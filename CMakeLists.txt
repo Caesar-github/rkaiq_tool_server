@@ -20,11 +20,6 @@ if(BUILD_SANITIZER_STATIC)
 	link_libraries(libasan.a dl m rt)
 endif()
 
-option(BUILD_TEST "build test demo" OFF)
-if(BUILD_TEST)
-	add_subdirectory(test)
-endif()
-
 option(BUILD_RKMEDIA "depend on rkmeda library" OFF)
 if(BUILD_RKMEDIA)
 find_package(PkgConfig QUIET)
@@ -35,7 +30,9 @@ find_path(EASYMEDIA_INCLUDE_DIR
     HINTS ${PKG_EASYMEDIA_INCLUDEDIR} ${PKG_EASYMEDIA_INCLUDE_DIRS}
     PATH_SUFFIXES easymedia)
 link_libraries(easymedia)
+add_compile_options(-fno-rtti)
 include_directories(${EASYMEDIA_INCLUDE_DIR}/)
+aux_source_directory(${PROJECT_SOURCE_DIR}/rkmedia/ RKMEDIA_SOURCE)
 endif()
 
 file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.h)
@@ -50,6 +47,12 @@ set(RKAIQ_TOOL_SERVER_SOURCE
 	${NET_SERVER_SOURCE}
 	${RKAIQ_SOURCE}
 	${CAMERA_SOURCE}
+	${RKMEDIA_SOURCE}
 	rkaiq_tool_server.cpp)
 add_executable(rkaiq_tool_server ${RKAIQ_TOOL_SERVER_SOURCE})
 target_link_libraries(rkaiq_tool_server pthread)
+
+option(BUILD_TEST "build test demo" OFF)
+if(BUILD_TEST)
+	add_subdirectory(test)
+endif()

@@ -13,6 +13,9 @@ add_executable(frame_average ${NET_SERVER_SOURCE} frame_average/frame_average.cp
 target_link_libraries(frame_average pthread)
 
 if(BUILD_RKMEDIA)
-add_executable(rtsp_flow_test rkmedia/rtsp_flow_test.cpp)
+add_executable(rtsp_flow_test ${RKMEDIA_SOURCE} rkmedia/rtsp_flow_test.cpp)
 target_link_libraries(rtsp_flow_test pthread easymedia)
+
+add_executable(source_sink_test ${RKMEDIA_SOURCE} rkmedia/source_sink_test.cpp)
+target_link_libraries(source_sink_test pthread easymedia)
 endif()

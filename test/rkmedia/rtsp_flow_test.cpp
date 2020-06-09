@@ -74,7 +74,7 @@ create_video_capture_flow(std::string input_path, std::string pixel_format,
   std::string stream_param;
   std::shared_ptr<easymedia::Flow> video_read_flow;
 
-  flow_name = "source_stream";
+  flow_name = "source_flow";
   flow_param = get_video_cap_flow_param(input_path, pixel_format, video_width,
                                         video_height);
   stream_param = get_video_cap_stream_param(input_path, pixel_format,
