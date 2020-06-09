@@ -275,53 +275,54 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   printf("cmd->checkSum %d\n", cmd->checkSum);
 }
 
-static void DoCapture(int socket, buffer *raw_buf) {
-  unsigned int count;
-  printf("\n mainloop enter!!!!!\n\n");
-  count = RKAiqProtocol::cap_info.frame_count;
-
-  usleep(1000 * 1000);
-
-  while (count-- > 0) {
-    for (;;) {
-      fd_set fds;
-      struct timeval tv;
-      int r;
-
-      FD_ZERO(&fds);
-      FD_SET(RKAiqProtocol::cap_info.dev_fd, &fds);
-
-      /* Timeout. */
-      tv.tv_sec = 2;
-      tv.tv_usec = 0;
-
-      r = select(RKAiqProtocol::cap_info.dev_fd + 1, &fds, NULL, NULL, &tv);
-
-      if (-1 == r) {
-        if (EINTR == errno)
-          continue;
-        errno_debug("select");
-      }
-
-      if (0 == r) {
-        fprintf(stderr, "select timeout\\n");
-        exit(EXIT_FAILURE);
-      }
-
-      if (read_frame(&RKAiqProtocol::cap_info))
-        break;
-      /* EAGAIN - continue select loop. */
+static void DoCaptureCallBack(int socket, void *buffer, int size) {
+  printf(" DoCaptureCallBack!!!!!\n\n");
+  char *buf = NULL;
+  int total = size;
+  int packet_len = MAXPACKETSIZE;
+  int send_size = 0;
+  int ret_val;
+  buf = (char *)buffer;
+  while (total > 0) {
+    if (total < packet_len) {
+      send_size = total;
+    } else {
+      send_size = packet_len;
     }
+    ret_val = send(socket, buf, send_size, 0);
+    total -= send_size;
+    buf += ret_val;
+    printf("DoCaptureCallBack send raw buffer, total remaind %d\n", total);
   }
-  printf("\n mainloop exit!!!!!\n\n");
+}
+
+static void DoCapture(int socket, struct capture_info *cap_info,
+                      buffer *raw_buf) {
+  printf("\n DoCapture entry!!!!!\n\n");
+  read_frame(socket, cap_info, DoCaptureCallBack);
+  printf("\n DoCapture exit!!!!!\n\n");
+}
+
+static void DumpCapinfo(capture_info *cap_info) {
+  printf("DumpCapinfo: \n");
+  printf("    dev_name ------------- %s\n", cap_info->dev_name);
+  printf("    dev_fd --------------- %d\n", cap_info->dev_fd);
+  printf("    io ------------------- %d\n", cap_info->io);
+  printf("    width ---------------- %d\n", cap_info->width);
+  printf("    height --------------- %d\n", cap_info->height);
+  printf("    format --------------- %d\n", cap_info->format);
+  printf("    capture_buf_type ----- %d\n", cap_info->capture_buf_type);
+  printf("    out_file ------------- %s\n", cap_info->out_file);
+  printf("    frame_count ---------- %d\n", cap_info->frame_count);
 }
 
 static void RawCaputure(Common_Cmd_t *cmd, struct capture_info *cap_info,
                         int socket, buffer *raw_buf) {
   printf("\n Raw_Capture enter!!!!!!! \n\n");
+  DumpCapinfo(cap_info);
   init_device(cap_info);
   start_capturing(cap_info);
-  // DoCapture(socket, raw_buf);
+  DoCapture(socket, cap_info, raw_buf);
   stop_capturing(cap_info);
   uninit_device(cap_info);
   fclose(cap_info->out_fp);

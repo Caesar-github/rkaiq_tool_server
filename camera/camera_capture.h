@@ -4,7 +4,11 @@
 #include "camera_device.h"
 #include "camera_memory.h"
 
+typedef void (*CaptureCallBack)(int, void *, int);
+
 int read_frame(struct capture_info *cap_info);
+int read_frame(int handler, struct capture_info *cap_info,
+               CaptureCallBack callback);
 void stop_capturing(struct capture_info *cap_info);
 void start_capturing(struct capture_info *cap_info);
 void uninit_device(struct capture_info *cap_info);

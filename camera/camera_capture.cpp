@@ -80,6 +80,81 @@ int read_frame(struct capture_info *cap_info) {
   return 1;
 }
 
+int read_frame(int handler, struct capture_info *cap_info,
+               CaptureCallBack callback) {
+  struct v4l2_buffer buf;
+  unsigned int i, bytesused;
+
+  switch (cap_info->io) {
+  case IO_METHOD_READ:
+    if (-1 == read(cap_info->dev_fd, cap_info->buffers[0].start,
+                   cap_info->buffers[0].length)) {
+      switch (errno) {
+      case EAGAIN:
+        return 0;
+      case EIO:
+      /* Could ignore EIO, see spec. */
+      /* fall through */
+      default:
+        errno_debug("read");
+      }
+    }
+    if (callback)
+      callback(handler, cap_info->buffers[0].start,
+               cap_info->buffers[0].length);
+    break;
+
+  case IO_METHOD_MMAP:
+    CLEAR(buf);
+
+    buf.type = cap_info->capture_buf_type;
+    buf.memory = V4L2_MEMORY_MMAP;
+    if (V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE == cap_info->capture_buf_type) {
+      struct v4l2_plane planes[FMT_NUM_PLANES];
+      buf.m.planes = planes;
+      buf.length = FMT_NUM_PLANES;
+    }
+
+    device_dqbuf(cap_info->dev_fd, &buf);
+
+    assert(buf.index < cap_info->n_buffers);
+
+    if (V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE == cap_info->capture_buf_type)
+      bytesused = buf.m.planes[0].bytesused;
+    else
+      bytesused = buf.bytesused;
+
+    if (callback)
+      callback(handler, cap_info->buffers[buf.index].start, bytesused);
+
+    device_qbuf(cap_info->dev_fd, &buf);
+    break;
+
+  case IO_METHOD_USERPTR:
+    CLEAR(buf);
+
+    buf.type = cap_info->capture_buf_type;
+    buf.memory = V4L2_MEMORY_USERPTR;
+
+    device_dqbuf(cap_info->dev_fd, &buf);
+
+    for (i = 0; i < cap_info->n_buffers; ++i)
+      if (buf.m.userptr == (unsigned long)cap_info->buffers[i].start &&
+          buf.length == cap_info->buffers[i].length)
+        break;
+
+    assert(i < cap_info->n_buffers);
+
+    if (callback)
+      callback(handler, (void *)buf.m.userptr, buf.bytesused);
+
+    device_qbuf(cap_info->dev_fd, &buf);
+    break;
+  }
+
+  return 1;
+}
+
 void stop_capturing(struct capture_info *cap_info) {
   enum v4l2_buf_type type;
 

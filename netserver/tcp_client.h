@@ -28,7 +28,9 @@ public:
   virtual ~TCPClient();
   bool Setup(string address, int port);
   bool Send(string data);
+  int Send(char *buff, int size);
   string Receive(int size);
+  int Receive(char *buff, int size);
 };
 
 #endif
