@@ -11,3 +11,8 @@ target_link_libraries(virsual_rkaiq_tool pthread)
 
 add_executable(frame_average ${NET_SERVER_SOURCE} frame_average/frame_average.cpp)
 target_link_libraries(frame_average pthread)
+
+if(BUILD_RKMEDIA)
+add_executable(rtsp_flow_test rkmedia/rtsp_flow_test.cpp)
+target_link_libraries(rtsp_flow_test pthread easymedia)
+endif()

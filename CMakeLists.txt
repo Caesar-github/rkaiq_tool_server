@@ -25,6 +25,19 @@ if(BUILD_TEST)
 	add_subdirectory(test)
 endif()
 
+option(BUILD_RKMEDIA "depend on rkmeda library" OFF)
+if(BUILD_RKMEDIA)
+find_package(PkgConfig QUIET)
+pkg_check_modules(PKG_EASYMEDIA QUIET "libeasymedia")
+set(EASYMEDIA_DEFINITIONS ${PKG_EASYMEDIA_CFLAGS_OTHER})
+find_path(EASYMEDIA_INCLUDE_DIR
+    NAMES buffer.h
+    HINTS ${PKG_EASYMEDIA_INCLUDEDIR} ${PKG_EASYMEDIA_INCLUDE_DIRS}
+    PATH_SUFFIXES easymedia)
+link_libraries(easymedia)
+include_directories(${EASYMEDIA_INCLUDE_DIR}/)
+endif()
+
 file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.h)
 add_custom_target(
     clangformat
