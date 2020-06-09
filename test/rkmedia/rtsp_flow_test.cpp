@@ -1,40 +1,41 @@
+#include "assert.h"
+#include "signal.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "unistd.h"
-#include "assert.h"
-#include "signal.h"
 
 #include <iostream>
-#include <string>
 #include <memory>
+#include <string>
 
-#include "easymedia/key_string.h"
-#include "easymedia/media_type.h"
-#include "easymedia/utils.h"
-#include "easymedia/reflector.h"
 #include "easymedia/buffer.h"
-#include "easymedia/image.h"
 #include "easymedia/flow.h"
-#include "easymedia/stream.h"
+#include "easymedia/image.h"
+#include "easymedia/key_string.h"
 #include "easymedia/media_config.h"
+#include "easymedia/media_type.h"
+#include "easymedia/reflector.h"
+#include "easymedia/stream.h"
+#include "easymedia/utils.h"
 
-std::shared_ptr<easymedia::Flow>
-create_flow(const std::string &flow_name, const std::string &flow_param,
-               const std::string &elem_param) {
+std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name,
+                                             const std::string &flow_param,
+                                             const std::string &elem_param) {
   auto &&param = easymedia::JoinFlowParam(flow_param, 1, elem_param);
-  //printf("create_flow :\n");
-  //printf("flow_name : %s\n", flow_name.c_str());
-  //printf("param : \n%s\n", param.c_str());
+  // printf("create_flow :\n");
+  // printf("flow_name : %s\n", flow_name.c_str());
+  // printf("param : \n%s\n", param.c_str());
   auto ret = easymedia::REFLECTOR(Flow)::Create<easymedia::Flow>(
       flow_name.c_str(), param.c_str());
-	printf(" ####### create_flow flow use_count %d\n", ret.use_count());
+  printf(" ####### create_flow flow use_count %d\n", ret.use_count());
   if (!ret)
     fprintf(stderr, "Create flow %s failed\n", flow_name.c_str());
   return ret;
 }
 
 std::string get_video_cap_flow_param(std::string input_path,
-    std::string pixel_format, int video_width, int video_height) {
+                                     std::string pixel_format, int video_width,
+                                     int video_height) {
   std::string flow_param;
   // Reading yuv from camera
   flow_param = "";
@@ -43,11 +44,12 @@ std::string get_video_cap_flow_param(std::string input_path,
   PARAM_STRING_APPEND(flow_param, KEK_THREAD_SYNC_MODEL, KEY_SYNC);
   PARAM_STRING_APPEND(flow_param, KEK_INPUT_MODEL, KEY_DROPFRONT);
   PARAM_STRING_APPEND_TO(flow_param, KEY_INPUT_CACHE_NUM, 5);
-  return  flow_param;
+  return flow_param;
 }
 
 std::string get_video_cap_stream_param(std::string input_path,
-    std::string pixel_format, int video_width, int video_height) {
+                                       std::string pixel_format,
+                                       int video_width, int video_height) {
   std::string stream_param;
   stream_param = "";
   PARAM_STRING_APPEND_TO(stream_param, KEY_USE_LIBV4L2, 1);
@@ -61,22 +63,22 @@ std::string get_video_cap_stream_param(std::string input_path,
   PARAM_STRING_APPEND(stream_param, KEY_OUTPUTDATATYPE, pixel_format);
   PARAM_STRING_APPEND_TO(stream_param, KEY_BUFFER_WIDTH, video_width);
   PARAM_STRING_APPEND_TO(stream_param, KEY_BUFFER_HEIGHT, video_height);
-  return  stream_param;
+  return stream_param;
 }
 
 std::shared_ptr<easymedia::Flow>
-create_video_capture_flow(std::string input_path,
-    std::string pixel_format, int video_width, int video_height) {
+create_video_capture_flow(std::string input_path, std::string pixel_format,
+                          int video_width, int video_height) {
   std::string flow_name;
   std::string flow_param;
   std::string stream_param;
   std::shared_ptr<easymedia::Flow> video_read_flow;
 
   flow_name = "source_stream";
-  flow_param = get_video_cap_flow_param(input_path, pixel_format,
-  	                                    video_width, video_height);
+  flow_param = get_video_cap_flow_param(input_path, pixel_format, video_width,
+                                        video_height);
   stream_param = get_video_cap_stream_param(input_path, pixel_format,
-  	                                    video_width, video_height);
+                                            video_width, video_height);
   video_read_flow = create_flow(flow_name, flow_param, stream_param);
   if (!video_read_flow) {
     fprintf(stderr, "Create flow %s failed\n", flow_name.c_str());
@@ -86,7 +88,9 @@ create_video_capture_flow(std::string input_path,
 }
 
 std::string get_video_enc_flow_param(std::string pixel_format,
-    std::string video_enc_type, int video_width, int video_height, int video_fps) {
+                                     std::string video_enc_type,
+                                     int video_width, int video_height,
+                                     int video_fps) {
   std::string flow_param;
   flow_param = "";
   PARAM_STRING_APPEND(flow_param, KEY_NAME, "rkmpp");
@@ -96,7 +100,9 @@ std::string get_video_enc_flow_param(std::string pixel_format,
 }
 
 std::string get_video_enc_stream_param(std::string pixel_format,
-    std::string video_enc_type, int video_width, int video_height, int video_fps) {
+                                       std::string video_enc_type,
+                                       int video_width, int video_height,
+                                       int video_fps) {
   std::string stream_param;
 
   int bps = video_width * video_height * video_fps / 14;
@@ -115,10 +121,9 @@ std::string get_video_enc_stream_param(std::string pixel_format,
   return stream_param;
 }
 
-
 std::shared_ptr<easymedia::Flow>
 create_video_enc_flow(std::string pixel_format, std::string video_enc_type,
-                            int video_width, int video_height, int video_fps) {
+                      int video_width, int video_height, int video_fps) {
   std::shared_ptr<easymedia::Flow> video_encoder_flow;
 
   std::string flow_name;
@@ -127,9 +132,9 @@ create_video_enc_flow(std::string pixel_format, std::string video_enc_type,
 
   flow_name = "video_enc";
   flow_param = get_video_enc_flow_param(pixel_format, video_enc_type,
-  	                                    video_width, video_height, video_fps);
-  stream_param = get_video_enc_stream_param(pixel_format, video_enc_type,
-  	                                    video_width, video_height, video_fps);
+                                        video_width, video_height, video_fps);
+  stream_param = get_video_enc_stream_param(
+      pixel_format, video_enc_type, video_width, video_height, video_fps);
   video_encoder_flow = create_flow(flow_name, flow_param, stream_param);
   if (!video_encoder_flow) {
     fprintf(stderr, "Create flow %s failed\n", flow_name.c_str());
@@ -139,7 +144,7 @@ create_video_enc_flow(std::string pixel_format, std::string video_enc_type,
 }
 
 std::string get_rtsp_server_flow_param(std::string channel_name,
-                                std::string media_type) {
+                                       std::string media_type) {
   std::string flow_param;
   flow_param = "";
   PARAM_STRING_APPEND(flow_param, KEY_INPUTDATATYPE, media_type);
@@ -149,15 +154,14 @@ std::string get_rtsp_server_flow_param(std::string channel_name,
 }
 
 std::string get_rtsp_server_stream_param(std::string channel_name,
-                                std::string media_type) {
+                                         std::string media_type) {
   std::string stream_param;
   stream_param = "";
   return stream_param;
 }
 
 std::shared_ptr<easymedia::Flow>
-create_rtsp_server_flow(std::string channel_name,
-                                std::string media_type) {
+create_rtsp_server_flow(std::string channel_name, std::string media_type) {
   std::shared_ptr<easymedia::Flow> rtsp_flow;
 
   std::string flow_name;
@@ -177,7 +181,7 @@ create_rtsp_server_flow(std::string channel_name,
 }
 
 std::string get_rtmp_server_flow_param(std::string stream_addr,
-                                std::string output_type) {
+                                       std::string output_type) {
   std::string flow_param;
   flow_param = "";
   PARAM_STRING_APPEND(flow_param, KEY_NAME, "muxer_flow");
@@ -187,7 +191,7 @@ std::string get_rtmp_server_flow_param(std::string stream_addr,
 }
 
 std::string get_rtmp_server_stream_param(std::string channel_name,
-                                std::string media_type) {
+                                         std::string media_type) {
   std::string stream_param;
   stream_param = "";
 
@@ -195,10 +199,8 @@ std::string get_rtmp_server_stream_param(std::string channel_name,
 }
 
 std::shared_ptr<easymedia::Flow>
-create_rtmp_server_flow(std::string stream_addr,
-                               std::string output_type,
-                               std::string video_param,
-                               std::string audio_param) {
+create_rtmp_server_flow(std::string stream_addr, std::string output_type,
+                        std::string video_param, std::string audio_param) {
   std::shared_ptr<easymedia::Flow> rtmp_flow;
   std::string flow_name;
   std::string flow_param;
@@ -206,7 +208,8 @@ create_rtmp_server_flow(std::string stream_addr,
 
   flow_name = "muxer_flow";
   flow_param = get_rtmp_server_flow_param(stream_addr, output_type);
-  muxer_param = easymedia::JoinFlowParam(flow_param, 2, video_param, audio_param);
+  muxer_param =
+      easymedia::JoinFlowParam(flow_param, 2, video_param, audio_param);
 
   rtmp_flow = create_flow(flow_name, flow_param, muxer_param);
   if (!rtmp_flow) {
@@ -240,30 +243,31 @@ void deinit(std::shared_ptr<easymedia::Flow> &video_cap_flow,
 std::string video_path;
 
 void init_2688p(std::shared_ptr<easymedia::Flow> &video_cap_flow,
-                    std::shared_ptr<easymedia::Flow> &video_enc_flow,
-                    std::shared_ptr<easymedia::Flow> &video_rtsp_flow) {
+                std::shared_ptr<easymedia::Flow> &video_enc_flow,
+                std::shared_ptr<easymedia::Flow> &video_rtsp_flow) {
   int width = 2688;
   int height = 1520;
   int fps = 30;
   std::string yuv_format = IMAGE_NV12;
   std::string enc_type = VIDEO_H264;
 
-  const char * video_dev = "/dev/video0";
+  const char *video_dev = "/dev/video0";
   if (!video_path.empty())
     video_dev = video_path.c_str();
 
   printf("init_2688p video_dev %s\n", video_dev);
 
-  video_cap_flow = create_video_capture_flow(video_dev, yuv_format, width, height);
-  video_enc_flow = create_video_enc_flow(yuv_format, enc_type, width, height, fps);
+  video_cap_flow =
+      create_video_capture_flow(video_dev, yuv_format, width, height);
+  video_enc_flow =
+      create_video_enc_flow(yuv_format, enc_type, width, height, fps);
   video_rtsp_flow = create_rtsp_server_flow("main_stream", VIDEO_H264);
 
   video_enc_flow->AddDownFlow(video_rtsp_flow, 0, 0);
   video_cap_flow->AddDownFlow(video_enc_flow, 0, 0);
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
   if (argc == 2)
     video_path = argv[1];
 
