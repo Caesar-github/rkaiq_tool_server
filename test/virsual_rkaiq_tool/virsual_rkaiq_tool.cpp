@@ -19,7 +19,7 @@ typedef struct Common_Cmd_s {
 
 void sig_exit(int s) { exit(0); }
 
-static void InitCommandCheck(Common_Cmd_t *cmd) {
+static void ICMD_CheckStatus(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = CHECK_DEVICE_STATUS;
@@ -31,7 +31,7 @@ static void InitCommandCheck(Common_Cmd_t *cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandRawCap0(Common_Cmd_t *cmd) {
+static void ICMD_GetVideoDevStatus(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = RAW_CAPTURE;
@@ -44,7 +44,7 @@ static void InitCommandRawCap0(Common_Cmd_t *cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandRawCap1(Common_Cmd_t *cmd) {
+static void ICMD_GetPclkHtsVts(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = RAW_CAPTURE;
@@ -57,20 +57,25 @@ static void InitCommandRawCap1(Common_Cmd_t *cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandRawCap2(Common_Cmd_t *cmd) {
+static void ICMD_GetSetParam(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = RAW_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x02;
-  cmd->dat[1] = 0x00;
+  cmd->dat[1] = 0x10;
+  cmd->dat[3] = 0x20;
+  cmd->dat[5] = 0;
+  cmd->dat[6] = 16;
+  cmd->dat[7] = 1;
+  cmd->dat[8] = 0;
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandRawCap3(Common_Cmd_t *cmd) {
+static void ICMD_DoCapture(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = RAW_CAPTURE;
@@ -83,7 +88,7 @@ static void InitCommandRawCap3(Common_Cmd_t *cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandRawCap4(Common_Cmd_t *cmd) {
+static void ICMD_DoSumCheck(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = RAW_CAPTURE;
@@ -96,7 +101,7 @@ static void InitCommandRawCap4(Common_Cmd_t *cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandReqAppStatus(Common_Cmd_t *cmd) {
+static void ICMD_GetAppStatus(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = VIDEO_APP_STATUS_REQ;
@@ -108,7 +113,7 @@ static void InitCommandReqAppStatus(Common_Cmd_t *cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandSetAppStatus(Common_Cmd_t *cmd) {
+static void ICMD_SetAppStatus(Common_Cmd_t *cmd) {
   strncpy((char *)cmd->RKID, TAG_PC_TO_DEVICE, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
   cmd->cmdID = VIDEO_APP_STATUS_SET;
@@ -136,6 +141,104 @@ void DumpCommand(char *buff) {
   }
 }
 
+void CMD_CheckStatus(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_CheckStatus\n");
+  ICMD_CheckStatus(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  DumpCommand(send_data);
+}
+
+void CMD_SetAppStatus(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_SetAppStatus\n");
+  ICMD_SetAppStatus(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  DumpCommand(send_data);
+}
+
+void CMD_GetAppStatus(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_GetAppStatus\n");
+  ICMD_GetAppStatus(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  DumpCommand(send_data);
+}
+
+void CMD_GetVideoDevStatus(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_GetVideoDevStatus\n");
+  ICMD_GetVideoDevStatus(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  DumpCommand(send_data);
+}
+
+void CMD_GetPclkHtsVts(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_GetPclkHtsVts\n");
+  ICMD_GetPclkHtsVts(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  DumpCommand(send_data);
+}
+
+void CMD_GetSetParam(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_GetSetParam\n");
+  ICMD_GetSetParam(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  DumpCommand(send_data);
+}
+
+void CMD_DoCapture(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_DoCapture\n");
+  ICMD_DoCapture(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  int ret_val = tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  while (sizeof(Common_Cmd_s) == MAX_BUFFER_SIZE)
+    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+}
+
+void CMD_DoSumCheck(TCPClient &tcp) {
+  Common_Cmd_t send_cmd;
+  char send_data[MAX_BUFFER_SIZE];
+  fprintf(stderr, "CMD_DoSumCheck\n");
+  ICMD_DoSumCheck(&send_cmd);
+  memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
+  tcp.Send(send_data, sizeof(Common_Cmd_s));
+  tcp.Receive(send_data, MAX_BUFFER_SIZE);
+  DumpCommand(send_data);
+}
+
+void CMD_CaptureRaw(TCPClient &tcp) {
+  CMD_SetAppStatus(tcp);
+  CMD_GetVideoDevStatus(tcp);
+  CMD_GetPclkHtsVts(tcp);
+  CMD_GetSetParam(tcp);
+  CMD_DoCapture(tcp);
+  CMD_DoSumCheck(tcp);
+}
+
 int main(int argc, char *argv[]) {
   if (argc < 3) {
     fprintf(stderr, "Usage: ./%s ip msg_id\n", argv[0]);
@@ -148,8 +251,6 @@ int main(int argc, char *argv[]) {
   TCPClient tcp;
   tcp.Setup(argv[1], SERVER_PORT);
   msg_id = atoi(argv[2]);
-  if (argc == 4)
-    proc_id = atoi(argv[3]);
 
   int ret_val;
   Common_Cmd_t send_cmd;
@@ -157,83 +258,10 @@ int main(int argc, char *argv[]) {
 
   switch (msg_id) {
   case CHECK_DEVICE_STATUS:
-    fprintf(stderr, "Check device status\n");
-    InitCommandCheck(&send_cmd);
-    memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-    printf("send length %d\n", ret_val);
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
-    DumpCommand(send_data);
+    CMD_CheckStatus(tcp);
     break;
   case RAW_CAPTURE:
-    switch (proc_id) {
-    case RAW_CAPTURE_GET_DEVICE_STATUS:
-      fprintf(stderr, "raw capture case0 Check device status\n");
-      InitCommandRawCap0(&send_cmd);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-      printf("send length %d\n", ret_val);
-      tcp.Receive(send_data, MAX_BUFFER_SIZE);
-      DumpCommand(send_data);
-      break;
-    case RAW_CAPTURE_GET_PCLK_HTS_VTS:
-      fprintf(stderr, "raw capture case1 GET_PCLK_HTS_VTS\n");
-      InitCommandRawCap1(&send_cmd);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-      printf("send length %d\n", ret_val);
-      tcp.Receive(send_data, MAX_BUFFER_SIZE);
-      DumpCommand(send_data);
-      break;
-    case RAW_CAPTURE_SET_PARAMS:
-      fprintf(stderr, "raw capture case2 SET_PARAMS\n");
-      InitCommandRawCap2(&send_cmd);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-      printf("send length %d\n", ret_val);
-      tcp.Receive(send_data, MAX_BUFFER_SIZE);
-      DumpCommand(send_data);
-      break;
-    case RAW_CAPTURE_DO_CAPTURE:
-      fprintf(stderr, "raw capture case3 CAPTURE\n");
-      InitCommandRawCap3(&send_cmd);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-      printf("send length %d\n", ret_val);
-      ret_val = tcp.Receive(send_data, MAX_BUFFER_SIZE);
-      if (sizeof(Common_Cmd_s) == ret_val)
-        DumpCommand(send_data);
-      break;
-    case RAW_CAPTURE_COMPARE_CHECKSUM:
-      fprintf(stderr, "raw capture case3 SEND CHECKSUM\n");
-      InitCommandRawCap4(&send_cmd);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-      printf("send length %d\n", ret_val);
-      tcp.Receive(send_data, MAX_BUFFER_SIZE);
-      DumpCommand(send_data);
-      break;
-    default:
-      break;
-    }
-    break;
-  case VIDEO_APP_STATUS_REQ:
-    fprintf(stderr, "req app status\n");
-    InitCommandReqAppStatus(&send_cmd);
-    memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-    printf("send length %d\n", ret_val);
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
-    DumpCommand(send_data);
-    break;
-  case VIDEO_APP_STATUS_SET:
-    fprintf(stderr, "set app status\n");
-    InitCommandSetAppStatus(&send_cmd);
-    memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    ret_val = tcp.Send(send_data, sizeof(Common_Cmd_s));
-    printf("send length %d\n", ret_val);
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
-    DumpCommand(send_data);
+    CMD_CaptureRaw(tcp);
     break;
   default:
     break;
