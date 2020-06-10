@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
       if (sizeof(Common_Cmd_s) == ret_val)
         DumpCommand(send_data);
       break;
-    case RAW_CAPTURE_SEND_CHECKSUM:
+    case RAW_CAPTURE_COMPARE_CHECKSUM:
       fprintf(stderr, "raw capture case3 SEND CHECKSUM\n");
       InitCommandRawCap4(&send_cmd);
       memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));

@@ -23,8 +23,13 @@ typedef enum {
   RAW_CAPTURE_GET_PCLK_HTS_VTS,
   RAW_CAPTURE_SET_PARAMS,
   RAW_CAPTURE_DO_CAPTURE,
-  RAW_CAPTURE_SEND_CHECKSUM
+  RAW_CAPTURE_COMPARE_CHECKSUM
 } cmdCapRawID;
+
+typedef enum {
+  CAPTURE_NORMAL = 0,
+  CAPTUER_AVERAGE,
+} captureMode;
 
 typedef enum { VIDEO_APP_OFF = 0x80, VIDEO_APP_ON } videoAppStatus;
 
@@ -52,12 +57,6 @@ public:
   RKAiqProtocol() = default;
   virtual ~RKAiqProtocol() = default;
   static void HandlerTCPMessage(int sockfd, char *buffer, int size);
-
-public:
-  static struct capture_info cap_info;
-
-private:
-  static int RunStatus;
 };
 
 #endif
