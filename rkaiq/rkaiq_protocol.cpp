@@ -39,7 +39,7 @@ typedef struct Capture_Reso_s {
 
 int RKAiqProtocol::RunStatus = READY;
 struct capture_info RKAiqProtocol::cap_info;
-buffer *RKAiqProtocol::raw_buf = new buffer();
+static vector<uint16_t> cap_check_sums;
 
 static int RunCmd(const char *cmd) {
   char buffer[1024];
@@ -99,12 +99,8 @@ static void RawCaptureinit(Common_Cmd_t *cmd) {
   cap_info->height = Reso->Height;
   cap_info->width = Reso->Width;
   cap_info->format = v4l2_fourcc('B', 'G', '1', '2');
-  strcpy(cap_info->out_file, SAVE_RAW0_PATH);
-  if ((cap_info->out_fp = fopen(cap_info->out_file, "w")) == NULL) {
-    perror("Creat file failed");
-    exit(0);
-  }
-  printf("get ResW: %d  ResH: %d\n", cap_info->width, cap_info->height);
+  fprintf(stderr, "get ResW: %d  ResH: %d\n", cap_info->width,
+          cap_info->height);
 }
 
 static void GetSensorPara(Common_Cmd_t *cmd, struct capture_info *cap_info,
@@ -133,7 +129,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, struct capture_info *cap_info,
   }
   horzBlank = ctrl.minimum;
 
-  printf("get hblank: %d\n", horzBlank);
+  fprintf(stderr, "get hblank: %d\n", horzBlank);
 
   memset(&ctrl, 0, sizeof(ctrl));
   ctrl.id = V4L2_CID_VBLANK;
@@ -144,7 +140,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, struct capture_info *cap_info,
   }
   vertBlank = ctrl.minimum;
 
-  printf("get vblank: %d\n", vertBlank);
+  fprintf(stderr, "get vblank: %d\n", vertBlank);
 
 #if 1
   memset(&fmt, 0, sizeof(fmt));
@@ -162,7 +158,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, struct capture_info *cap_info,
   // VTS = vertBlank + cap_info->height;
   // HTS = horzBlank + cap_info->width;
 
-  printf("get VTS: %d  HTS: %d\n", VTS, HTS);
+  fprintf(stderr, "get VTS: %d  HTS: %d\n", VTS, HTS);
 #if 1
   memset(&finterval, 0, sizeof(finterval));
   finterval.pad = 0;
@@ -173,7 +169,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, struct capture_info *cap_info,
   }
 
   fps = (float)(finterval.interval.denominator) / finterval.interval.numerator;
-  printf("get fps: %f\n", fps);
+  fprintf(stderr, "get fps: %f\n", fps);
 #endif
   // fps = 30;
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
@@ -192,7 +188,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, struct capture_info *cap_info,
   for (int i = 0; i < cmd->datLen; i++) {
     cmd->checkSum += cmd->dat[i];
   }
-  printf("cmd->checkSum %d\n", cmd->checkSum);
+  fprintf(stderr, "cmd->checkSum %d\n", cmd->checkSum);
 
 end:
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
@@ -211,7 +207,7 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   Capture_Params_t *CapParam = (Capture_Params_t *)(recv_cmd->dat + 1);
 
   for (int i = 0; i < recv_cmd->datLen; i++) {
-    printf("data[%d]: 0x%x\n", i, recv_cmd->dat[i]);
+    fprintf(stderr, "data[%d]: 0x%x\n", i, recv_cmd->dat[i]);
   }
 
 #if 0
@@ -231,10 +227,10 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
 	ctrls.controls = exp_gain;
 	ctrls.reserved[0] = 0;
 	ctrls.reserved[1] = 0;
-	printf(" set exposure : %d   set gain : %d \n", exp_gain[0].value, exp_gain[1].value);
+	fprintf(stderr, " set exposure : %d   set gain : %d \n", exp_gain[0].value, exp_gain[1].value);
 
 	if (device_set3aexposure(cap_info->dev_fd, &ctrls) < 0) {
-		printf(" set exposure result failed to device\n");
+		fprintf(stderr, " set exposure result failed to device\n");
 	}
 
 #else
@@ -247,14 +243,15 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   gain.id = V4L2_CID_ANALOGUE_GAIN;
   gain.value = CapParam->GAIN;
 
-  printf(" set gain : %d   set exposure : %d \n", gain.value, exp.value);
+  fprintf(stderr, " set gain : %d   set exposure : %d \n", gain.value,
+          exp.value);
 
   if (device_setctrl(cap_info->dev_fd, &exp) < 0) {
-    printf(" set exposure result failed to device\n");
+    fprintf(stderr, " set exposure result failed to device\n");
   }
 
   if (device_setctrl(cap_info->dev_fd, &gain) < 0) {
-    printf(" set gain result failed to device\n");
+    fprintf(stderr, " set gain result failed to device\n");
   }
 #endif
 
@@ -266,22 +263,23 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   cmd->dat[0] = 0x02;
   cmd->dat[1] = ret_status;
   for (int i = 0; i < cmd->datLen; i++) {
-    printf("data[%d]: 0x%x\n", i, cmd->dat[i]);
+    fprintf(stderr, "data[%d]: 0x%x\n", i, cmd->dat[i]);
   }
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++) {
     cmd->checkSum += cmd->dat[i];
   }
-  printf("cmd->checkSum %d\n", cmd->checkSum);
+  fprintf(stderr, "cmd->checkSum %d\n", cmd->checkSum);
 }
 
 static void DoCaptureCallBack(int socket, void *buffer, int size) {
-  printf(" DoCaptureCallBack!!!!!\n\n");
+  fprintf(stderr, " DoCaptureCallBack!!!!!\n\n");
   char *buf = NULL;
   int total = size;
   int packet_len = MAXPACKETSIZE;
   int send_size = 0;
   int ret_val;
+  uint16_t check_sum = 0;
   buf = (char *)buffer;
   while (total > 0) {
     if (total < packet_len) {
@@ -292,45 +290,50 @@ static void DoCaptureCallBack(int socket, void *buffer, int size) {
     ret_val = send(socket, buf, send_size, 0);
     total -= send_size;
     buf += ret_val;
-    printf("DoCaptureCallBack send raw buffer, total remaind %d\n", total);
+    // fprintf(stderr, "DoCaptureCallBack send raw buffer, total remaind %d\n",
+    // total);
   }
+
+  buf = (char *)buffer;
+  for (int i = 0; i < size; i++) {
+    check_sum += buf[i];
+  }
+  cap_check_sums.push_back(check_sum);
 }
 
-static void DoCapture(int socket, struct capture_info *cap_info,
-                      buffer *raw_buf) {
-  printf("\n DoCapture entry!!!!!\n\n");
+static void DoCapture(int socket, struct capture_info *cap_info) {
+  fprintf(stderr, "\n DoCapture entry!!!!!\n\n");
   read_frame(socket, cap_info, DoCaptureCallBack);
-  printf("\n DoCapture exit!!!!!\n\n");
+  fprintf(stderr, "\n DoCapture exit!!!!!\n\n");
 }
 
 static void DumpCapinfo(capture_info *cap_info) {
-  printf("DumpCapinfo: \n");
-  printf("    dev_name ------------- %s\n", cap_info->dev_name);
-  printf("    dev_fd --------------- %d\n", cap_info->dev_fd);
-  printf("    io ------------------- %d\n", cap_info->io);
-  printf("    width ---------------- %d\n", cap_info->width);
-  printf("    height --------------- %d\n", cap_info->height);
-  printf("    format --------------- %d\n", cap_info->format);
-  printf("    capture_buf_type ----- %d\n", cap_info->capture_buf_type);
-  printf("    out_file ------------- %s\n", cap_info->out_file);
-  printf("    frame_count ---------- %d\n", cap_info->frame_count);
+  fprintf(stderr, "DumpCapinfo: \n");
+  fprintf(stderr, "    dev_name ------------- %s\n", cap_info->dev_name);
+  fprintf(stderr, "    dev_fd --------------- %d\n", cap_info->dev_fd);
+  fprintf(stderr, "    io ------------------- %d\n", cap_info->io);
+  fprintf(stderr, "    width ---------------- %d\n", cap_info->width);
+  fprintf(stderr, "    height --------------- %d\n", cap_info->height);
+  fprintf(stderr, "    format --------------- %d\n", cap_info->format);
+  fprintf(stderr, "    capture_buf_type ----- %d\n",
+          cap_info->capture_buf_type);
+  fprintf(stderr, "    out_file ------------- %s\n", cap_info->out_file);
+  fprintf(stderr, "    frame_count ---------- %d\n", cap_info->frame_count);
 }
 
 static void RawCaputure(Common_Cmd_t *cmd, struct capture_info *cap_info,
-                        int socket, buffer *raw_buf) {
-  printf("\n Raw_Capture enter!!!!!!! \n\n");
+                        int socket) {
+  fprintf(stderr, "\n Raw_Capture enter!!!!!!! \n\n");
   DumpCapinfo(cap_info);
   init_device(cap_info);
   start_capturing(cap_info);
-  DoCapture(socket, cap_info, raw_buf);
+  DoCapture(socket, cap_info);
   stop_capturing(cap_info);
   uninit_device(cap_info);
-  fclose(cap_info->out_fp);
-  printf("\n Raw_Capture exit!!!!!!! \n\n");
+  fprintf(stderr, "\n Raw_Capture exit!!!!!!! \n\n");
 }
 
-void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd,
-                       buffer *raw_buf) {
+static void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   unsigned short *checksum;
   checksum = (unsigned short *)&recv_cmd->dat[1];
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
@@ -339,12 +342,24 @@ void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd,
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x04;
-  printf("raw_buf->checksum = %d,  recieve checksum = %d\n", raw_buf->checksum,
-         *checksum);
-  if (*checksum == raw_buf->checksum)
-    cmd->dat[1] = RES_SUCCESS;
-  else
-    cmd->dat[1] = RES_FAILED;
+  cmd->dat[1] = RES_FAILED;
+
+  printf("######## SendRawDataResult cap_check_sums size %d\n",
+         cap_check_sums.size());
+  for (auto &iter : cap_check_sums) {
+    fprintf(stderr, "######## cap_check_sums %d, recieve %d\n", iter,
+            *checksum);
+  }
+
+  for (auto iter = cap_check_sums.begin(); iter != cap_check_sums.end();) {
+    if (*iter == 9) {
+      cmd->dat[1] = RES_SUCCESS;
+      iter = cap_check_sums.erase(iter);
+      break;
+    } else {
+      iter++;
+    }
+  }
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
@@ -354,21 +369,22 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   int ret_status = RES_SUCCESS;
   unsigned short *AppStatus;
   AppStatus = (unsigned short *)&recv_cmd->dat[0];
-  printf(">>>>>>>>>>>Set_App_Status recv_cmd->dat[0] = %p>>\n", AppStatus);
+  fprintf(stderr, ">>>>>>>>>>>Set_App_Status recv_cmd->dat[0] = %p>>\n",
+          AppStatus);
   if (*AppStatus == VIDEO_APP_OFF) {
-    printf(">>>>>>>>>>>close app start>>>>>>>>>>>>>>>>>>>\n");
+    fprintf(stderr, ">>>>>>>>>>>close app start>>>>>>>>>>>>>>>>>>>\n");
     int ret = RunCmd(STOP_RKLUNCH_CMD);
     usleep(2000000);
     if (ret < 0) {
-      printf("kill app failed\n");
+      fprintf(stderr, "kill app failed\n");
       ret_status = RES_FAILED;
     }
   } else if (*AppStatus == VIDEO_APP_ON) {
-    printf(">>>>>>>>>>>open app start>>>>>>>>>>>>>>>>>>>\n");
+    fprintf(stderr, ">>>>>>>>>>>open app start>>>>>>>>>>>>>>>>>>>\n");
     int ret = RunCmd(START_RKLUNCH_CMD);
     usleep(2000000);
     if (ret < 0) {
-      printf("open app failed\n");
+      fprintf(stderr, "open app failed\n");
       ret_status = RES_FAILED;
     }
   }
@@ -381,7 +397,7 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++) {
     cmd->checkSum += cmd->dat[i];
-    printf("Set_App_Status cmd->dat[%d] = %d\n", i, cmd->dat[i]);
+    fprintf(stderr, "Set_App_Status cmd->dat[%d] = %d\n", i, cmd->dat[i]);
   }
 }
 
@@ -389,10 +405,10 @@ static void ReqAppStatus(Common_Cmd_t *cmd) {
   memset(cmd->dat, 0, sizeof(cmd->dat));
   if (device_open(RKAiqProtocol::cap_info.dev_name) < 0) {
     cmd->dat[0] = VIDEO_APP_ON;
-    printf("video status is ON\n");
+    fprintf(stderr, "video status is ON\n");
   } else {
     cmd->dat[0] = VIDEO_APP_OFF;
-    printf("video status is OFF\n");
+    fprintf(stderr, "video status is OFF\n");
   }
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
@@ -409,120 +425,118 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
   char send_data[MAXPACKETSIZE];
   int ret_val;
 
+  fprintf(stderr, "HandlerTCPMessage:\n");
+
   for (int i = 0; i < common_cmd->datLen; i++) {
-    fprintf(stderr, "data[%d]: 0x%x\n", i, common_cmd->dat[i]);
+    fprintf(stderr, "DATA[%d]: 0x%x\n", i, common_cmd->dat[i]);
   }
 
   if (strcmp((char *)common_cmd->RKID, TAG_PC_TO_DEVICE) == 0) {
-    fprintf(stderr, "common_cmd RKID: %s\n", common_cmd->RKID);
+    fprintf(stderr, "RKID: %s\n", common_cmd->RKID);
   } else {
-    fprintf(stderr, "Unknow command RKID\n");
+    fprintf(stderr, "RKID: Unknow\n");
     return;
   }
 
   switch (common_cmd->cmdID) {
   case CHECK_DEVICE_STATUS:
-    fprintf(stderr, "Check device status\n");
+    fprintf(stderr, "CmdID CHECK_DEVICE_STATUS in\n");
     if (common_cmd->dat[0] == KNOCK_KNOCK) {
       InitCommandPingAns(&send_cmd, READY);
       fprintf(stderr, "Device is READY\n");
     } else {
-      fprintf(stderr, "Unknow command message\n");
+      fprintf(stderr, "Unknow CHECK_DEVICE_STATUS message\n");
     }
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-    printf("send length %d\n", ret_val);
+    send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
+    fprintf(stderr, "cmdID CHECK_DEVICE_STATUS out\n\n");
     break;
   case RAW_CAPTURE: {
-
-    fprintf(stderr, "RAW CAPTURE\n");
+    fprintf(stderr, "CmdID RAW_CAPTURE in\n");
     char *datBuf = (char *)(common_cmd->dat);
-    int ret = system("./dump_raw.sh &");
-    if (ret < 0)
-      fprintf(stderr, ">>>>>>>>>set isp output raw failed\n");
+    int ret = system("dump_raw.sh");
+    if (ret < 0) {
+      fprintf(stderr, "cmdID RAW_CAPTURE set isp mode failed\n");
+    }
 
     switch (datBuf[0]) {
     case RAW_CAPTURE_GET_DEVICE_STATUS:
-      fprintf(stderr, "RAW_CAPTURE_GET_DEVICE_STATUS\n");
+      fprintf(stderr, "ProcID RAW_CAPTURE_GET_DEVICE_STATUS in\n");
       if (common_cmd->dat[1] == KNOCK_KNOCK) {
         if (RunStatus == RAW_CAP)
           InitCommandRawCapAns(&send_cmd, BUSY);
         InitCommandRawCapAns(&send_cmd, READY);
       } else {
-        fprintf(stderr, "Unknow command message\n");
+        fprintf(stderr, "Unknow RAW_CAPTURE_GET_DEVICE_STATUS message\n");
       }
       memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      printf("raw capture case0: check status send length %d\n", ret_val);
+      send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
+      fprintf(stderr, "ProcID RAW_CAPTURE_GET_DEVICE_STATUS out\n");
       break;
     case RAW_CAPTURE_GET_PCLK_HTS_VTS:
-      fprintf(stderr, "RAW_CAPTURE_GET_PCLK_HTS_VTS\n");
+      fprintf(stderr, "ProcID RAW_CAPTURE_GET_PCLK_HTS_VTS in\n");
       RawCaptureinit(common_cmd);
       GetSensorPara(&send_cmd, &RKAiqProtocol::cap_info, RES_SUCCESS);
       fprintf(stderr, "send_cmd.checkSum %d\n", send_cmd.checkSum);
       memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
       ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      printf("raw capture case1: get sensor parameters send length %d\n",
-             ret_val);
+      fprintf(stderr, "ProcID RAW_CAPTURE_GET_PCLK_HTS_VTS out\n");
       break;
     case RAW_CAPTURE_SET_PARAMS:
+      fprintf(stderr, "ProcID RAW_CAPTURE_SET_PARAMS in\n");
       SetCapConf(common_cmd, &send_cmd, &RKAiqProtocol::cap_info, READY);
-      printf("send_cmd.checkSum %d\n", send_cmd.checkSum);
       memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      printf("raw capture case2: set sensor conf send length %d\n", ret_val);
+      send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
+      fprintf(stderr, "ProcID RAW_CAPTURE_SET_PARAMS out\n");
       break;
     case RAW_CAPTURE_DO_CAPTURE: {
-      printf("case 3 RAW CAPTURE\n");
-      memset(RKAiqProtocol::raw_buf, 0, sizeof(buffer));
+      fprintf(stderr, "ProcID RAW_CAPTURE_DO_CAPTURE in\n");
       RunStatus = RAW_CAP;
-      RawCaputure(&send_cmd, &cap_info, sockfd, RKAiqProtocol::raw_buf);
+      RawCaputure(&send_cmd, &cap_info, sockfd);
       RunStatus = AVALIABLE;
-      printf("\ncase 3 RAW CAPTURE exit\n\n");
+      fprintf(stderr, "ProcID RAW_CAPTURE_DO_CAPTURE out\n");
       break;
     }
     case RAW_CAPTURE_SEND_CHECKSUM:
-      printf("case 4 send raw data result\n");
-      SendRawDataResult(&send_cmd, common_cmd, RKAiqProtocol::raw_buf);
+      fprintf(stderr, "ProcID RAW_CAPTURE_SEND_CHECKSUM in\n");
+      SendRawDataResult(&send_cmd, common_cmd);
       memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      printf("send_cmd.checkSum %d\n", send_cmd.checkSum);
       ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      printf("raw capture case4:result send length %d\n", ret_val);
+      fprintf(stderr, "ProcID RAW_CAPTURE_SEND_CHECKSUM out\n");
       break;
     default:
       break;
     }
+    fprintf(stderr, "CmdID RAW_CAPTURE out\n\n");
     break;
   }
   case VIDEO_APP_STATUS_REQ:
-    printf("Req_App_Status start\n");
+    fprintf(stderr, "CmdID VIDEO_APP_STATUS_REQ in\n");
     if (common_cmd->dat[0] == KNOCK_KNOCK) {
       ReqAppStatus(&send_cmd);
-      printf("Req_App_Status is DONE\n");
+      fprintf(stderr, "VIDEO_APP_STATUS_REQ is DONE\n");
     } else {
-      printf("Unknow command message\n");
+      fprintf(stderr, "Unknow VIDEO_APP_STATUS_REQ message\n");
     }
-
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
     ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-    printf("send length %d\n", ret_val);
-    printf("Req_App_Status end\n");
+    fprintf(stderr, "CmdID RAW_CAPTURE out\n\n");
     break;
   case VIDEO_APP_STATUS_SET:
-    printf("VIDEO_APP_STATUS_SET start\n");
-    system("./dump_yuv.sh &");
+    fprintf(stderr, "VIDEO_APP_STATUS_SET start\n");
+    system("dump_yuv.sh");
     if (common_cmd->dat[0] == VIDEO_APP_OFF ||
         common_cmd->dat[0] == VIDEO_APP_ON) {
-      printf("SetAppStatus is on(128) or off(129) :%d\n", common_cmd->dat[0]);
+      fprintf(stderr, "VIDEO_APP_STATUS is on(0x80) or off(0x81) : 0x%x\n",
+              common_cmd->dat[0]);
       SetAppStatus(&send_cmd, common_cmd);
-      printf("SetAppStatus is DONE\n");
+      fprintf(stderr, "VIDEO_APP_STATUS_SET is DONE\n");
     } else {
-      printf("Unknow command message\n");
+      fprintf(stderr, "Unknow VIDEO_APP_STATUS_SET message\n");
     }
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-    printf("send length %d\n", ret_val);
-    printf("VIDEO_APP_STATUS_SET end\n");
+    send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
+    fprintf(stderr, "VIDEO_APP_STATUS_SET end\n\n");
     break;
   default:
     break;

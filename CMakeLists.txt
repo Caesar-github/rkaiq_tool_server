@@ -35,7 +35,7 @@ include_directories(${EASYMEDIA_INCLUDE_DIR}/)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkmedia/ RKMEDIA_SOURCE)
 endif()
 
-file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.h)
+file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.cc *.h)
 add_custom_target(
     clangformat
     COMMAND /usr/bin/clang-format

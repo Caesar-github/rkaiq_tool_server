@@ -71,7 +71,8 @@ bool process_buffer(Flow *f, MediaBufferVector &input_vector) {
   if (flow->link_type_ == LINK_VIDEO) {
     auto link_handler = flow->GetVideoHandler();
     if (link_handler)
-      link_handler((unsigned char *)buffer->GetPtr(), buffer->GetValidSize(), 0, 0);
+      link_handler((unsigned char *)buffer->GetPtr(), buffer->GetValidSize(), 0,
+                   0);
   }
 
   return 0;

@@ -106,15 +106,13 @@ int read_frame(int handler, struct capture_info *cap_info,
 
   case IO_METHOD_MMAP:
     CLEAR(buf);
-
+    struct v4l2_plane planes[FMT_NUM_PLANES];
     buf.type = cap_info->capture_buf_type;
     buf.memory = V4L2_MEMORY_MMAP;
     if (V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE == cap_info->capture_buf_type) {
-      struct v4l2_plane planes[FMT_NUM_PLANES];
       buf.m.planes = planes;
       buf.length = FMT_NUM_PLANES;
     }
-
     device_dqbuf(cap_info->dev_fd, &buf);
 
     assert(buf.index < cap_info->n_buffers);

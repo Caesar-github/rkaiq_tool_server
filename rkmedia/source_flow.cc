@@ -33,8 +33,7 @@ private:
   std::string tag;
 };
 
-SourceFlow::SourceFlow(const char *param)
-    : loop(false), read_thread(nullptr) {
+SourceFlow::SourceFlow(const char *param) : loop(false), read_thread(nullptr) {
   std::list<std::string> separate_list;
   std::map<std::string, std::string> params;
   if (!ParseWrapFlowParams(param, params, separate_list)) {
@@ -101,9 +100,7 @@ void SourceFlow::ReadThreadRun() {
 }
 
 DEFINE_FLOW_FACTORY(SourceFlow, Flow)
-const char *FACTORY(SourceFlow)::ExpectedInputDataType() {
-  return nullptr;
-}
+const char *FACTORY(SourceFlow)::ExpectedInputDataType() { return nullptr; }
 
 // TODO!
 const char *FACTORY(SourceFlow)::OutPutDataType() { return ""; }

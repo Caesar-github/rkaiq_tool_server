@@ -54,7 +54,6 @@ public:
 
 public:
   static struct capture_info cap_info;
-  static buffer *raw_buf;
 
 private:
   static int RunStatus;
