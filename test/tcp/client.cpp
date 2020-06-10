@@ -1,8 +1,6 @@
 #include "tcp_client.h"
 #include <signal.h>
 
-TCPClient tcp;
-
 void sig_exit(int s) { exit(0); }
 
 int main(int argc, char *argv[]) {
@@ -12,6 +10,7 @@ int main(int argc, char *argv[]) {
   }
   signal(SIGINT, sig_exit);
 
+  TCPClient tcp;
   tcp.Setup(argv[1], atoi(argv[2]));
   while (1) {
     tcp.Send(argv[3]);

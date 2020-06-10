@@ -1,5 +1,10 @@
 #include "tcp_client.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "tcp_client.cpp"
+
 TCPClient::TCPClient() {
   sock = -1;
   port = 0;
@@ -16,7 +21,7 @@ bool TCPClient::Setup(string address, int port) {
   if (sock == -1) {
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
-      cout << "Could not create socket" << endl;
+      LOG_ERROR("Could not create socket\n");
     }
   }
   if ((signed)inet_addr(address.c_str()) == -1) {
@@ -24,7 +29,7 @@ bool TCPClient::Setup(string address, int port) {
     struct in_addr **addr_list;
     if ((he = gethostbyname(address.c_str())) == NULL) {
       herror("gethostbyname");
-      cout << "Failed to resolve hostname\n";
+      LOG_ERROR("Failed to resolve hostname\n");
       return false;
     }
     addr_list = (struct in_addr **)he->h_addr_list;
@@ -38,7 +43,7 @@ bool TCPClient::Setup(string address, int port) {
   server.sin_family = AF_INET;
   server.sin_port = htons(port);
   if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
-    perror("connect failed. Error");
+    LOG_ERROR("connect failed. Error");
     return false;
   }
   return true;
@@ -47,7 +52,7 @@ bool TCPClient::Setup(string address, int port) {
 bool TCPClient::Send(string data) {
   if (sock != -1) {
     if (send(sock, data.c_str(), strlen(data.c_str()), 0) < 0) {
-      cout << "Send failed : " << data << endl;
+      LOG_ERROR("Send failed : %s\n", data.c_str());
       return false;
     }
   } else
@@ -60,7 +65,7 @@ int TCPClient::Send(char *buff, int size) {
   if (sock != -1) {
     ret = send(sock, buff, size, 0);
     if (ret <= 0) {
-      cout << "Send buff size %d failed " << size << endl;
+      LOG_ERROR("Send buff size %d failed\n", size);
       return ret;
     }
   }
@@ -72,7 +77,7 @@ string TCPClient::Receive(int size) {
   memset(&buffer[0], 0, sizeof(buffer));
   string reply;
   if (recv(sock, buffer, size, 0) < 0) {
-    cout << "receive failed!" << endl;
+    LOG_ERROR("receive failed!\n", size);
     return nullptr;
   }
   buffer[size - 1] = '\0';
@@ -85,7 +90,7 @@ int TCPClient::Receive(char *buff, int size) {
   memset(buff, 0, size);
   ret = recv(sock, buff, size, 0);
   if (ret < 0) {
-    cout << "receive failed!" << endl;
+    LOG_ERROR("receive failed!\n", size);
     return -1;
   }
   return ret;

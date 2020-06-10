@@ -1,7 +1,12 @@
 #include "camera_memory.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "camera_memory.cpp"
+
 void errno_debug(const char *s) {
-  fprintf(stderr, "%s error %d, %s\n", s, errno, strerror(errno));
+  LOG_ERROR("%s error %d, %s\n", s, errno, strerror(errno));
 }
 
 int xioctl(int fh, int request, void *arg) {
@@ -16,7 +21,7 @@ void init_read(struct capture_info *cap_info, unsigned int buffer_size) {
   cap_info->buffers = (struct buffer *)calloc(1, sizeof(*cap_info->buffers));
 
   if (!cap_info->buffers) {
-    fprintf(stderr, "Out of memory\\n");
+    LOG_ERROR("Out of memory\\n");
     exit(EXIT_FAILURE);
   }
 
@@ -24,7 +29,7 @@ void init_read(struct capture_info *cap_info, unsigned int buffer_size) {
   cap_info->buffers[0].start = malloc(buffer_size);
 
   if (!cap_info->buffers[0].start) {
-    fprintf(stderr, "Out of memory\\n");
+    LOG_ERROR("Out of memory\\n");
     exit(EXIT_FAILURE);
   }
 }
@@ -40,9 +45,9 @@ void init_mmap(struct capture_info *cap_info) {
 
   if (-1 == xioctl(cap_info->dev_fd, VIDIOC_REQBUFS, &req)) {
     if (EINVAL == errno) {
-      fprintf(stderr, "%s does not support "
-                      "memory mappingn",
-              cap_info->dev_name);
+      LOG_ERROR("%s does not support "
+                "memory mappingn",
+                cap_info->dev_name);
       exit(EXIT_FAILURE);
     } else {
       errno_debug("VIDIOC_REQBUFS");
@@ -50,7 +55,7 @@ void init_mmap(struct capture_info *cap_info) {
   }
 
   if (req.count < 2) {
-    fprintf(stderr, "Insufficient buffer memory on %s\\n", cap_info->dev_name);
+    LOG_ERROR("Insufficient buffer memory on %s\\n", cap_info->dev_name);
     exit(EXIT_FAILURE);
   }
 
@@ -58,7 +63,7 @@ void init_mmap(struct capture_info *cap_info) {
       (struct buffer *)calloc(req.count, sizeof(*cap_info->buffers));
 
   if (!cap_info->buffers) {
-    fprintf(stderr, "Out of memory\\n");
+    LOG_ERROR("Out of memory\\n");
     exit(EXIT_FAILURE);
   }
 
@@ -111,9 +116,9 @@ void init_userp(struct capture_info *cap_info, unsigned int buffer_size) {
 
   if (-1 == xioctl(cap_info->dev_fd, VIDIOC_REQBUFS, &req)) {
     if (EINVAL == errno) {
-      fprintf(stderr, "%s does not support "
-                      "user pointer i/on",
-              cap_info->dev_name);
+      LOG_ERROR("%s does not support "
+                "user pointer i/on",
+                cap_info->dev_name);
       exit(EXIT_FAILURE);
     } else {
       errno_debug("VIDIOC_REQBUFS");
@@ -123,7 +128,7 @@ void init_userp(struct capture_info *cap_info, unsigned int buffer_size) {
   cap_info->buffers = (struct buffer *)calloc(4, sizeof(*cap_info->buffers));
 
   if (!cap_info->buffers) {
-    fprintf(stderr, "Out of memory\\n");
+    LOG_ERROR("Out of memory\\n");
     exit(EXIT_FAILURE);
   }
 
@@ -133,7 +138,7 @@ void init_userp(struct capture_info *cap_info, unsigned int buffer_size) {
     cap_info->buffers[cap_info->n_buffers].start = malloc(buffer_size);
 
     if (!cap_info->buffers[cap_info->n_buffers].start) {
-      fprintf(stderr, "Out of memory\\n");
+      LOG_ERROR("Out of memory\\n");
       exit(EXIT_FAILURE);
     }
   }
@@ -143,7 +148,7 @@ int check_io_method(enum io_method io, unsigned int capabilities) {
   switch (io) {
   case IO_METHOD_READ:
     if (!(capabilities & V4L2_CAP_READWRITE)) {
-      fprintf(stderr, "Not support read i/o\n");
+      LOG_ERROR("Not support read i/o\n");
       return -1;
     }
     break;
@@ -151,7 +156,7 @@ int check_io_method(enum io_method io, unsigned int capabilities) {
   case IO_METHOD_MMAP:
   case IO_METHOD_USERPTR:
     if (!(capabilities & V4L2_CAP_STREAMING)) {
-      fprintf(stderr, "Not support streaming i/o\n");
+      LOG_ERROR("Not support streaming i/o\n");
       return -1;
     }
     break;

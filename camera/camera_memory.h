@@ -23,6 +23,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "logger/log.h"
+
 #define FMT_NUM_PLANES 1
 #define PORT 8080
 #define CLEAR(x) memset(&(x), 0, sizeof(x))

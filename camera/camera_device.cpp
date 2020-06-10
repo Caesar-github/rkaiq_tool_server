@@ -1,5 +1,10 @@
 #include "camera_device.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "camera_device.cpp"
+
 void device_close(int dev_fd) {
   if (-1 == close(dev_fd))
     errno_debug("close");
@@ -10,18 +15,17 @@ int device_open(const char *dev_name) {
   int dev_fd;
   struct stat st;
   if (-1 == stat(dev_name, &st)) {
-    fprintf(stderr, "Cannot identify '%s': %d, %s\\n", dev_name, errno,
-            strerror(errno));
+    LOG_ERROR("Cannot identify '%s': %d, %s\n", dev_name, errno,
+              strerror(errno));
     return -1;
   }
   if (!S_ISCHR(st.st_mode)) {
-    fprintf(stderr, "%s is no devicen", dev_name);
+    LOG_ERROR("%s is no devicen", dev_name);
     return -1;
   }
   dev_fd = open(dev_name, O_RDWR /*| O_NONBLOCK*/, 0);
   if (-1 == dev_fd) {
-    fprintf(stderr, "Cannot open '%s': %d, %s\\n", dev_name, errno,
-            strerror(errno));
+    LOG_ERROR("Cannot open '%s': %d, %s\n", dev_name, errno, strerror(errno));
     return -1;
   }
   return dev_fd;

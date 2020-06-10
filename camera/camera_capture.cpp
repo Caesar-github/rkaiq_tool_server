@@ -1,8 +1,13 @@
 #include "camera_capture.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "camera_capture.cpp"
+
 void process_image(struct capture_info *cap_info, const void *p, int size) {
   static int image_index = 0;
-  printf("image_index --------- %d\n", image_index++);
+  LOG_INFO("image_index %d\n", image_index++);
   if (cap_info->out_fp) {
     fwrite(p, size, 1, cap_info->out_fp);
     fflush(cap_info->out_fp);
@@ -250,7 +255,7 @@ int init_device(struct capture_info *cap_info) {
   if (-1 != device_querycap(cap_info->dev_fd, &cap)) {
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) &&
         !(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)) {
-      fprintf(stderr, "%s is no video capture device\\n", cap_info->dev_name);
+      LOG_ERROR("%s is no video capture device\n", cap_info->dev_name);
       return -1;
     }
   }

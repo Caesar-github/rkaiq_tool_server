@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "camera_capture.h"
+#include "logger/log.h"
 
 typedef enum { PC_TO_DEVICE = 0x00, DEVICE_TO_PC } cmdType;
 

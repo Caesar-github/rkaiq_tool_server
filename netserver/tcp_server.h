@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include "logger/log.h"
+
 using namespace std;
 
 #define MAXPACKETSIZE 8192

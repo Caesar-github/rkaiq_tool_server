@@ -3,6 +3,7 @@
 
 #include "camera_device.h"
 #include "camera_memory.h"
+#include "logger/log.h"
 
 typedef void (*CaptureCallBack)(int, void *, int);
 

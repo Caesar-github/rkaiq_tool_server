@@ -20,6 +20,7 @@
 #include <linux/videodev2.h>
 
 #include "camera_memory.h"
+#include "logger/log.h"
 
 void device_close(int dev_fd);
 int device_open(const char *dev_name);

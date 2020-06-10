@@ -3,6 +3,7 @@
 #include <ctime>
 
 int quit = 0;
+
 void sigterm_handler(int sig) {
   fprintf(stderr, "sigterm_handler signal %d\n", sig);
   quit = 1;

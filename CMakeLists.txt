@@ -10,6 +10,7 @@ include_directories(
 
 add_definitions(-std=c++11)
 
+aux_source_directory(${PROJECT_SOURCE_DIR}/logger/ LOGGER_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/netserver NET_SERVER_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkaiq RKAIQ_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/camera/ CAMERA_SOURCE)
@@ -44,6 +45,7 @@ add_custom_target(
     ${ALL_SOURCE_FILES})
 
 set(RKAIQ_TOOL_SERVER_SOURCE
+	${LOGGER_SOURCE}
 	${NET_SERVER_SOURCE}
 	${RKAIQ_SOURCE}
 	${CAMERA_SOURCE}

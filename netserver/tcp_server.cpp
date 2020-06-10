@@ -1,5 +1,10 @@
 #include "tcp_server.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "tcp_server.cpp"
+
 TCPServer::~TCPServer() {
   recv_threads_.clear();
   accept_threads_.clear();
@@ -10,14 +15,14 @@ int TCPServer::Send(int cilent_socket, char *buff, int size) {
 }
 
 int TCPServer::Recvieve(int cilent_socket) {
-  fprintf(stderr, "TCPServer::Recvieve\n");
+  LOG_INFO("TCPServer::Recvieve\n");
   char buffer[MAXPACKETSIZE];
   int size = sizeof(buffer);
   while (1) {
     int length = recv(cilent_socket, buffer, size, 0);
-    fprintf(stderr, "socket recvieve length: %d\n", length);
+    LOG_INFO("socket recvieve length: %d\n", length);
     if (length <= 0) {
-      fprintf(stderr, "socket recvieve exit\n");
+      LOG_ERROR("socket recvieve exit\n");
       break;
     }
     if (callback_) {
@@ -28,16 +33,16 @@ int TCPServer::Recvieve(int cilent_socket) {
 }
 
 void TCPServer::Accepted() {
-  fprintf(stderr, "TCPServer::Accepted\n");
+  LOG_INFO("TCPServer::Accepted\n");
   while (1) {
     int cilent_socket;
     socklen_t sosize = sizeof(clientAddress);
     cilent_socket = accept(sockfd, (struct sockaddr *)&clientAddress, &sosize);
     if (cilent_socket < 0) {
-      fprintf(stderr, "Error socket accept failed\n");
+      LOG_ERROR("Error socket accept failed\n");
       continue;
     }
-    fprintf(stderr, "socket accept ip %s\n", inet_ntoa(clientAddress.sin_addr));
+    LOG_INFO("socket accept ip %s\n", inet_ntoa(clientAddress.sin_addr));
 
     std::shared_ptr<std::thread> recv_thread;
     recv_thread =
@@ -47,13 +52,13 @@ void TCPServer::Accepted() {
 }
 
 int TCPServer::Process(int port) {
-  fprintf(stderr, "TCPServer::Process\n");
+  LOG_INFO("TCPServer::Process\n");
   int opt = 1;
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   memset(&serverAddress, 0, sizeof(serverAddress));
   if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
                  sizeof(opt))) {
-    fprintf(stderr, "Error setsockopt\n");
+    LOG_ERROR("Error setsockopt\n");
     exit(EXIT_FAILURE);
   }
 
@@ -62,11 +67,11 @@ int TCPServer::Process(int port) {
   serverAddress.sin_port = htons(port);
   if ((::bind(sockfd, (struct sockaddr *)&serverAddress,
               sizeof(serverAddress))) < 0) {
-    fprintf(stderr, "Error bind\n");
+    LOG_ERROR("Error bind\n");
     exit(EXIT_FAILURE);
   }
   if (listen(sockfd, 5) < 0) {
-    fprintf(stderr, "Error listen\n");
+    LOG_ERROR("Error listen\n");
     exit(EXIT_FAILURE);
   }
 
