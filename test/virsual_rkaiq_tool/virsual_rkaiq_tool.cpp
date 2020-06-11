@@ -17,6 +17,8 @@ typedef struct Common_Cmd_s {
 } Common_Cmd_t;
 #pragma pack()
 
+int capture_mode = 0;
+int capture_count = 1;
 void sig_exit(int s) { exit(0); }
 
 static void ICMD_CheckStatus(Common_Cmd_t *cmd) {
@@ -68,8 +70,8 @@ static void ICMD_GetSetParam(Common_Cmd_t *cmd) {
   cmd->dat[3] = 0x20;
   cmd->dat[5] = 0;
   cmd->dat[6] = 16;
-  cmd->dat[7] = 1;
-  cmd->dat[8] = 0;
+  cmd->dat[7] = capture_count;
+  cmd->dat[8] = capture_mode;
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
@@ -251,6 +253,11 @@ int main(int argc, char *argv[]) {
   TCPClient tcp;
   tcp.Setup(argv[1], SERVER_PORT);
   msg_id = atoi(argv[2]);
+
+  if (argc == 5) {
+    capture_mode = atoi(argv[3]);
+    capture_count = atoi(argv[4]);
+  }
 
   int ret_val;
   Common_Cmd_t send_cmd;
