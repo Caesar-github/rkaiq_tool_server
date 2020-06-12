@@ -30,6 +30,8 @@ int device_cropcap(int dev_fd, struct v4l2_cropcap *cropcap,
 int device_setformat(int dev_fd, struct v4l2_format *fmt);
 int device_getformat(int dev_fd, struct v4l2_format *fmt);
 int device_getsubdevformat(int dev_fd, struct v4l2_subdev_format *fmt);
+int device_setsubdevformat(int dev_fd, struct v4l2_subdev_format *fmt);
+int device_setsubdevcrop(int dev_fd, struct v4l2_subdev_selection *sel);
 int device_getblank(int dev_fd, struct v4l2_queryctrl *ctrl);
 int device_set3aexposure(int dev_fd, struct v4l2_ext_controls *ctrls);
 int device_setctrl(int dev_fd, struct v4l2_control *ctrl);

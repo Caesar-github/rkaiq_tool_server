@@ -8,6 +8,7 @@
 
 #include "camera_capture.h"
 #include "logger/log.h"
+#include "camera_infohw.h"
 
 typedef enum { PC_TO_DEVICE = 0x00, DEVICE_TO_PC } cmdType;
 
@@ -49,8 +50,8 @@ typedef enum { RAW_CAP = 0x00, AVALIABLE } runStaus;
 #define TAG_PC_TO_DEVICE "RKISP-AK"
 #define TAG_DEVICE_TO_PC "RKISP-AS"
 
-#define STOP_RKLUNCH_CMD "sh /oem/RkLunch-stop.sh &"
-#define START_RKLUNCH_CMD "sh /oem/RkLunch.sh &"
+#define STOP_RKLUNCH_CMD "sh /oem/RkLunch-stop.sh"
+#define START_RKLUNCH_CMD "sh /oem/RkLunch.sh"
 
 class RKAiqProtocol {
 public:

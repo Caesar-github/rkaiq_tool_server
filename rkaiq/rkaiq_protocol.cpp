@@ -100,12 +100,17 @@ static void InitCommandRawCapAns(Common_Cmd_t *cmd, int ret_status) {
 static void RawCaptureinit(Common_Cmd_t *cmd) {
   char *buf = (char *)(cmd->dat);
   Capture_Reso_t *Reso = (Capture_Reso_t *)(cmd->dat + 1);
+  int ret = initCamHwInfos(&cap_info);
+  ret = setupLink(&cap_info, true);
+  if (ret < 0)
+    LOG_INFO(">>>>>>>>>setup link to isp output raw failed\n");
   cap_info.dev_fd = -1;
+  cap_info.subdev_fd = -1;
   cap_info.dev_name = VIDEO_RAW0;
   cap_info.io = IO_METHOD_MMAP;
   cap_info.height = Reso->height;
   cap_info.width = Reso->width;
-  cap_info.format = v4l2_fourcc('B', 'G', '1', '2');
+  // cap_info.format = v4l2_fourcc('B', 'G', '1', '2');
   LOG_INFO("get ResW: %d  ResH: %d\n", cap_info.width, cap_info.height);
 }
 
@@ -119,11 +124,13 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
 
   Sensor_Params_t *sensorParam = (Sensor_Params_t *)(&cmd->dat[1]);
   int hblank, vblank;
-  int vts, hts;
+  int vts, hts, ret;
   float fps;
 
   cap_info.dev_fd = device_open(cap_info.dev_name);
-  int subdev_fd = device_open("/dev/v4l-subdev4");
+  cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
+
+  LOG_INFO("sensor subdev path: %s/n", cap_info.sd_path.device_name);
 
   memset(&ctrl, 0, sizeof(ctrl));
   ctrl.id = V4L2_CID_HBLANK;
@@ -148,17 +155,30 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   memset(&fmt, 0, sizeof(fmt));
   fmt.pad = 0;
   fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
-  if (device_getsubdevformat(subdev_fd, &fmt) < 0) {
+  if (device_getsubdevformat(cap_info.subdev_fd, &fmt) < 0) {
     sensorParam->status = RES_FAILED;
     goto end;
   }
   vts = vblank + fmt.format.height;
   hts = hblank + fmt.format.width;
   LOG_INFO("get hts: %d  vts: %d\n", hts, vts);
+  cap_info.format = convert_to_v4l2fmt(fmt.format.code);
+  cap_info.sd_path.sen_fmt = fmt.format.code;
+  cap_info.sd_path.width = fmt.format.width;
+  cap_info.sd_path.height = fmt.format.height;
+
+  /* set isp subdev fmt to bayer raw*/
+  ret = rkisp_set_ispsd_fmt(&cap_info, fmt.format.width, fmt.format.height,
+                            fmt.format.code, cap_info.width, cap_info.height,
+                            fmt.format.code);
+  if (ret) {
+    LOG_ERROR("subdev choose the best fit fmt: %dx%d, 0x%08x\n",
+              fmt.format.width, fmt.format.height, fmt.format.code);
+  }
 
   memset(&finterval, 0, sizeof(finterval));
   finterval.pad = 0;
-  if (device_getsensorfps(subdev_fd, &finterval) < 0) {
+  if (device_getsensorfps(cap_info.subdev_fd, &finterval) < 0) {
     sensorParam->status = RES_FAILED;
     goto end;
   }
@@ -182,9 +202,13 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   }
   LOG_INFO("cmd->checkSum %d\n", cmd->checkSum);
 
-  if (subdev_fd > 0) {
-    device_close(subdev_fd);
-    subdev_fd = -1;
+  if (cap_info.subdev_fd > 0) {
+    device_close(cap_info.subdev_fd);
+    cap_info.subdev_fd = -1;
+  }
+  if (cap_info.dev_fd > 0) {
+    device_close(cap_info.dev_fd);
+    cap_info.dev_fd = -1;
   }
   return;
 
@@ -197,9 +221,9 @@ end:
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
-  if (subdev_fd > 0) {
-    device_close(subdev_fd);
-    subdev_fd = -1;
+  if (cap_info.subdev_fd > 0) {
+    device_close(cap_info.subdev_fd);
+    cap_info.subdev_fd = -1;
   }
 }
 
@@ -218,6 +242,7 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   LOG_INFO(" set bits        : %d\n", CapParam->bits);
   LOG_INFO(" set framenumber : %d\n", CapParam->framenumber);
   LOG_INFO(" set multiframe  : %d\n", CapParam->multiframe);
+  cap_info.dev_fd = device_open(cap_info.dev_name);
 
   struct v4l2_control exp;
   exp.id = V4L2_CID_EXPOSURE;
@@ -399,7 +424,7 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
   Common_Cmd_t *common_cmd = (Common_Cmd_t *)buffer;
   Common_Cmd_t send_cmd;
   char send_data[MAXPACKETSIZE];
-  int ret_val;
+  int ret_val, ret;
 
   LOG_INFO("HandlerTCPMessage:\n");
 
@@ -432,10 +457,6 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
   case RAW_CAPTURE: {
     LOG_INFO("CmdID RAW_CAPTURE in\n");
     char *datBuf = (char *)(common_cmd->dat);
-    int ret = system("dump_raw.sh");
-    if (ret < 0) {
-      LOG_ERROR("cmdID RAW_CAPTURE set isp mode failed\n");
-    }
 
     switch (datBuf[0]) {
     case RAW_CAPTURE_GET_DEVICE_STATUS:
@@ -507,7 +528,14 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
     break;
   case VIDEO_APP_STATUS_SET:
     LOG_INFO("VIDEO_APP_STATUS_SET start\n");
-    system("dump_yuv.sh");
+    setupLink(&cap_info, false);
+    /* set isp subdev fmt to bayer raw*/
+    if (rkisp_set_ispsd_fmt(&cap_info, cap_info.sd_path.width,
+                            cap_info.sd_path.height, cap_info.sd_path.sen_fmt,
+                            cap_info.width, cap_info.height,
+                            MEDIA_BUS_FMT_YUYV8_2X8) < 0)
+      LOG_ERROR("set isp subdev fmt to YUYV8_2X8 FAILED\n");
+
     if (common_cmd->dat[0] == VIDEO_APP_OFF ||
         common_cmd->dat[0] == VIDEO_APP_ON) {
       LOG_INFO("VIDEO_APP_STATUS is on(0x80) or off(0x81) : 0x%x\n",

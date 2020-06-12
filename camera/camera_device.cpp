@@ -51,7 +51,7 @@ int device_cropcap(int dev_fd, struct v4l2_cropcap *cropcap,
     if (-1 == ret) {
       switch (errno) {
       case EINVAL:
-        /* Cropping not supported. */
+        LOG_ERROR("Cropping not supported.\n");
         break;
       default:
         /* Errors ignored. */
@@ -82,6 +82,28 @@ int device_getsubdevformat(int dev_fd, struct v4l2_subdev_format *fmt) {
   int ret = xioctl(dev_fd, VIDIOC_SUBDEV_G_FMT, fmt);
   if (-1 == ret)
     errno_debug("VIDIOC_SUBDEV_G_FMT");
+  return ret;
+}
+
+int device_setsubdevformat(int dev_fd, struct v4l2_subdev_format *fmt) {
+  int ret = xioctl(dev_fd, VIDIOC_SUBDEV_S_FMT, fmt);
+  if (-1 == ret)
+    errno_debug("VIDIOC_SUBDEV_G_FMT");
+  return ret;
+}
+
+int device_setsubdevcrop(int dev_fd, struct v4l2_subdev_selection *sel) {
+  int ret = xioctl(dev_fd, VIDIOC_SUBDEV_S_SELECTION, sel);
+  if (-1 == ret) {
+    switch (errno) {
+      case EINVAL:
+        LOG_ERROR("Cropping not supported.\n");
+        break;
+      default:
+        /* Errors ignored. */
+        break;
+      }
+    }
   return ret;
 }
 
