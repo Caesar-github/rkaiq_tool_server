@@ -14,13 +14,31 @@
 
 #include <signal.h>
 
-void sig_exit(int s) { exit(0); }
+#define DUMMY_DATA 0
 
-void MultiFrameAverage(uint16_t *pIn1_pOut, uint16_t width, uint16_t height,
+void sig_exit(int s) { exit(0); }
+void ConverToLE(uint16_t *buf, uint32_t len) {
+  uint32_t a;
+  for (uint32_t n = 0; n < len; n++) {
+    a = buf[n];
+    buf[n] = (a << 8) | (a >> 8);
+  }
+}
+// only for even number frame
+void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t width, uint16_t height,
                        uint8_t frameNumber) {
   uint16_t n;
   uint16_t roundOffset = 0;
   switch (frameNumber) {
+  case 128:
+    n = 7;
+    break;
+  case 64:
+    n = 6;
+    break;
+  case 32:
+    n = 5;
+    break;
   case 16:
     n = 4;
     break;
@@ -49,42 +67,53 @@ void MultiFrameAverage(uint16_t *pIn1_pOut, uint16_t width, uint16_t height,
   }
 }
 
-void MultiFrameAddition(uint16_t *pIn1_pOut, uint16_t *pIn2, uint16_t width,
+void MultiFrameAddition(uint32_t *pIn1_pOut, uint16_t *pIn2, uint16_t width,
                         uint16_t height) {
   int w, h, n;
   for (h = 0; h < height; h++) {
     n = h * width;
     for (w = 0; w < width; w++) {
-      pIn1_pOut[n + w] = (pIn1_pOut[n + w] + pIn2[n + w]);
+      pIn1_pOut[n + w] += pIn2[n + w];
     }
   }
 }
 
+void FrameU32ToU16(uint32_t *pIn, uint16_t *pOut, uint16_t width,
+                   uint16_t height) {
+  int w, h, n;
+  for (h = 0; h < height; h++) {
+    n = h * width;
+    for (w = 0; w < width; w++) {
+      pOut[n + w] += pIn[n + w];
+    }
+  }
+}
+
+void Read(int fd, uint16_t *buffer, int size) {
+#if DUMMY_DATA
+  for (int i = 0; i < (size >> 1); i++) {
+    buffer[i] = 0xFFF0;
+  }
+#else
+  read(fd, buffer, size);
+#endif
+  ConverToLE(buffer, size >> 1);
+}
+
 void ProcessMultiFrame(int fd_in, int width, int height, int frame_count,
-                       int frame_size, int index, uint16_t *pOut0,
-                       uint16_t *pOut1, uint16_t *pIn) {
+                       int frame_size, int index, uint32_t *pOut0,
+                       uint32_t *pOut1, uint16_t *pIn) {
   fprintf(stderr, "index      %d\n", index);
   if (index == 0) {
-    read(fd_in, pOut0, frame_size);
-  } else if (index > 0 && index < (frame_count >> 1)) {
-    read(fd_in, pIn, frame_size);
+    Read(fd_in, pIn, frame_size);
+  } else {
+    Read(fd_in, pIn, frame_size);
     MultiFrameAddition(pOut0, pIn, width, height);
-  } else if (index == (frame_count >> 1)) {
-    read(fd_in, pOut1, frame_size);
-  } else if (index > (frame_count >> 1) && index < frame_count) {
-    read(fd_in, pIn, frame_size);
-    MultiFrameAddition(pOut1, pIn, width, height);
-  }
-
-  if (index == ((frame_count >> 1) - 1)) {
-    MultiFrameAverage(pOut0, width, height, (frame_count >> 1));
-  } else if (index == (frame_count - 1)) {
-    MultiFrameAverage(pOut1, width, height, (frame_count >> 1));
   }
 
   if (index == (frame_count - 1)) {
-    MultiFrameAddition(pOut0, pOut1, width, height);
-    MultiFrameAverage(pOut0, width, height, 2);
+    MultiFrameAverage(pOut1, width, height, frame_count);
+    FrameU32ToU16(pOut1, pIn, width, height);
   }
 }
 
@@ -110,45 +139,28 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, sig_exit);
 
   int fd_in = open(input_file.c_str(), O_RDONLY);
-  int fd_out = open(output_file.c_str(), O_RDWR | O_CREAT | O_SYNC);
+  int fd_out = open(output_file.c_str(), O_RDWR | O_CREAT | O_SYNC, 0664);
 
-  int one_frame_size = width * height * 2;
+  int one_frame_size = width * height * sizeof(uint16_t);
   uint16_t *one_frame = (uint16_t *)malloc(one_frame_size);
   memset(one_frame, 0, one_frame_size);
-  uint16_t *averge_frame0 = (uint16_t *)malloc(one_frame_size);
+
+  one_frame_size = width * height * sizeof(uint32_t);
+  uint32_t *averge_frame0 = (uint32_t *)malloc(one_frame_size);
+  uint32_t *averge_frame1 = (uint32_t *)malloc(one_frame_size);
   memset(averge_frame0, 0, one_frame_size);
-  uint16_t *averge_frame1 = (uint16_t *)malloc(one_frame_size);
   memset(averge_frame1, 0, one_frame_size);
 
-#if 1
+  one_frame_size = width * height * sizeof(uint16_t);
+
   for (int i = 0; i < frame_count; i++) {
     ProcessMultiFrame(fd_in, width, height, frame_count, one_frame_size, i,
                       averge_frame0, averge_frame1, one_frame);
   }
-#else
-  // get frame 0
-  read(fd_in, averge_frame0, one_frame_size);
-  // get frame 1 ~ frame (n/2  - 1)
-  for (int i = 1; i < (frame_count >> 1); i++) {
-    read(fd_in, one_frame, one_frame_size);
-    MultiFrameAddition(averge_frame0, one_frame, width, height);
-  }
-  MultiFrameAverage(averge_frame0, width, height, (frame_count >> 1));
-
-  // get frame (n/2)
-  read(fd_in, averge_frame1, one_frame_size);
-  // get frame (n/2  + 1) ~ frame (n  - 1)
-  for (int i = 1; i < (frame_count >> 1); i++) {
-    read(fd_in, one_frame, one_frame_size);
-    MultiFrameAddition(averge_frame1, one_frame, width, height);
-  }
-  MultiFrameAverage(averge_frame1, width, height, (frame_count >> 1));
-
-  MultiFrameAddition(averge_frame0, averge_frame1, width, height);
-  MultiFrameAverage(averge_frame0, width, height, 2);
+#if DUMMY_DATA
+  DumpFrameU16(one_frame, width, height);
 #endif
-
-  write(fd_out, averge_frame0, one_frame_size);
+  write(fd_out, one_frame, one_frame_size);
 
   free(one_frame);
   free(averge_frame0);
