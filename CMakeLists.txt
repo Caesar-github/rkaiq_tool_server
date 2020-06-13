@@ -6,7 +6,8 @@ include_directories(
 	${PROJECT_SOURCE_DIR}/
 	${PROJECT_SOURCE_DIR}/netserver/
 	${PROJECT_SOURCE_DIR}/rkaiq/
-	${PROJECT_SOURCE_DIR}/camera/)
+	${PROJECT_SOURCE_DIR}/camera/
+	${PROJECT_SOURCE_DIR}/mediactl/)
 
 add_definitions(-std=c++11)
 
@@ -14,6 +15,7 @@ aux_source_directory(${PROJECT_SOURCE_DIR}/logger/ LOGGER_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/netserver NET_SERVER_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkaiq RKAIQ_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/camera/ CAMERA_SOURCE)
+aux_source_directory(${PROJECT_SOURCE_DIR}/mediactl/ MEDIACTL_SOURCE)
 
 option(BUILD_SANITIZER_STATIC "compile with sanitizer (static library linker)" OFF)
 if(BUILD_SANITIZER_STATIC)
@@ -50,6 +52,7 @@ set(RKAIQ_TOOL_SERVER_SOURCE
 	${RKAIQ_SOURCE}
 	${CAMERA_SOURCE}
 	${RKMEDIA_SOURCE}
+	${MEDIACTL_SOURCE}
 	rkaiq_tool_server.cpp)
 add_executable(rkaiq_tool_server ${RKAIQ_TOOL_SERVER_SOURCE})
 target_link_libraries(rkaiq_tool_server pthread)

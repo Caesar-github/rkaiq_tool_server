@@ -26,8 +26,10 @@
 #include "logger/log.h"
 
 #define FMT_NUM_PLANES 1
-#define PORT 8080
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
+#define DEV_PATH_LEN  64
+#define MAX_MEDIA_INDEX 4
+
 
 enum io_method {
   IO_METHOD_READ,
@@ -42,13 +44,33 @@ struct buffer {
   unsigned short checksum;
 };
 
+struct isp_t {
+  char media_dev_path[DEV_PATH_LEN];
+  char isp_main_path[DEV_PATH_LEN];
+  char isp_sd_path[DEV_PATH_LEN];
+  int width;
+  int height;
+  __u32 sd_fmt;
+};
+	
+struct sensor_t{
+  char device_name[DEV_PATH_LEN];
+  char sensor_name[DEV_PATH_LEN];
+  int width;
+  int height;
+  __u32 sen_fmt;
+};
+
 struct capture_info {
   const char *dev_name;
   int dev_fd;
+  int subdev_fd;
   enum io_method io;
   struct buffer *buffers;
+  struct isp_t vd_path;
+  struct sensor_t sd_path;
   unsigned int n_buffers;
-  int format;
+  __u32 format;
   int width;
   int height;
   enum v4l2_buf_type capture_buf_type;
