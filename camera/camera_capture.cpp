@@ -85,7 +85,7 @@ int read_frame(struct capture_info *cap_info) {
   return 1;
 }
 
-int read_frame(int handler, struct capture_info *cap_info,
+int read_frame(int handler, int index, struct capture_info *cap_info,
                CaptureCallBack callback) {
   struct v4l2_buffer buf;
   unsigned int i, bytesused;
@@ -105,7 +105,7 @@ int read_frame(int handler, struct capture_info *cap_info,
       }
     }
     if (callback)
-      callback(handler, cap_info->buffers[0].start,
+      callback(handler, index, cap_info->buffers[0].start,
                cap_info->buffers[0].length);
     break;
 
@@ -128,7 +128,7 @@ int read_frame(int handler, struct capture_info *cap_info,
       bytesused = buf.bytesused;
 
     if (callback)
-      callback(handler, cap_info->buffers[buf.index].start, bytesused);
+      callback(handler, index, cap_info->buffers[buf.index].start, bytesused);
 
     device_qbuf(cap_info->dev_fd, &buf);
     break;
@@ -149,7 +149,7 @@ int read_frame(int handler, struct capture_info *cap_info,
     assert(i < cap_info->n_buffers);
 
     if (callback)
-      callback(handler, (void *)buf.m.userptr, buf.bytesused);
+      callback(handler, index, (void *)buf.m.userptr, buf.bytesused);
 
     device_qbuf(cap_info->dev_fd, &buf);
     break;

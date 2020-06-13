@@ -15,6 +15,7 @@
 #include <signal.h>
 
 #define DUMMY_DATA 0
+#define BE_TO_LE 0
 
 void sig_exit(int s) { exit(0); }
 void ConverToLE(uint16_t *buf, uint32_t len) {
@@ -89,6 +90,17 @@ void FrameU32ToU16(uint32_t *pIn, uint16_t *pOut, uint16_t width,
   }
 }
 
+void FrameU16ToU32(uint16_t *pIn, uint32_t *pOut, uint16_t width,
+                   uint16_t height) {
+  int w, h, n;
+  for (h = 0; h < height; h++) {
+    n = h * width;
+    for (w = 0; w < width; w++) {
+      pOut[n + w] += pIn[n + w];
+    }
+  }
+}
+
 void Read(int fd, uint16_t *buffer, int size) {
 #if DUMMY_DATA
   for (int i = 0; i < (size >> 1); i++) {
@@ -97,7 +109,10 @@ void Read(int fd, uint16_t *buffer, int size) {
 #else
   read(fd, buffer, size);
 #endif
+
+#if BE_TO_LE
   ConverToLE(buffer, size >> 1);
+#endif
 }
 
 void ProcessMultiFrame(int fd_in, int width, int height, int frame_count,
@@ -106,6 +121,7 @@ void ProcessMultiFrame(int fd_in, int width, int height, int frame_count,
   fprintf(stderr, "index      %d\n", index);
   if (index == 0) {
     Read(fd_in, pIn, frame_size);
+    FrameU16ToU32(pIn, pOut0, width, height);
   } else {
     Read(fd_in, pIn, frame_size);
     MultiFrameAddition(pOut0, pIn, width, height);

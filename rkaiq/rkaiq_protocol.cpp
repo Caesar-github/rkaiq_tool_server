@@ -1,4 +1,5 @@
 #include "rkaiq_protocol.h"
+#include "multiframe_process.h"
 #include "tcp_server.h"
 
 #ifdef LOG_TAG
@@ -44,10 +45,13 @@ typedef struct Capture_Reso_s {
 } Capture_Reso_t;
 #pragma pack()
 
-int capture_status = READY;
-int capture_mode = CAPTURE_NORMAL;
-struct capture_info cap_info;
-static vector<uint16_t> cap_check_sums;
+static int capture_status = READY;
+static int capture_mode = CAPTURE_NORMAL;
+static int capture_frames = 0;
+static uint16_t capture_check_sums;
+static struct capture_info cap_info;
+static uint32_t *averge_frame0;
+static uint16_t *averge_frame1;
 
 static int RunCmd(const char *cmd) {
   char buffer[1024];
@@ -244,6 +248,10 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   LOG_INFO(" set multiframe  : %d\n", CapParam->multiframe);
   cap_info.dev_fd = device_open(cap_info.dev_name);
 
+  capture_frames = CapParam->framenumber;
+  capture_mode = CapParam->multiframe;
+  capture_check_sums = 0;
+
   struct v4l2_control exp;
   exp.id = V4L2_CID_EXPOSURE;
   exp.value = CapParam->time;
@@ -280,8 +288,8 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   }
 }
 
-static void DoCaptureCallBack(int socket, void *buffer, int size) {
-  LOG_INFO(" DoCaptureCallBack\n");
+static void SendRawData(int socket, int index, void *buffer, int size) {
+  LOG_INFO(" SendRawData\n");
   char *buf = NULL;
   int total = size;
   int packet_len = MAXPACKETSIZE;
@@ -304,13 +312,64 @@ static void DoCaptureCallBack(int socket, void *buffer, int size) {
   for (int i = 0; i < size; i++) {
     check_sum += buf[i];
   }
-  cap_check_sums.push_back(check_sum);
+
+  LOG_INFO("capture raw index %d, check_sum %d capture_check_sums %d\n", index,
+           check_sum, capture_check_sums);
+  capture_check_sums += check_sum;
+}
+
+static void DoCaptureCallBack(int socket, int index, void *buffer, int size) {
+  LOG_INFO(" DoCaptureCallBack\n");
+  SendRawData(socket, index, buffer, size);
 }
 
 static void DoCapture(int socket) {
   LOG_INFO("DoCapture entry!!!!!\n");
-  read_frame(socket, &cap_info, DoCaptureCallBack);
+  for (int i = 0; i < capture_frames; i++)
+    read_frame(socket, i, &cap_info, DoCaptureCallBack);
   LOG_INFO("DoCapture exit!!!!!\n");
+}
+
+static void DoMultiFrameCallBack(int socket, int index, void *buffer,
+                                 int size) {
+  LOG_INFO(" DoCaptureCallBack\n");
+  int width = cap_info.width;
+  int height = cap_info.height;
+  if (index == 0) {
+    FrameU16ToU32((uint16_t *)buffer, averge_frame0, width, height);
+  } else {
+    MultiFrameAddition(averge_frame0, (uint16_t *)buffer, width, height);
+  }
+
+  if (index == (capture_frames - 1)) {
+    MultiFrameAverage(averge_frame0, width, height, capture_frames);
+    FrameU32ToU16(averge_frame0, averge_frame1, width, height);
+    SendRawData(socket, index, averge_frame1, size);
+  }
+
+  if (index == 0)
+    SendRawData(socket, index, buffer, size);
+}
+
+static void DoMultiFrameCapture(int socket) {
+  LOG_INFO("DoMultiFrameCapture entry!!!!!\n");
+  uint32_t one_frame_size = cap_info.width * cap_info.height * sizeof(uint32_t);
+  averge_frame0 = (uint32_t *)malloc(one_frame_size);
+  one_frame_size = one_frame_size >> 1;
+  averge_frame1 = (uint16_t *)malloc(one_frame_size);
+  memset(averge_frame0, 0, one_frame_size);
+  memset(averge_frame1, 0, one_frame_size);
+  for (int i = 0; i < capture_frames; i++)
+    read_frame(socket, i, &cap_info, DoMultiFrameCallBack);
+  if (averge_frame0 != nullptr) {
+    free(averge_frame0);
+  }
+  if (averge_frame1 != nullptr) {
+    free(averge_frame1);
+  }
+  averge_frame0 = nullptr;
+  averge_frame1 = nullptr;
+  LOG_INFO("DoMultiFrameCapture exit!!!!!\n");
 }
 
 static void DumpCapinfo() {
@@ -331,7 +390,11 @@ static void RawCaputure(Common_Cmd_t *cmd, int socket) {
   init_device(&cap_info);
   DumpCapinfo();
   start_capturing(&cap_info);
-  DoCapture(socket);
+  if (capture_mode == CAPTURE_NORMAL)
+    DoCapture(socket);
+  else
+    DoMultiFrameCapture(socket);
+
   stop_capturing(&cap_info);
   uninit_device(&cap_info);
   LOG_INFO("Raw_Capture exit!!!!!!!\n");
@@ -346,21 +409,12 @@ static void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x04;
-  cmd->dat[1] = RES_FAILED;
-
-  LOG_INFO("cap_check_sums size %d\n", cap_check_sums.size());
-  for (auto &iter : cap_check_sums) {
-    LOG_INFO("cap_check_sums %d, recieve %d\n", iter, *checksum);
-  }
-
-  for (auto iter = cap_check_sums.begin(); iter != cap_check_sums.end();) {
-    if (*iter == *checksum) {
-      cmd->dat[1] = RES_SUCCESS;
-      iter = cap_check_sums.erase(iter);
-      break;
-    } else {
-      iter++;
-    }
+  LOG_INFO("capture_check_sums %d, recieve %d\n", capture_check_sums,
+           *checksum);
+  if (capture_check_sums == *checksum) {
+    cmd->dat[1] = RES_SUCCESS;
+  } else {
+    cmd->dat[1] = RES_FAILED;
   }
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
@@ -461,7 +515,6 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
     switch (datBuf[0]) {
     case RAW_CAPTURE_GET_DEVICE_STATUS:
       LOG_INFO("ProcID RAW_CAPTURE_GET_DEVICE_STATUS in\n");
-      cap_check_sums.clear();
       if (common_cmd->dat[1] == KNOCK_KNOCK) {
         if (capture_status == RAW_CAP) {
           LOG_INFO("capture_status BUSY\n");
