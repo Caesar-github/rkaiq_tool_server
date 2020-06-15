@@ -118,7 +118,7 @@ int get_sensor_info(struct media_device *device, const char *devpath,
             sizeof(cam_info->sensor_name));
     LOG_INFO("sensor subdev path: %s\n", cam_info->device_name);
   }
-
+  media_device_unref(device);
   return 0;
 }
 
@@ -278,7 +278,7 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
     if (ret)
       LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
   }
-  // media_device_unref(device);
+  media_device_unref(device);
   return 0;
 FAIL:
   media_device_unref(device);

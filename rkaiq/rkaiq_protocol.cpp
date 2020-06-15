@@ -536,7 +536,6 @@ static void ReqAppStatus(Common_Cmd_t *cmd) {
   if (dev_fd < 0) {
     cmd->dat[0] = VIDEO_APP_ON;
     LOG_INFO("app status is ON\n");
-    device_close(dev_fd);
   } else {
     cmd->dat[0] = VIDEO_APP_OFF;
     LOG_INFO("app status is OFF\n");
