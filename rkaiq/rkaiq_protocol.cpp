@@ -76,6 +76,40 @@ static int RunCmd(const char *cmd) {
   return ret;
 }
 
+static int ProcessExists(char *process_name) {
+  FILE *fp;
+  char cmd[1024] = {0};
+  char buf[1024] = {0};
+  snprintf(cmd, sizeof(cmd), "ps | grep %s | grep -v grep", process_name);
+  fp = popen(cmd, "r");
+  if (!fp) {
+    LOG_INFO("popen ps | grep %s fail\n", process_name);
+    return -1;
+  }
+  while (fgets(buf, sizeof(buf), fp)) {
+    LOG_INFO("ProcessExists %s\n", buf);
+    if (strstr(buf, process_name)) {
+      fclose(fp);
+      return 1;
+    }
+  }
+  fclose(fp);
+  return 0;
+}
+
+static int StopProcess(char *process, char *str) {
+  int count = 0;
+  while (ProcessExists(process) > 0) {
+    LOG_INFO("StopProcess %s... \n", process);
+    system(str);
+    sleep(1);
+    count++;
+    if (count > 3)
+      return -1;
+  }
+  return 0;
+}
+
 static void InitCommandPingAns(Common_Cmd_t *cmd, int ret_status) {
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
@@ -320,7 +354,13 @@ static void SendRawData(int socket, int index, void *buffer, int size) {
 }
 
 static void DoCaptureCallBack(int socket, int index, void *buffer, int size) {
-  LOG_INFO(" DoCaptureCallBack\n");
+  LOG_INFO(" DoCaptureCallBack size %d\n", size);
+  int width = cap_info.width;
+  int height = cap_info.height;
+  if (size > (width * height * 2)) {
+    LOG_ERROR(" DoMultiFrameCallBack size error\n");
+    return;
+  }
   SendRawData(socket, index, buffer, size);
 }
 
@@ -335,10 +375,16 @@ static void DoCapture(int socket) {
 
 static void DoMultiFrameCallBack(int socket, int index, void *buffer,
                                  int size) {
-  LOG_INFO(" DoMultiFrameCallBack\n");
+  LOG_INFO(" DoMultiFrameCallBack size %d\n", size);
   AutoDuration ad;
   int width = cap_info.width;
   int height = cap_info.height;
+
+  if (size > (width * height * 2)) {
+    LOG_ERROR(" DoMultiFrameCallBack size error\n");
+    return;
+  }
+
   DumpRawData((uint16_t *)buffer, size, 2);
   MultiFrameAddition(averge_frame0, (uint16_t *)buffer, width, height);
   DumpRawData32(averge_frame0, size, 2);
@@ -443,23 +489,23 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   LOG_INFO("recv_cmd->dat[0] = %p>>\n", AppStatus);
   if (*AppStatus == VIDEO_APP_OFF) {
     LOG_INFO("kill app start\n");
-    system(STOP_RTSPSERVER_CMD);
-    usleep(200000);
+    // system(STOP_RTSPSERVER_CMD);
+    StopProcess("rkaiq_rtsp_server", STOP_RTSPSERVER_CMD);
     int ret = system(STOP_RKLUNCH_CMD);
-    usleep(1800000);
+    usleep(1000000);
     if (ret < 0) {
       LOG_ERROR("kill app failed\n");
       ret_status = RES_FAILED;
     }
   } else if (*AppStatus == VIDEO_APP_ON) {
     LOG_INFO("run app start\n");
-	setupLink(&cap_info, false);
+    setupLink(&cap_info, false);
     /* set isp subdev fmt to bayer raw*/
     if (rkisp_set_ispsd_fmt(&cap_info, cap_info.sd_path.width,
                             cap_info.sd_path.height, cap_info.sd_path.sen_fmt,
                             cap_info.width, cap_info.height,
                             MEDIA_BUS_FMT_YUYV8_2X8) < 0)
-                            LOG_ERROR("set isp subdev fmt to YUYV8_2X8 FAILED\n");
+      LOG_ERROR("set isp subdev fmt to YUYV8_2X8 FAILED\n");
     system(START_DBSERVER_CMD);
     usleep(100000);
     system(START_ISPSERVER_CMD);
@@ -487,14 +533,14 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
 static void ReqAppStatus(Common_Cmd_t *cmd) {
   memset(cmd->dat, 0, sizeof(cmd->dat));
   int dev_fd = device_open(cap_info.dev_name);
-  if ( dev_fd < 0) {
+  if (dev_fd < 0) {
     cmd->dat[0] = VIDEO_APP_ON;
     LOG_INFO("app status is ON\n");
-	device_close(dev_fd);
+    device_close(dev_fd);
   } else {
     cmd->dat[0] = VIDEO_APP_OFF;
     LOG_INFO("app status is OFF\n");
-	device_close(dev_fd);
+    device_close(dev_fd);
   }
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;

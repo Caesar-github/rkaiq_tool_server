@@ -251,7 +251,7 @@ void init_2688p(std::shared_ptr<easymedia::Flow> &video_cap_flow,
   std::string yuv_format = IMAGE_NV12;
   std::string enc_type = VIDEO_H264;
 
-  const char *video_dev = "/dev/video13";
+  const char *video_dev = "rkispp_m_bypass";
   if (!video_path.empty())
     video_dev = video_path.c_str();
 

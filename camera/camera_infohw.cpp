@@ -227,7 +227,8 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
 
   device = media_device_new(media_info->vd_path.media_dev_path);
 
-  LOG_INFO("%s: setup link for raw or yuv: %d\n", media_info->vd_path.media_dev_path, raw_mode);
+  LOG_INFO("%s: setup link for raw or yuv: %d\n",
+           media_info->vd_path.media_dev_path, raw_mode);
 
   /* Enumerate entities, pads and links. */
   media_device_enumerate(device);
@@ -263,20 +264,21 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
 
   if (raw_mode) {
     ret = media_setup_link(device, src_pad, sink_pad_bridge, 0);
-	if (ret)
-		LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+    if (ret)
+      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
     ret = media_setup_link(device, src_pad, sink_pad_mp, MEDIA_LNK_FL_ENABLED);
-	if (ret)
-		LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+    if (ret)
+      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
   } else {
     ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
-	if (ret)
-		LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
-    ret = media_setup_link(device, src_pad, sink_pad_bridge, MEDIA_LNK_FL_ENABLED);
-	if (ret)
-		LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+    if (ret)
+      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+    ret = media_setup_link(device, src_pad, sink_pad_bridge,
+                           MEDIA_LNK_FL_ENABLED);
+    if (ret)
+      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
   }
-  //media_device_unref(device);
+  // media_device_unref(device);
   return 0;
 FAIL:
   media_device_unref(device);

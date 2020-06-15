@@ -51,7 +51,7 @@ typedef enum { RAW_CAP = 0x00, AVALIABLE } runStaus;
 #define TAG_DEVICE_TO_PC "RKISP-AS"
 
 #define STOP_RKLUNCH_CMD "sh /oem/RkLunch-stop.sh"
-#define STOP_RTSPSERVER_CMD "killall rtsp_flow_test"
+#define STOP_RTSPSERVER_CMD "killall rkaiq_rtsp_server"
 
 #define START_DBSERVER_CMD "dbserver &"
 #define START_ISPSERVER_CMD "ispserver &"
