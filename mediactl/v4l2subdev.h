@@ -63,8 +63,8 @@ void v4l2_subdev_close(struct media_entity *entity);
  * @return 0 on success, or a negative error code on failure.
  */
 int v4l2_subdev_get_format(struct media_entity *entity,
-	struct v4l2_mbus_framefmt *format, unsigned int pad,
-	enum v4l2_subdev_format_whence which);
+                           struct v4l2_mbus_framefmt *format, unsigned int pad,
+                           enum v4l2_subdev_format_whence which);
 
 /**
  * @brief Set the format on a pad.
@@ -84,8 +84,8 @@ int v4l2_subdev_get_format(struct media_entity *entity,
  * @return 0 on success, or a negative error code on failure.
  */
 int v4l2_subdev_set_format(struct media_entity *entity,
-	struct v4l2_mbus_framefmt *format, unsigned int pad,
-	enum v4l2_subdev_format_whence which);
+                           struct v4l2_mbus_framefmt *format, unsigned int pad,
+                           enum v4l2_subdev_format_whence which);
 
 /**
  * @brief Retrieve a selection rectangle on a pad.
@@ -106,8 +106,9 @@ int v4l2_subdev_set_format(struct media_entity *entity,
  * @return 0 on success, or a negative error code on failure.
  */
 int v4l2_subdev_get_selection(struct media_entity *entity,
-	struct v4l2_rect *rect, unsigned int pad, unsigned int target,
-	enum v4l2_subdev_format_whence which);
+                              struct v4l2_rect *rect, unsigned int pad,
+                              unsigned int target,
+                              enum v4l2_subdev_format_whence which);
 
 /**
  * @brief Set a selection rectangle on a pad.
@@ -128,8 +129,9 @@ int v4l2_subdev_get_selection(struct media_entity *entity,
  * @return 0 on success, or a negative error code on failure.
  */
 int v4l2_subdev_set_selection(struct media_entity *entity,
-	struct v4l2_rect *rect, unsigned int pad, unsigned int target,
-	enum v4l2_subdev_format_whence which);
+                              struct v4l2_rect *rect, unsigned int pad,
+                              unsigned int target,
+                              enum v4l2_subdev_format_whence which);
 
 /**
  * @brief Retrieve the frame interval on a sub-device.
@@ -146,7 +148,7 @@ int v4l2_subdev_set_selection(struct media_entity *entity,
  */
 
 int v4l2_subdev_get_frame_interval(struct media_entity *entity,
-	struct v4l2_fract *interval);
+                                   struct v4l2_fract *interval);
 
 /**
  * @brief Set the frame interval on a sub-device.
@@ -163,7 +165,7 @@ int v4l2_subdev_get_frame_interval(struct media_entity *entity,
  * @return 0 on success, or a negative error code on failure.
  */
 int v4l2_subdev_set_frame_interval(struct media_entity *entity,
-	struct v4l2_fract *interval);
+                                   struct v4l2_fract *interval);
 
 /**
  * @brief Parse a string and apply format, crop and frame interval settings.
@@ -201,5 +203,5 @@ const char *v4l2_subdev_pixelcode_to_string(enum v4l2_mbus_pixelcode code);
  * @return media bus pixelcode on success, -1 on failure.
  */
 enum v4l2_mbus_pixelcode v4l2_subdev_string_to_pixelcode(const char *string,
-							 unsigned int length);
+                                                         unsigned int length);
 #endif

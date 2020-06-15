@@ -1,6 +1,6 @@
+#include "camera_infohw.h"
 #include "rkaiq_protocol.h"
 #include "tcp_server.h"
-#include "camera_infohw.h"
 #include <csignal>
 #include <ctime>
 

@@ -27,9 +27,8 @@
 
 #define FMT_NUM_PLANES 1
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
-#define DEV_PATH_LEN  64
+#define DEV_PATH_LEN 64
 #define MAX_MEDIA_INDEX 4
-
 
 enum io_method {
   IO_METHOD_READ,
@@ -52,8 +51,8 @@ struct isp_t {
   int height;
   __u32 sd_fmt;
 };
-	
-struct sensor_t{
+
+struct sensor_t {
   char device_name[DEV_PATH_LEN];
   char sensor_name[DEV_PATH_LEN];
   int width;

@@ -5,6 +5,8 @@
 #ifndef _RK_LOGGER_H_
 #define _RK_LOGGER_H_
 
+#include <chrono>
+
 extern int log_level;
 
 #define LOG_LEVEL_ERROR 0
@@ -43,5 +45,28 @@ extern int log_level;
       break;                                                                   \
     fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, ##__VA_ARGS__); \
   } while (0)
+
+inline int64_t gettimeofday() {
+  std::chrono::microseconds us =
+      std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::system_clock::now().time_since_epoch());
+  return us.count();
+}
+
+class AutoDuration {
+public:
+  AutoDuration() { Reset(); }
+  int64_t Get() { return gettimeofday() - start; }
+  void Reset() { start = gettimeofday(); }
+  int64_t GetAndReset() {
+    int64_t now = gettimeofday();
+    int64_t pretime = start;
+    start = now;
+    return now - pretime;
+  }
+
+private:
+  int64_t start;
+};
 
 #endif

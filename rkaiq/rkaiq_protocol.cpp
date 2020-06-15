@@ -249,6 +249,7 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   cap_info.dev_fd = device_open(cap_info.dev_name);
 
   capture_frames = CapParam->framenumber;
+  cap_info.frame_count = CapParam->framenumber;
   capture_mode = CapParam->multiframe;
   capture_check_sums = 0;
 
@@ -325,8 +326,10 @@ static void DoCaptureCallBack(int socket, int index, void *buffer, int size) {
 
 static void DoCapture(int socket) {
   LOG_INFO("DoCapture entry!!!!!\n");
+  AutoDuration ad;
   for (int i = 0; i < capture_frames; i++)
     read_frame(socket, i, &cap_info, DoCaptureCallBack);
+  LOG_INFO("DoCapture %lld ms %lld us\n", ad.Get() / 1000, ad.Get() % 1000);
   LOG_INFO("DoCapture exit!!!!!\n");
 }
 
@@ -335,6 +338,7 @@ static void DoMultiFrameCallBack(int socket, int index, void *buffer,
   LOG_INFO(" DoCaptureCallBack\n");
   int width = cap_info.width;
   int height = cap_info.height;
+
   if (index == 0) {
     FrameU16ToU32((uint16_t *)buffer, averge_frame0, width, height);
   } else {
@@ -344,15 +348,17 @@ static void DoMultiFrameCallBack(int socket, int index, void *buffer,
   if (index == (capture_frames - 1)) {
     MultiFrameAverage(averge_frame0, width, height, capture_frames);
     FrameU32ToU16(averge_frame0, averge_frame1, width, height);
-    SendRawData(socket, index, averge_frame1, size);
-  }
-
-  if (index == 0)
+    AutoDuration ad;
     SendRawData(socket, index, buffer, size);
+    SendRawData(socket, index, averge_frame1, size);
+    LOG_INFO("DoMultiFrameCallBack SendRawData interval %lld ms %lld us\n",
+             ad.Get() / 1000, ad.Get() % 1000);
+  }
 }
 
 static void DoMultiFrameCapture(int socket) {
   LOG_INFO("DoMultiFrameCapture entry!!!!!\n");
+  AutoDuration ad;
   uint32_t one_frame_size = cap_info.width * cap_info.height * sizeof(uint32_t);
   averge_frame0 = (uint32_t *)malloc(one_frame_size);
   one_frame_size = one_frame_size >> 1;
@@ -369,6 +375,8 @@ static void DoMultiFrameCapture(int socket) {
   }
   averge_frame0 = nullptr;
   averge_frame1 = nullptr;
+  LOG_INFO("DoMultiFrameCapture %lld ms %lld us\n", ad.Get() / 1000,
+           ad.Get() % 1000);
   LOG_INFO("DoMultiFrameCapture exit!!!!!\n");
 }
 

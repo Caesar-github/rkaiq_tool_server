@@ -96,14 +96,14 @@ int device_setsubdevcrop(int dev_fd, struct v4l2_subdev_selection *sel) {
   int ret = xioctl(dev_fd, VIDIOC_SUBDEV_S_SELECTION, sel);
   if (-1 == ret) {
     switch (errno) {
-      case EINVAL:
-        LOG_ERROR("Cropping not supported.\n");
-        break;
-      default:
-        /* Errors ignored. */
-        break;
-      }
+    case EINVAL:
+      LOG_ERROR("Cropping not supported.\n");
+      break;
+    default:
+      /* Errors ignored. */
+      break;
     }
+  }
   return ret;
 }
 
