@@ -17,16 +17,22 @@
 void DumpRawData(uint16_t *buf, uint32_t len, uint32_t plen) {
   uint32_t a;
   for (uint32_t n = 0; n < len; n++) {
-    if (n < plen)
-      fprintf(stderr, "buf[%d]      %x\n", n, buf[n]);
+    if (n < plen) {
+      fprintf(stderr, "buf16[%d]      %x\n", n, buf[n]);
+    } else {
+      break;
+    }
   }
 }
 
 void DumpRawData32(uint32_t *buf, uint32_t len, uint32_t plen) {
   uint32_t a;
   for (uint32_t n = 0; n < len; n++) {
-    if (n < plen)
-      fprintf(stderr, "buf[%d]      %x\n", n, buf[n]);
+    if (n < plen) {
+      fprintf(stderr, "buf32[%d]      %x\n", n, buf[n]);
+    } else {
+      break;
+    }
   }
 }
 
@@ -37,6 +43,7 @@ void ConverToLE(uint16_t *buf, uint32_t len) {
     buf[n] = (a << 8) | (a >> 8);
   }
 }
+
 // only for even number frame
 void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t *POut, uint16_t width,
                        uint16_t height, uint8_t frameNumber) {
@@ -70,47 +77,38 @@ void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t *POut, uint16_t width,
     break;
   }
   roundOffset = pow(2, n - 1);
-  int w, h, m;
-  for (h = 0; h < height; h++) {
-    m = h * width;
-    for (w = 0; w < width; w++) {
-      pIn1_pOut[m + w] += roundOffset;
-      pIn1_pOut[m + w] = pIn1_pOut[m + w] >> n;
-      POut[m + w] = (uint16_t)pIn1_pOut[m + w] & 0xFFF0;
-    }
+
+  int len = height * width;
+  for (int i = 0; i < len; i++) {
+    pIn1_pOut[i] += roundOffset;
+    pIn1_pOut[i] = pIn1_pOut[i] >> n;
+    POut[i] = (uint16_t)pIn1_pOut[i];
   }
 }
 
 void MultiFrameAddition(uint32_t *pIn1_pOut, uint16_t *pIn2, uint16_t width,
                         uint16_t height) {
-  int w, h, n;
-  for (h = 0; h < height; h++) {
-    n = h * width;
-    for (w = 0; w < width; w++) {
-      pIn1_pOut[n + w] +=
-          ((uint16_t)(pIn2[n + w] >> 8) | (uint16_t)(pIn2[n + w] << 8));
-    }
+  int n;
+  int len = height * width;
+  for (n = 0; n < len; n++) {
+    pIn1_pOut[n] += ((uint16_t)(pIn2[n] >> 8) | (uint16_t)(pIn2[n] << 8));
   }
 }
 
 void FrameU32ToU16(uint32_t *pIn, uint16_t *pOut, uint16_t width,
                    uint16_t height) {
-  int w, h, n;
-  for (h = 0; h < height; h++) {
-    n = h * width;
-    for (w = 0; w < width; w++) {
-      pOut[n + w] += pIn[n + w];
-    }
+  int n;
+  int len = height * width;
+  for (n = 0; n < len; n++) {
+    pOut[n] += pIn[n];
   }
 }
 
 void FrameU16ToU32(uint16_t *pIn, uint32_t *pOut, uint16_t width,
                    uint16_t height) {
-  int w, h, n;
-  for (h = 0; h < height; h++) {
-    n = h * width;
-    for (w = 0; w < width; w++) {
-      pOut[n + w] += pIn[n + w];
-    }
+  int n;
+  int len = height * width;
+  for (n = 0; n < len; n++) {
+    pOut[n] += pIn[n];
   }
 }
