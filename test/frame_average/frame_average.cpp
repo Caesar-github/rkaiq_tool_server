@@ -14,92 +14,12 @@
 
 #include <signal.h>
 
+#include "multiframe_process.h"
+
 #define DUMMY_DATA 0
 #define BE_TO_LE 0
 
 void sig_exit(int s) { exit(0); }
-void ConverToLE(uint16_t *buf, uint32_t len) {
-  uint32_t a;
-  for (uint32_t n = 0; n < len; n++) {
-    a = buf[n];
-    buf[n] = (a << 8) | (a >> 8);
-  }
-}
-// only for even number frame
-void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t width, uint16_t height,
-                       uint8_t frameNumber) {
-  uint16_t n;
-  uint16_t roundOffset = 0;
-  switch (frameNumber) {
-  case 128:
-    n = 7;
-    break;
-  case 64:
-    n = 6;
-    break;
-  case 32:
-    n = 5;
-    break;
-  case 16:
-    n = 4;
-    break;
-  case 8:
-    n = 3;
-    break;
-  case 4:
-    n = 2;
-    break;
-  case 2:
-    n = 1;
-    break;
-  default:
-    printf("frame number error! %d", frameNumber);
-    return;
-    break;
-  }
-  roundOffset = pow(2, n - 1);
-  int w, h, m;
-  for (h = 0; h < height; h++) {
-    m = h * width;
-    for (w = 0; w < width; w++) {
-      pIn1_pOut[m + w] += roundOffset;
-      pIn1_pOut[m + w] = pIn1_pOut[m + w] >> n;
-    }
-  }
-}
-
-void MultiFrameAddition(uint32_t *pIn1_pOut, uint16_t *pIn2, uint16_t width,
-                        uint16_t height) {
-  int w, h, n;
-  for (h = 0; h < height; h++) {
-    n = h * width;
-    for (w = 0; w < width; w++) {
-      pIn1_pOut[n + w] += pIn2[n + w];
-    }
-  }
-}
-
-void FrameU32ToU16(uint32_t *pIn, uint16_t *pOut, uint16_t width,
-                   uint16_t height) {
-  int w, h, n;
-  for (h = 0; h < height; h++) {
-    n = h * width;
-    for (w = 0; w < width; w++) {
-      pOut[n + w] += pIn[n + w];
-    }
-  }
-}
-
-void FrameU16ToU32(uint16_t *pIn, uint32_t *pOut, uint16_t width,
-                   uint16_t height) {
-  int w, h, n;
-  for (h = 0; h < height; h++) {
-    n = h * width;
-    for (w = 0; w < width; w++) {
-      pOut[n + w] += pIn[n + w];
-    }
-  }
-}
 
 void Read(int fd, uint16_t *buffer, int size) {
 #if DUMMY_DATA
@@ -107,6 +27,7 @@ void Read(int fd, uint16_t *buffer, int size) {
     buffer[i] = 0xFFF0;
   }
 #else
+  lseek(fd, 0, SEEK_SET);
   read(fd, buffer, size);
 #endif
 
@@ -117,19 +38,19 @@ void Read(int fd, uint16_t *buffer, int size) {
 
 void ProcessMultiFrame(int fd_in, int width, int height, int frame_count,
                        int frame_size, int index, uint32_t *pOut0,
-                       uint32_t *pOut1, uint16_t *pIn) {
+                       uint16_t *pOut1, uint16_t *pIn) {
   fprintf(stderr, "index      %d\n", index);
-  if (index == 0) {
-    Read(fd_in, pIn, frame_size);
-    FrameU16ToU32(pIn, pOut0, width, height);
-  } else {
-    Read(fd_in, pIn, frame_size);
-    MultiFrameAddition(pOut0, pIn, width, height);
-  }
 
+  Read(fd_in, pIn, frame_size);
+  MultiFrameAddition(pOut0, pIn, width, height);
+  fprintf(stderr, "MultiFrameAddition\n");
+  DumpRawData(pIn, frame_size, 2);
+  DumpRawData32(pOut0, frame_size, 2);
   if (index == (frame_count - 1)) {
-    MultiFrameAverage(pOut1, width, height, frame_count);
-    FrameU32ToU16(pOut1, pIn, width, height);
+    MultiFrameAverage(pOut0, pOut1, width, height, frame_count);
+    fprintf(stderr, "MultiFrameAverage\n");
+    DumpRawData(pOut1, frame_size, 2);
+    DumpRawData32(pOut0, frame_size, 2);
   }
 }
 
@@ -146,16 +67,23 @@ int main(int argc, char *argv[]) {
   int width = atoi(argv[4]);
   int height = atoi(argv[5]);
 
-  fprintf(stderr, "input_file  %s\n", input_file.c_str());
-  fprintf(stderr, "frame_count %d\n", frame_count);
-  fprintf(stderr, "output_file %s\n", output_file.c_str());
-  fprintf(stderr, "width       %d\n", width);
-  fprintf(stderr, "height      %d\n", height);
+  std::string output_file_s = output_file;
+  output_file_s.append("_s.raw");
+  std::string output_file_m = output_file;
+  output_file_m.append("_m.raw");
+
+  fprintf(stderr, "input_file    %s\n", input_file.c_str());
+  fprintf(stderr, "frame_count   %d\n", frame_count);
+  fprintf(stderr, "output_file_s %s\n", output_file_s.c_str());
+  fprintf(stderr, "output_file_m %s\n", output_file_m.c_str());
+  fprintf(stderr, "width         %d\n", width);
+  fprintf(stderr, "height        %d\n", height);
 
   signal(SIGINT, sig_exit);
 
   int fd_in = open(input_file.c_str(), O_RDONLY);
-  int fd_out = open(output_file.c_str(), O_RDWR | O_CREAT | O_SYNC, 0664);
+  int fd_out_s = open(output_file_s.c_str(), O_RDWR | O_CREAT | O_SYNC, 0664);
+  int fd_out_m = open(output_file_m.c_str(), O_RDWR | O_CREAT | O_SYNC, 0664);
 
   int one_frame_size = width * height * sizeof(uint16_t);
   uint16_t *one_frame = (uint16_t *)malloc(one_frame_size);
@@ -163,12 +91,13 @@ int main(int argc, char *argv[]) {
 
   one_frame_size = width * height * sizeof(uint32_t);
   uint32_t *averge_frame0 = (uint32_t *)malloc(one_frame_size);
-  uint32_t *averge_frame1 = (uint32_t *)malloc(one_frame_size);
   memset(averge_frame0, 0, one_frame_size);
+
+  one_frame_size = width * height * sizeof(uint16_t);
+  uint16_t *averge_frame1 = (uint16_t *)malloc(one_frame_size);
   memset(averge_frame1, 0, one_frame_size);
 
   one_frame_size = width * height * sizeof(uint16_t);
-
   for (int i = 0; i < frame_count; i++) {
     ProcessMultiFrame(fd_in, width, height, frame_count, one_frame_size, i,
                       averge_frame0, averge_frame1, one_frame);
@@ -176,12 +105,18 @@ int main(int argc, char *argv[]) {
 #if DUMMY_DATA
   DumpFrameU16(one_frame, width, height);
 #endif
-  write(fd_out, one_frame, one_frame_size);
+  write(fd_out_s, one_frame, one_frame_size);
+  DumpRawData(one_frame, one_frame_size, 2);
+
+  ConverToLE(averge_frame1, one_frame_size >> 1);
+  write(fd_out_m, averge_frame1, one_frame_size);
+  DumpRawData(averge_frame1, one_frame_size, 2);
 
   free(one_frame);
   free(averge_frame0);
   free(averge_frame1);
-  close(fd_out);
+  close(fd_out_s);
+  close(fd_out_m);
   close(fd_in);
   sync();
 

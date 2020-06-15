@@ -8,7 +8,7 @@ target_link_libraries(tcp_client pthread)
 add_executable(virsual_rkaiq_tool ${TCP_TEST_SOURCE} virsual_rkaiq_tool/virsual_rkaiq_tool.cpp)
 target_link_libraries(virsual_rkaiq_tool pthread)
 
-set(FRAME_AVERGET_TEST_SOURCE ${LOGGER_SOURCE})
+set(FRAME_AVERGET_TEST_SOURCE ${LOGGER_SOURCE} ../rkaiq/multiframe_process.cpp)
 add_executable(frame_average ${FRAME_AVERGET_TEST_SOURCE} frame_average/frame_average.cpp)
 target_link_libraries(frame_average pthread)
 

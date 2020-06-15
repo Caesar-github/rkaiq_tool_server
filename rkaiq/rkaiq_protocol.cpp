@@ -335,24 +335,31 @@ static void DoCapture(int socket) {
 
 static void DoMultiFrameCallBack(int socket, int index, void *buffer,
                                  int size) {
-  LOG_INFO(" DoCaptureCallBack\n");
+  LOG_INFO(" DoMultiFrameCallBack\n");
+  AutoDuration ad;
   int width = cap_info.width;
   int height = cap_info.height;
-
-  if (index == 0) {
-    FrameU16ToU32((uint16_t *)buffer, averge_frame0, width, height);
-  } else {
-    MultiFrameAddition(averge_frame0, (uint16_t *)buffer, width, height);
-  }
-
+  DumpRawData((uint16_t *)buffer, size, 2);
+  MultiFrameAddition(averge_frame0, (uint16_t *)buffer, width, height);
+  DumpRawData32(averge_frame0, size, 2);
+  LOG_INFO("index %d MultiFrameAddition %lld ms %lld us\n", index,
+           ad.Get() / 1000, ad.Get() % 1000);
+  ad.Reset();
   if (index == (capture_frames - 1)) {
-    MultiFrameAverage(averge_frame0, width, height, capture_frames);
-    FrameU32ToU16(averge_frame0, averge_frame1, width, height);
-    AutoDuration ad;
-    SendRawData(socket, index, buffer, size);
-    SendRawData(socket, index, averge_frame1, size);
-    LOG_INFO("DoMultiFrameCallBack SendRawData interval %lld ms %lld us\n",
+    MultiFrameAverage(averge_frame0, averge_frame1, width, height,
+                      capture_frames);
+    DumpRawData32(averge_frame0, size, 2);
+    DumpRawData(averge_frame1, size, 2);
+    LOG_INFO("index %d MultiFrameAverage %lld ms %lld us\n", index,
              ad.Get() / 1000, ad.Get() % 1000);
+    ad.Reset();
+    SendRawData(socket, index, averge_frame1, size);
+    LOG_INFO("index %d SendRawData %lld ms %lld us\n", index, ad.Get() / 1000,
+             ad.Get() % 1000);
+  } else if (index == (capture_frames - 2)) {
+    SendRawData(socket, index, buffer, size);
+    LOG_INFO("index %d SendRawData %lld ms %lld us\n", index, ad.Get() / 1000,
+             ad.Get() % 1000);
   }
 }
 

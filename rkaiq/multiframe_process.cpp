@@ -14,7 +14,21 @@
 
 #include "multiframe_process.h"
 
-#define DUMMY_DATA 0
+void DumpRawData(uint16_t *buf, uint32_t len, uint32_t plen) {
+  uint32_t a;
+  for (uint32_t n = 0; n < len; n++) {
+    if (n < plen)
+      fprintf(stderr, "buf[%d]      %x\n", n, buf[n]);
+  }
+}
+
+void DumpRawData32(uint32_t *buf, uint32_t len, uint32_t plen) {
+  uint32_t a;
+  for (uint32_t n = 0; n < len; n++) {
+    if (n < plen)
+      fprintf(stderr, "buf[%d]      %x\n", n, buf[n]);
+  }
+}
 
 void ConverToLE(uint16_t *buf, uint32_t len) {
   uint32_t a;
@@ -24,8 +38,8 @@ void ConverToLE(uint16_t *buf, uint32_t len) {
   }
 }
 // only for even number frame
-void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t width, uint16_t height,
-                       uint8_t frameNumber) {
+void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t *POut, uint16_t width,
+                       uint16_t height, uint8_t frameNumber) {
   uint16_t n;
   uint16_t roundOffset = 0;
   switch (frameNumber) {
@@ -62,6 +76,7 @@ void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t width, uint16_t height,
     for (w = 0; w < width; w++) {
       pIn1_pOut[m + w] += roundOffset;
       pIn1_pOut[m + w] = pIn1_pOut[m + w] >> n;
+      POut[m + w] = (uint16_t)pIn1_pOut[m + w] & 0xFFF0;
     }
   }
 }
@@ -72,7 +87,8 @@ void MultiFrameAddition(uint32_t *pIn1_pOut, uint16_t *pIn2, uint16_t width,
   for (h = 0; h < height; h++) {
     n = h * width;
     for (w = 0; w < width; w++) {
-      pIn1_pOut[n + w] += pIn2[n + w];
+      pIn1_pOut[n + w] +=
+          ((uint16_t)(pIn2[n + w] >> 8) | (uint16_t)(pIn2[n + w] << 8));
     }
   }
 }
