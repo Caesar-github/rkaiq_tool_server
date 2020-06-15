@@ -443,16 +443,22 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   LOG_INFO("recv_cmd->dat[0] = %p>>\n", AppStatus);
   if (*AppStatus == VIDEO_APP_OFF) {
     LOG_INFO("kill app start\n");
-    int ret = RunCmd(STOP_RKLUNCH_CMD);
-    usleep(2000000);
+    system(STOP_RTSPSERVER_CMD);
+    usleep(200000);
+    int ret = system(STOP_RKLUNCH_CMD);
+    usleep(1800000);
     if (ret < 0) {
       LOG_ERROR("kill app failed\n");
       ret_status = RES_FAILED;
     }
   } else if (*AppStatus == VIDEO_APP_ON) {
     LOG_INFO("run app start\n");
-    int ret = RunCmd(START_RKLUNCH_CMD);
-    usleep(2000000);
+    system(START_DBSERVER_CMD);
+    usleep(100000);
+    system(START_ISPSERVER_CMD);
+    usleep(100000);
+    int ret = system(START_RTSPSERVER_CMD);
+    usleep(1800000);
     if (ret < 0) {
       LOG_ERROR("run app failed\n");
       ret_status = RES_FAILED;

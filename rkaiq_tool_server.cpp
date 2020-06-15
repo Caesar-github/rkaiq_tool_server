@@ -28,6 +28,10 @@ static int get_env(const char *name, int *value, int default_value) {
 void sigterm_handler(int sig) {
   fprintf(stderr, "sigterm_handler signal %d\n", sig);
   quit = 1;
+  system(STOP_RTSPSERVER_CMD);
+  usleep(200000);
+  system(STOP_RKLUNCH_CMD);
+  usleep(1800000);
   exit(0);
 }
 
