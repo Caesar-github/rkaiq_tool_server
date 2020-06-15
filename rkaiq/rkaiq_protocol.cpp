@@ -110,7 +110,7 @@ static void RawCaptureinit(Common_Cmd_t *cmd) {
     LOG_INFO(">>>>>>>>>setup link to isp output raw failed\n");
   cap_info.dev_fd = -1;
   cap_info.subdev_fd = -1;
-  cap_info.dev_name = VIDEO_RAW0;
+  cap_info.dev_name = cap_info.vd_path.isp_main_path;
   cap_info.io = IO_METHOD_MMAP;
   cap_info.height = Reso->height;
   cap_info.width = Reso->width;
@@ -134,7 +134,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   cap_info.dev_fd = device_open(cap_info.dev_name);
   cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
 
-  LOG_INFO("sensor subdev path: %s/n", cap_info.sd_path.device_name);
+  LOG_INFO("sensor subdev path: %s\n", cap_info.sd_path.device_name);
 
   memset(&ctrl, 0, sizeof(ctrl));
   ctrl.id = V4L2_CID_HBLANK;
@@ -453,6 +453,13 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
     }
   } else if (*AppStatus == VIDEO_APP_ON) {
     LOG_INFO("run app start\n");
+	setupLink(&cap_info, false);
+    /* set isp subdev fmt to bayer raw*/
+    if (rkisp_set_ispsd_fmt(&cap_info, cap_info.sd_path.width,
+                            cap_info.sd_path.height, cap_info.sd_path.sen_fmt,
+                            cap_info.width, cap_info.height,
+                            MEDIA_BUS_FMT_YUYV8_2X8) < 0)
+                            LOG_ERROR("set isp subdev fmt to YUYV8_2X8 FAILED\n");
     system(START_DBSERVER_CMD);
     usleep(100000);
     system(START_ISPSERVER_CMD);
@@ -479,12 +486,15 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
 
 static void ReqAppStatus(Common_Cmd_t *cmd) {
   memset(cmd->dat, 0, sizeof(cmd->dat));
-  if (device_open(cap_info.dev_name) < 0) {
+  int dev_fd = device_open(cap_info.dev_name);
+  if ( dev_fd < 0) {
     cmd->dat[0] = VIDEO_APP_ON;
     LOG_INFO("app status is ON\n");
+	device_close(dev_fd);
   } else {
     cmd->dat[0] = VIDEO_APP_OFF;
     LOG_INFO("app status is OFF\n");
+	device_close(dev_fd);
   }
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
@@ -602,14 +612,6 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
     break;
   case VIDEO_APP_STATUS_SET:
     LOG_INFO("VIDEO_APP_STATUS_SET start\n");
-    setupLink(&cap_info, false);
-    /* set isp subdev fmt to bayer raw*/
-    if (rkisp_set_ispsd_fmt(&cap_info, cap_info.sd_path.width,
-                            cap_info.sd_path.height, cap_info.sd_path.sen_fmt,
-                            cap_info.width, cap_info.height,
-                            MEDIA_BUS_FMT_YUYV8_2X8) < 0)
-      LOG_ERROR("set isp subdev fmt to YUYV8_2X8 FAILED\n");
-
     if (common_cmd->dat[0] == VIDEO_APP_OFF ||
         common_cmd->dat[0] == VIDEO_APP_ON) {
       LOG_INFO("VIDEO_APP_STATUS is on(0x80) or off(0x81) : 0x%x\n",
