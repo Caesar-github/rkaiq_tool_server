@@ -76,7 +76,7 @@ static int RunCmd(const char *cmd) {
   return ret;
 }
 
-static int ProcessExists(char *process_name) {
+static int ProcessExists(const char *process_name) {
   FILE *fp;
   char cmd[1024] = {0};
   char buf[1024] = {0};
@@ -97,7 +97,7 @@ static int ProcessExists(char *process_name) {
   return 0;
 }
 
-static int StopProcess(char *process, char *str) {
+static int StopProcess(const char *process, const char *str) {
   int count = 0;
   while (ProcessExists(process) > 0) {
     LOG_INFO("StopProcess %s... \n", process);
@@ -489,8 +489,7 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   LOG_INFO("recv_cmd->dat[0] = %p>>\n", AppStatus);
   if (*AppStatus == VIDEO_APP_OFF) {
     LOG_INFO("kill app start\n");
-    // system(STOP_RTSPSERVER_CMD);
-    StopProcess("rkaiq_rtsp_server", STOP_RTSPSERVER_CMD);
+    StopProcess(RTSPSERVER_CMD, STOP_RTSPSERVER_CMD);
     int ret = system(STOP_RKLUNCH_CMD);
     usleep(1000000);
     if (ret < 0) {
