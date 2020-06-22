@@ -28,10 +28,11 @@ static int get_env(const char *name, int *value, int default_value) {
 void sigterm_handler(int sig) {
   fprintf(stderr, "sigterm_handler signal %d\n", sig);
   quit = 1;
-  system(STOP_RTSPSERVER_CMD);
-  usleep(200000);
+#ifdef ENABLE_RSTP_SERVER
+  deinit_rtsp();
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+#endif
   system(STOP_RKLUNCH_CMD);
-  usleep(1800000);
   exit(0);
 }
 
@@ -49,5 +50,6 @@ int main(int argc, char **argv) {
   tcp.Process(SERVER_PORT);
   while (!quit)
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
   return 0;
 }

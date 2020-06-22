@@ -241,6 +241,7 @@ void uninit_device(struct capture_info *cap_info) {
   }
   free(cap_info->buffers);
   device_close(cap_info->dev_fd);
+  cap_info->dev_fd = -1;
 }
 
 int init_device(struct capture_info *cap_info) {

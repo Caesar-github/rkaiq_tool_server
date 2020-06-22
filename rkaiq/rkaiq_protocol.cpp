@@ -53,27 +53,34 @@ static struct capture_info cap_info;
 static uint32_t *averge_frame0;
 static uint16_t *averge_frame1;
 
-static int RunCmd(const char *cmd) {
-  char buffer[1024];
-  FILE *read_fp;
-  int chars_read;
-  int ret;
-
-  memset(buffer, 0, 1024);
-  read_fp = popen(cmd, "r");
-  if (read_fp != NULL) {
-    chars_read = fread(buffer, sizeof(char), BUFSIZ - 1, read_fp);
-    if (chars_read > 0) {
-      ret = 0;
-    } else {
-      ret = -1;
-    }
-    pclose(read_fp);
-  } else {
-    ret = -1;
+void RunCmd(const char *cmd, char *result) {
+  FILE *fp;
+  fp = popen(cmd, "r");
+  if (!fp) {
+    LOG_INFO("[%s] fail\n", cmd);
+    return;
   }
+  fgets(result, 1024, fp);
+  LOG_INFO("fgets result: %s\n", result);
+  fclose(fp);
+}
 
-  return ret;
+static int SetLHcg(int mode) {
+  char cmd[1024] = {0};
+  char result[1024] = {0};
+  RunCmd("media-ctl -p | grep sensor -B 1 -i | "
+         "head -1 | cut -d ' ' -f 5",
+         result);
+  snprintf(cmd, sizeof(cmd), "eval find "
+                             "/sys/devices/platform/ -name %s",
+           result);
+  RunCmd(cmd, result);
+  int length = strlen(result) - 1;
+  result[length] = '\0';
+  snprintf(cmd, sizeof(cmd), "echo %d > %s/cam_s_cg", mode, result);
+  RunCmd(cmd, result);
+  LOG_INFO(" set lhcg cmd %s\n", cmd);
+  return 0;
 }
 
 static int ProcessExists(const char *process_name) {
@@ -97,7 +104,7 @@ static int ProcessExists(const char *process_name) {
   return 0;
 }
 
-static int StopProcess(const char *process, const char *str) {
+int StopProcess(const char *process, const char *str) {
   int count = 0;
   while (ProcessExists(process) > 0) {
     LOG_INFO("StopProcess %s... \n", process);
@@ -150,6 +157,19 @@ static void RawCaptureinit(Common_Cmd_t *cmd) {
   cap_info.width = Reso->width;
   // cap_info.format = v4l2_fourcc('B', 'G', '1', '2');
   LOG_INFO("get ResW: %d  ResH: %d\n", cap_info.width, cap_info.height);
+}
+
+static void RawCaptureDeinit() {
+  if (cap_info.subdev_fd > 0) {
+    device_close(cap_info.subdev_fd);
+    cap_info.subdev_fd = -1;
+    LOG_ERROR("device_close(cap_info.subdev_fd)\n");
+  }
+  if (cap_info.dev_fd > 0) {
+    device_close(cap_info.dev_fd);
+    cap_info.dev_fd = -1;
+    LOG_ERROR("device_close(cap_info.dev_fd)\n");
+  }
 }
 
 static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
@@ -301,6 +321,8 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
     LOG_ERROR(" set gain result failed to device\n");
   }
 
+  SetLHcg(CapParam->lhcg);
+
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
   cmd->cmdID = RAW_CAPTURE;
@@ -402,7 +424,7 @@ static void DoMultiFrameCallBack(int socket, int index, void *buffer,
     SendRawData(socket, index, averge_frame1, size);
     LOG_INFO("index %d SendRawData %lld ms %lld us\n", index, ad.Get() / 1000,
              ad.Get() % 1000);
-  } else if (index == (capture_frames - 2)) {
+  } else if (index == ((capture_frames >> 1) - 1)) {
     SendRawData(socket, index, buffer, size);
     LOG_INFO("index %d SendRawData %lld ms %lld us\n", index, ad.Get() / 1000,
              ad.Get() % 1000);
@@ -489,9 +511,12 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   LOG_INFO("recv_cmd->dat[0] = %p>>\n", AppStatus);
   if (*AppStatus == VIDEO_APP_OFF) {
     LOG_INFO("kill app start\n");
-    StopProcess(RTSPSERVER_CMD, STOP_RTSPSERVER_CMD);
+#ifdef ENABLE_RSTP_SERVER
+    deinit_rtsp();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+#endif
     int ret = system(STOP_RKLUNCH_CMD);
-    usleep(1000000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     if (ret < 0) {
       LOG_ERROR("kill app failed\n");
       ret_status = RES_FAILED;
@@ -505,16 +530,17 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
                             cap_info.width, cap_info.height,
                             MEDIA_BUS_FMT_YUYV8_2X8) < 0)
       LOG_ERROR("set isp subdev fmt to YUYV8_2X8 FAILED\n");
+#ifdef ENABLE_RSTP_SERVER
     system(START_DBSERVER_CMD);
-    usleep(100000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     system(START_ISPSERVER_CMD);
-    usleep(100000);
-    int ret = system(START_RTSPSERVER_CMD);
-    usleep(1800000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    int ret = init_rtsp(cap_info.width, cap_info.height);
     if (ret < 0) {
       LOG_ERROR("run app failed\n");
       ret_status = RES_FAILED;
     }
+#endif
   }
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
@@ -634,6 +660,7 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
       SendRawDataResult(&send_cmd, common_cmd);
       memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
       ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
+      RawCaptureDeinit();
       LOG_INFO("ProcID RAW_CAPTURE_COMPARE_CHECKSUM out\n");
       break;
     default:

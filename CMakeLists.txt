@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(rkaiq_tool_server)
+project(rkaiq_tool_server CXX)
 
 include_directories(
 	${PROJECT_SOURCE_DIR}/
@@ -19,7 +19,7 @@ aux_source_directory(${PROJECT_SOURCE_DIR}/mediactl/ MEDIACTL_SOURCE)
 
 option(BUILD_SANITIZER_STATIC "compile with sanitizer (static library linker)" OFF)
 if(BUILD_SANITIZER_STATIC)
-	add_definitions(-fsanitize=address -static-libasan -g -ggdb -gdwarf -funwind-tables -rdynamic -O0)
+	add_definitions(-fsanitize=address -static-libasan -g -ggdb -gdwarf -funwind-tables -rdynamic -O0 )
 	link_libraries(libasan.a dl m rt)
 endif()
 
@@ -32,8 +32,10 @@ find_path(EASYMEDIA_INCLUDE_DIR
     NAMES buffer.h
     HINTS ${PKG_EASYMEDIA_INCLUDEDIR} ${PKG_EASYMEDIA_INCLUDE_DIRS}
     PATH_SUFFIXES easymedia)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia/)
 link_libraries(easymedia)
 add_compile_options(-fno-rtti)
+add_definitions(-DENABLE_RSTP_SERVER)
 include_directories(${EASYMEDIA_INCLUDE_DIR}/)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkmedia/ RKMEDIA_SOURCE)
 endif()
@@ -55,7 +57,7 @@ set(RKAIQ_TOOL_SERVER_SOURCE
 	${MEDIACTL_SOURCE}
 	rkaiq_tool_server.cpp)
 add_executable(rkaiq_tool_server ${RKAIQ_TOOL_SERVER_SOURCE})
-target_link_libraries(rkaiq_tool_server pthread)
+target_link_libraries(rkaiq_tool_server pthread rkaiq)
 install(TARGETS rkaiq_tool_server RUNTIME DESTINATION bin)
 
 if(BUILD_RKMEDIA)

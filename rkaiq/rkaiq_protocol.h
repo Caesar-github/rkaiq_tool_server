@@ -8,6 +8,9 @@
 
 #include "camera_capture.h"
 #include "camera_infohw.h"
+#ifdef ENABLE_RSTP_SERVER
+#include "rtsp_server.h"
+#endif
 #include "logger/log.h"
 
 typedef enum { PC_TO_DEVICE = 0x00, DEVICE_TO_PC } cmdType;
@@ -55,9 +58,7 @@ typedef enum { RAW_CAP = 0x00, AVALIABLE } runStaus;
 #define START_DBSERVER_CMD "dbserver &"
 #define START_ISPSERVER_CMD "ispserver &"
 
-#define RTSPSERVER_CMD "rkaiq_rtsp_server"
-#define STOP_RTSPSERVER_CMD "killall rkaiq_rtsp_server"
-#define START_RTSPSERVER_CMD "rkaiq_rtsp_server &"
+int StopProcess(const char *process, const char *str);
 
 class RKAiqProtocol {
 public:
