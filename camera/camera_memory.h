@@ -57,6 +57,7 @@ struct sensor_t {
   char sensor_name[DEV_PATH_LEN];
   int width;
   int height;
+  int bits;
   __u32 sen_fmt;
 };
 

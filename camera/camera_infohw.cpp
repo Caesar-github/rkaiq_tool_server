@@ -5,56 +5,72 @@
 #endif
 #define LOG_TAG "camera_infohw.cpp"
 
-__u32 convert_to_v4l2fmt(int code) {
+__u32 convert_to_v4l2fmt(struct capture_info *media_info, int code) {
   __u32 v4l2_fmt = 0;
+  __u32 bits = 0;
   switch (code) {
   /* 8bit raw bayer */
   case MEDIA_BUS_FMT_SBGGR8_1X8:
     v4l2_fmt = V4L2_PIX_FMT_SRGGB8;
+    media_info->sd_path.bits = 8;
     break;
   case MEDIA_BUS_FMT_SGBRG8_1X8:
     v4l2_fmt = V4L2_PIX_FMT_SGBRG8;
+    media_info->sd_path.bits = 8;
     break;
   case MEDIA_BUS_FMT_SGRBG8_1X8:
     v4l2_fmt = V4L2_PIX_FMT_SGRBG8;
+    media_info->sd_path.bits = 8;
     break;
   case MEDIA_BUS_FMT_SRGGB8_1X8:
     v4l2_fmt = V4L2_PIX_FMT_SRGGB8;
+    media_info->sd_path.bits = 8;
     break;
   case MEDIA_BUS_FMT_Y8_1X8:
     v4l2_fmt = V4L2_PIX_FMT_GREY;
+    media_info->sd_path.bits = 8;
     break;
   /* 10bit raw bayer */
   case MEDIA_BUS_FMT_SBGGR10_1X10:
     v4l2_fmt = V4L2_PIX_FMT_SRGGB10;
+    media_info->sd_path.bits = 10;
     break;
   case MEDIA_BUS_FMT_SGBRG10_1X10:
     v4l2_fmt = V4L2_PIX_FMT_SGBRG10;
+    media_info->sd_path.bits = 10;
     break;
   case MEDIA_BUS_FMT_SGRBG10_1X10:
     v4l2_fmt = V4L2_PIX_FMT_SGRBG10;
+    media_info->sd_path.bits = 10;
     break;
   case MEDIA_BUS_FMT_SRGGB10_1X10:
     v4l2_fmt = V4L2_PIX_FMT_SRGGB10;
+    media_info->sd_path.bits = 10;
     break;
   case MEDIA_BUS_FMT_Y10_1X10:
     v4l2_fmt = V4L2_PIX_FMT_Y10;
+    media_info->sd_path.bits = 10;
     break;
   /* 12bit raw bayer */
   case MEDIA_BUS_FMT_SBGGR12_1X12:
     v4l2_fmt = V4L2_PIX_FMT_SRGGB12;
+    media_info->sd_path.bits = 12;
     break;
   case MEDIA_BUS_FMT_SGBRG12_1X12:
     v4l2_fmt = V4L2_PIX_FMT_SGBRG12;
+    media_info->sd_path.bits = 12;
     break;
   case MEDIA_BUS_FMT_SGRBG12_1X12:
     v4l2_fmt = V4L2_PIX_FMT_SGRBG12;
+    media_info->sd_path.bits = 12;
     break;
   case MEDIA_BUS_FMT_SRGGB12_1X12:
     v4l2_fmt = V4L2_PIX_FMT_SRGGB12;
+    media_info->sd_path.bits = 12;
     break;
   case MEDIA_BUS_FMT_Y12_1X12:
     v4l2_fmt = V4L2_PIX_FMT_Y12;
+    media_info->sd_path.bits = 12;
     break;
   default:
     LOG_ERROR("nonsupport raw bayer formats, please check sensor output fmt\n");

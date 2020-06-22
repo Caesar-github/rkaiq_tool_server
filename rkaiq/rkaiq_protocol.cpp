@@ -24,6 +24,7 @@ typedef struct Sensor_Params_s {
   uint32_t fps;
   uint32_t hts;
   uint32_t vts;
+  uint32_t bits;
 } Sensor_Params_t;
 #pragma pack()
 
@@ -220,10 +221,12 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   vts = vblank + fmt.format.height;
   hts = hblank + fmt.format.width;
   LOG_INFO("get hts: %d  vts: %d\n", hts, vts);
-  cap_info.format = convert_to_v4l2fmt(fmt.format.code);
+  cap_info.format = convert_to_v4l2fmt(&cap_info, fmt.format.code);
   cap_info.sd_path.sen_fmt = fmt.format.code;
   cap_info.sd_path.width = fmt.format.width;
   cap_info.sd_path.height = fmt.format.height;
+
+  LOG_INFO("get sensor code: %d  bits: %d\n", cap_info.sd_path.sen_fmt, cap_info.sd_path.bits);
 
   /* set isp subdev fmt to bayer raw*/
   ret = rkisp_set_ispsd_fmt(&cap_info, fmt.format.width, fmt.format.height,
@@ -253,6 +256,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   sensorParam->fps = fps;
   sensorParam->hts = hts;
   sensorParam->vts = vts;
+  sensorParam->bits = cap_info.sd_path.bits;
 
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++) {
