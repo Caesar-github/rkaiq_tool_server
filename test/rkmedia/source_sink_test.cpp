@@ -18,7 +18,7 @@
 #include "easymedia/stream.h"
 #include "easymedia/utils.h"
 
-std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name,
+static std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name,
                                              const std::string &flow_param,
                                              const std::string &elem_param) {
   auto &&param = easymedia::JoinFlowParam(flow_param, 1, elem_param);
@@ -33,7 +33,7 @@ std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name,
   return ret;
 }
 
-std::string get_video_cap_flow_param(std::string input_path,
+static std::string get_video_cap_flow_param(std::string input_path,
                                      std::string pixel_format, int video_width,
                                      int video_height) {
   std::string flow_param;
@@ -47,7 +47,7 @@ std::string get_video_cap_flow_param(std::string input_path,
   return flow_param;
 }
 
-std::string get_video_cap_stream_param(std::string input_path,
+static std::string get_video_cap_stream_param(std::string input_path,
                                        std::string pixel_format,
                                        int video_width, int video_height) {
   std::string stream_param;
@@ -66,7 +66,7 @@ std::string get_video_cap_stream_param(std::string input_path,
   return stream_param;
 }
 
-std::shared_ptr<easymedia::Flow>
+static std::shared_ptr<easymedia::Flow>
 create_video_capture_flow(std::string input_path, std::string pixel_format,
                           int video_width, int video_height) {
   std::string flow_name;
