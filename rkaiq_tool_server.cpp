@@ -30,7 +30,7 @@ void sigterm_handler(int sig) {
   quit = 1;
 #ifdef ENABLE_RSTP_SERVER
   deinit_rtsp();
-  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #endif
   system(STOP_RKLUNCH_CMD);
   exit(0);
@@ -44,6 +44,16 @@ int main(int argc, char **argv) {
   signal(SIGIO, sigterm_handler);
   signal(SIGPIPE, SIG_IGN);
   get_env("rkaiq_tool_server_log_level", &log_level, 4);
+
+  system(STOP_RKLUNCH_CMD);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+#ifdef ENABLE_RSTP_SERVER
+  system(START_DBSERVER_CMD);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  system(START_ISPSERVER_CMD);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  //init_rtsp(2688, 1520);
+#endif
 
   TCPServer tcp;
   tcp.RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);

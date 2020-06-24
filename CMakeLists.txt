@@ -23,7 +23,7 @@ if(BUILD_SANITIZER_STATIC)
 	link_libraries(libasan.a dl m rt)
 endif()
 
-option(BUILD_RKMEDIA "depend on rkmeda library" OFF)
+option(BUILD_RKMEDIA "depend on rkmeda library" ON)
 if(BUILD_RKMEDIA)
 find_package(PkgConfig QUIET)
 pkg_check_modules(PKG_EASYMEDIA QUIET "libeasymedia")
@@ -59,17 +59,6 @@ set(RKAIQ_TOOL_SERVER_SOURCE
 add_executable(rkaiq_tool_server ${RKAIQ_TOOL_SERVER_SOURCE})
 target_link_libraries(rkaiq_tool_server pthread rkaiq)
 install(TARGETS rkaiq_tool_server RUNTIME DESTINATION bin)
-
-if(BUILD_RKMEDIA)
-set(RKAIQ_RSTP_SERVER_SOURCE
-	${LOGGER_SOURCE}
-	${RKMEDIA_SOURCE}
-	test/rkmedia/rtsp_flow_test.cpp)
-message("RKAIQ_RSTP_SERVER_SOURCE ${RKAIQ_RSTP_SERVER_SOURCE}")
-add_executable(rkaiq_rtsp_server ${RKAIQ_RSTP_SERVER_SOURCE})
-target_link_libraries(rkaiq_rtsp_server pthread)
-install(TARGETS rkaiq_rtsp_server RUNTIME DESTINATION bin)
-endif()
 
 option(BUILD_TEST "build test demo" OFF)
 if(BUILD_TEST)
