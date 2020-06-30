@@ -226,7 +226,8 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   cap_info.sd_path.width = fmt.format.width;
   cap_info.sd_path.height = fmt.format.height;
 
-  LOG_INFO("get sensor code: %d  bits: %d\n", cap_info.sd_path.sen_fmt, cap_info.sd_path.bits);
+  LOG_INFO("get sensor code: %d  bits: %d\n", cap_info.sd_path.sen_fmt,
+           cap_info.sd_path.bits);
 
   /* set isp subdev fmt to bayer raw*/
   ret = rkisp_set_ispsd_fmt(&cap_info, fmt.format.width, fmt.format.height,
@@ -393,8 +394,15 @@ static void DoCaptureCallBack(int socket, int index, void *buffer, int size) {
 static void DoCapture(int socket) {
   LOG_INFO("DoCapture entry!!!!!\n");
   AutoDuration ad;
-  for (int i = 0; i < capture_frames; i++)
-    read_frame(socket, i, &cap_info, DoCaptureCallBack);
+  int skip_frame = 3;
+  for (int i = 0; i < capture_frames + skip_frame; i++) {
+    if (i >= skip_frame) {
+      read_frame(socket, i, &cap_info, DoCaptureCallBack);
+    } else {
+      LOG_INFO("DoCapture skip frame %d ...\n", i);
+      read_frame(socket, i, &cap_info, nullptr);
+    }
+  }
   LOG_INFO("DoCapture %lld ms %lld us\n", ad.Get() / 1000, ad.Get() % 1000);
   LOG_INFO("DoCapture exit!!!!!\n");
 }

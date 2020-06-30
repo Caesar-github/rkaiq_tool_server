@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(rkaiq_tool_server CXX)
+project(rkaiq_tool_server C CXX)
 
 include_directories(
 	${PROJECT_SOURCE_DIR}/
@@ -9,7 +9,9 @@ include_directories(
 	${PROJECT_SOURCE_DIR}/camera/
 	${PROJECT_SOURCE_DIR}/mediactl/)
 
-add_definitions(-std=c++11)
+if(CMAKE_COMPILER_IS_GNUCXX)
+set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
+endif(CMAKE_COMPILER_IS_GNUCXX)
 
 aux_source_directory(${PROJECT_SOURCE_DIR}/logger/ LOGGER_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/netserver NET_SERVER_SOURCE)
@@ -34,7 +36,6 @@ find_path(EASYMEDIA_INCLUDE_DIR
     PATH_SUFFIXES easymedia)
 include_directories(${PROJECT_SOURCE_DIR}/rkmedia/)
 link_libraries(easymedia)
-add_compile_options(-fno-rtti)
 add_definitions(-DENABLE_RSTP_SERVER)
 include_directories(${EASYMEDIA_INCLUDE_DIR}/)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkmedia/ RKMEDIA_SOURCE)
@@ -57,7 +58,7 @@ set(RKAIQ_TOOL_SERVER_SOURCE
 	${MEDIACTL_SOURCE}
 	rkaiq_tool_server.cpp)
 add_executable(rkaiq_tool_server ${RKAIQ_TOOL_SERVER_SOURCE})
-target_link_libraries(rkaiq_tool_server pthread rkaiq)
+target_link_libraries(rkaiq_tool_server pthread)
 install(TARGETS rkaiq_tool_server RUNTIME DESTINATION bin)
 
 option(BUILD_TEST "build test demo" OFF)

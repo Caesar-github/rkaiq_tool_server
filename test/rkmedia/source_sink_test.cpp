@@ -18,9 +18,9 @@
 #include "easymedia/stream.h"
 #include "easymedia/utils.h"
 
-static std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name,
-                                             const std::string &flow_param,
-                                             const std::string &elem_param) {
+static std::shared_ptr<easymedia::Flow>
+create_flow(const std::string &flow_name, const std::string &flow_param,
+            const std::string &elem_param) {
   auto &&param = easymedia::JoinFlowParam(flow_param, 1, elem_param);
   // printf("create_flow :\n");
   // printf("flow_name : %s\n", flow_name.c_str());
@@ -34,8 +34,8 @@ static std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name
 }
 
 static std::string get_video_cap_flow_param(std::string input_path,
-                                     std::string pixel_format, int video_width,
-                                     int video_height) {
+                                            std::string pixel_format,
+                                            int video_width, int video_height) {
   std::string flow_param;
   // Reading yuv from camera
   flow_param = "";
@@ -48,8 +48,9 @@ static std::string get_video_cap_flow_param(std::string input_path,
 }
 
 static std::string get_video_cap_stream_param(std::string input_path,
-                                       std::string pixel_format,
-                                       int video_width, int video_height) {
+                                              std::string pixel_format,
+                                              int video_width,
+                                              int video_height) {
   std::string stream_param;
   stream_param = "";
   PARAM_STRING_APPEND_TO(stream_param, KEY_USE_LIBV4L2, 1);
