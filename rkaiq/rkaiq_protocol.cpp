@@ -312,6 +312,8 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   capture_mode = CapParam->multiframe;
   capture_check_sums = 0;
 
+  SetLHcg(CapParam->lhcg);
+
   struct v4l2_control exp;
   exp.id = V4L2_CID_EXPOSURE;
   exp.value = CapParam->time;
@@ -325,8 +327,6 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   if (device_setctrl(cap_info.dev_fd, &gain) < 0) {
     LOG_ERROR(" set gain result failed to device\n");
   }
-
-  SetLHcg(CapParam->lhcg);
 
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
