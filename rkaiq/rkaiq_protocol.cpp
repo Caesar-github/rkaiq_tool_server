@@ -49,7 +49,8 @@ typedef struct Capture_Reso_s {
 static int capture_status = READY;
 static int capture_mode = CAPTURE_NORMAL;
 static int capture_frames = 0;
-static uint16_t capture_check_sums;
+static int capture_frames_index = 0;
+static uint16_t capture_check_sum;
 static struct capture_info cap_info;
 static uint32_t *averge_frame0;
 static uint16_t *averge_frame1;
@@ -308,9 +309,10 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   cap_info.dev_fd = device_open(cap_info.dev_name);
 
   capture_frames = CapParam->framenumber;
+  capture_frames_index = 0;
   cap_info.frame_count = CapParam->framenumber;
   capture_mode = CapParam->multiframe;
-  capture_check_sums = 0;
+  capture_check_sum = 0;
 
   SetLHcg(CapParam->lhcg);
 
@@ -375,9 +377,9 @@ static void SendRawData(int socket, int index, void *buffer, int size) {
     check_sum += buf[i];
   }
 
-  LOG_INFO("capture raw index %d, check_sum %d capture_check_sums %d\n", index,
-           check_sum, capture_check_sums);
-  capture_check_sums += check_sum;
+  LOG_INFO("capture raw index %d, check_sum %d capture_check_sum %d\n", index,
+           check_sum, capture_check_sum);
+  capture_check_sum = check_sum;
 }
 
 static void DoCaptureCallBack(int socket, int index, void *buffer, int size) {
@@ -395,14 +397,17 @@ static void DoCapture(int socket) {
   LOG_INFO("DoCapture entry!!!!!\n");
   AutoDuration ad;
   int skip_frame = 3;
-  for (int i = 0; i < capture_frames + skip_frame; i++) {
-    if (i >= skip_frame) {
-      read_frame(socket, i, &cap_info, DoCaptureCallBack);
-    } else {
-      LOG_INFO("DoCapture skip frame %d ...\n", i);
+
+  if (capture_frames_index == 0) {
+    for (int i = 0; i < skip_frame; i++) {
       read_frame(socket, i, &cap_info, nullptr);
+      LOG_INFO("DoCapture skip frame %d ...\n", i);
     }
   }
+
+  read_frame(socket, capture_frames_index, &cap_info, DoCaptureCallBack);
+  capture_frames_index++;
+
   LOG_INFO("DoCapture %lld ms %lld us\n", ad.Get() / 1000, ad.Get() % 1000);
   LOG_INFO("DoCapture exit!!!!!\n");
 }
@@ -443,17 +448,17 @@ static void DoMultiFrameCallBack(int socket, int index, void *buffer,
   }
 }
 
-static void DoMultiFrameCapture(int socket) {
-  LOG_INFO("DoMultiFrameCapture entry!!!!!\n");
-  AutoDuration ad;
+static int InitMultiFrame() {
   uint32_t one_frame_size = cap_info.width * cap_info.height * sizeof(uint32_t);
   averge_frame0 = (uint32_t *)malloc(one_frame_size);
   one_frame_size = one_frame_size >> 1;
   averge_frame1 = (uint16_t *)malloc(one_frame_size);
   memset(averge_frame0, 0, one_frame_size);
   memset(averge_frame1, 0, one_frame_size);
-  for (int i = 0; i < capture_frames; i++)
-    read_frame(socket, i, &cap_info, DoMultiFrameCallBack);
+  return 0;
+}
+
+static int deInitMultiFrame() {
   if (averge_frame0 != nullptr) {
     free(averge_frame0);
   }
@@ -462,6 +467,33 @@ static void DoMultiFrameCapture(int socket) {
   }
   averge_frame0 = nullptr;
   averge_frame1 = nullptr;
+  return 0;
+}
+
+static void DoMultiFrameCapture(int socket) {
+  LOG_INFO("DoMultiFrameCapture entry!!!!!\n");
+  AutoDuration ad;
+
+  int skip_frame = 3;
+  if (capture_frames_index == 0) {
+    for (int i = 0; i < skip_frame; i++) {
+      read_frame(socket, i, &cap_info, nullptr);
+      LOG_INFO("DoCapture skip frame %d ...\n", i);
+    }
+  }
+
+  if (capture_frames_index == 0) {
+    for (int i = 0; i < (capture_frames >> 1); i++) {
+      read_frame(socket, i, &cap_info, DoMultiFrameCallBack);
+      capture_frames_index++;
+    }
+  } else if (capture_frames_index == (capture_frames >> 1)) {
+    for (int i = (capture_frames >> 1); i < capture_frames; i++) {
+      read_frame(socket, i, &cap_info, DoMultiFrameCallBack);
+      capture_frames_index++;
+    }
+  }
+
   LOG_INFO("DoMultiFrameCapture %lld ms %lld us\n", ad.Get() / 1000,
            ad.Get() % 1000);
   LOG_INFO("DoMultiFrameCapture exit!!!!!\n");
@@ -480,19 +512,46 @@ static void DumpCapinfo() {
   LOG_DEBUG("    frame_count ---------- %d\n", cap_info.frame_count);
 }
 
-static void RawCaputure(Common_Cmd_t *cmd, int socket) {
-  LOG_INFO("Raw_Capture enter!!!!!!!\n");
+static int StartCapture() {
+  LOG_INFO(" enter\n");
   init_device(&cap_info);
   DumpCapinfo();
   start_capturing(&cap_info);
+  if (capture_mode != CAPTURE_NORMAL)
+    InitMultiFrame();
+  LOG_INFO(" exit\n");
+  return 0;
+}
+
+static int StopCapture() {
+  LOG_INFO(" enter\n");
+  stop_capturing(&cap_info);
+  uninit_device(&cap_info);
+  RawCaptureDeinit();
+  if (capture_mode != CAPTURE_NORMAL)
+    deInitMultiFrame();
+  LOG_INFO(" exit\n");
+  return 0;
+}
+
+static void RawCaputure(Common_Cmd_t *cmd, int socket) {
+  LOG_INFO(" enter\n");
+  LOG_INFO("capture_frames %d capture_frames_index %d\n", capture_frames,
+           capture_frames_index);
+  if (capture_frames_index == 0) {
+    StartCapture();
+  }
+
   if (capture_mode == CAPTURE_NORMAL)
     DoCapture(socket);
   else
     DoMultiFrameCapture(socket);
 
-  stop_capturing(&cap_info);
-  uninit_device(&cap_info);
-  LOG_INFO("Raw_Capture exit!!!!!!!\n");
+  if (capture_frames_index == capture_frames) {
+    StopCapture();
+  }
+
+  LOG_INFO(" exit\n");
 }
 
 static void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
@@ -504,12 +563,12 @@ static void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x04;
-  LOG_INFO("capture_check_sums %d, recieve %d\n", capture_check_sums,
-           *checksum);
-  if (capture_check_sums == *checksum) {
+  LOG_INFO("capture_check_sum %d, recieve %d\n", capture_check_sum, *checksum);
+  if (capture_check_sum == *checksum) {
     cmd->dat[1] = RES_SUCCESS;
   } else {
     cmd->dat[1] = RES_FAILED;
+    StopCapture();
   }
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
@@ -672,7 +731,6 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
       SendRawDataResult(&send_cmd, common_cmd);
       memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
       ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      RawCaptureDeinit();
       LOG_INFO("ProcID RAW_CAPTURE_COMPARE_CHECKSUM out\n");
       break;
     default:
