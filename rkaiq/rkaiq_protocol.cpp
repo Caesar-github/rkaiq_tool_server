@@ -311,6 +311,7 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   capture_frames = CapParam->framenumber;
   capture_frames_index = 0;
   cap_info.frame_count = CapParam->framenumber;
+  cap_info.lhcg = CapParam->lhcg;
   capture_mode = CapParam->multiframe;
   capture_check_sum = 0;
 
@@ -396,10 +397,12 @@ static void DoCaptureCallBack(int socket, int index, void *buffer, int size) {
 static void DoCapture(int socket) {
   LOG_INFO("DoCapture entry!!!!!\n");
   AutoDuration ad;
-  int skip_frame = 3;
+  int skip_frame = 5;
 
   if (capture_frames_index == 0) {
     for (int i = 0; i < skip_frame; i++) {
+      if (i == 0)
+        SetLHcg(cap_info.lhcg);
       read_frame(socket, i, &cap_info, nullptr);
       LOG_INFO("DoCapture skip frame %d ...\n", i);
     }
@@ -474,9 +477,11 @@ static void DoMultiFrameCapture(int socket) {
   LOG_INFO("DoMultiFrameCapture entry!!!!!\n");
   AutoDuration ad;
 
-  int skip_frame = 3;
+  int skip_frame = 5;
   if (capture_frames_index == 0) {
     for (int i = 0; i < skip_frame; i++) {
+      if (i == 0)
+        SetLHcg(cap_info.lhcg);
       read_frame(socket, i, &cap_info, nullptr);
       LOG_INFO("DoCapture skip frame %d ...\n", i);
     }

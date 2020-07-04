@@ -73,6 +73,7 @@ struct capture_info {
   __u32 format;
   int width;
   int height;
+  int lhcg;
   enum v4l2_buf_type capture_buf_type;
   int frame_count;
   char out_file[255];
