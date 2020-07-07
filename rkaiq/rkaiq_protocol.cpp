@@ -237,6 +237,8 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   if (ret) {
     LOG_ERROR("subdev choose the best fit fmt: %dx%d, 0x%08x\n",
               fmt.format.width, fmt.format.height, fmt.format.code);
+  sensorParam->status = RES_FAILED;
+  goto end;
   }
 
   memset(&finterval, 0, sizeof(finterval));
@@ -315,8 +317,6 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   capture_mode = CapParam->multiframe;
   capture_check_sum = 0;
 
-  SetLHcg(CapParam->lhcg);
-
   struct v4l2_control exp;
   exp.id = V4L2_CID_EXPOSURE;
   exp.value = CapParam->time;
@@ -326,9 +326,11 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
 
   if (device_setctrl(cap_info.dev_fd, &exp) < 0) {
     LOG_ERROR(" set exposure result failed to device\n");
+    ret_status = RES_FAILED;
   }
   if (device_setctrl(cap_info.dev_fd, &gain) < 0) {
     LOG_ERROR(" set gain result failed to device\n");
+    ret_status = RES_FAILED;
   }
 
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
