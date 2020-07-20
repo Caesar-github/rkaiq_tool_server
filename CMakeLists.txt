@@ -25,6 +25,22 @@ if(BUILD_SANITIZER_STATIC)
 	link_libraries(libasan.a dl m rt)
 endif()
 
+option(BUILD_RKAIQ_API "depend on rkaiq api library" ON)
+if(BUILD_RKAIQ_API)
+aux_source_directory(${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_api RKAIQ_SOURCE)
+find_path(RKAIQ_API_INCLUDE_DIR
+    NAMES rk_aiq_user_api_imgproc.h
+    HINTS ${CMAKE_FIND_ROOT_PATH}
+    PATH_SUFFIXES rkaiq/uAPI)
+include_directories(${RKAIQ_API_INCLUDE_DIR}/)
+include_directories(${RKAIQ_API_INCLUDE_DIR}/../xcore)
+include_directories(${RKAIQ_API_INCLUDE_DIR}/../common)
+include_directories(${RKAIQ_API_INCLUDE_DIR}/../algos)
+include_directories(${RKAIQ_API_INCLUDE_DIR}/../iq_parser)
+link_libraries(rkaiq)
+add_definitions(-DENABLE_RKAIQ_UAPI)
+endif()
+
 option(BUILD_RKMEDIA "depend on rkmeda library" ON)
 if(BUILD_RKMEDIA)
 find_package(PkgConfig QUIET)
