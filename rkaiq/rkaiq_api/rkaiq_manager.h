@@ -1,9 +1,9 @@
 #ifndef _TOOL_RKAIQ_API_MANAGER_H_
 #define _TOOL_RKAIQ_API_MANAGER_H_
 
-#include "rkaiq_cmdid.h"
 #include "rkaiq_ae.h"
 #include "rkaiq_anr.h"
+#include "rkaiq_cmdid.h"
 #include "rkaiq_engine.h"
 #include "rkaiq_imgproc.h"
 #include <memory>

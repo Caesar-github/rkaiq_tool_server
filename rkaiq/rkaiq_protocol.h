@@ -12,6 +12,7 @@
 #include "rtsp_server.h"
 #endif
 #include "logger/log.h"
+#include "rkaiq_cmdid.h"
 
 typedef enum { PC_TO_DEVICE = 0x00, DEVICE_TO_PC } cmdType;
 
@@ -19,7 +20,7 @@ typedef enum {
   CHECK_DEVICE_STATUS = 0x01,
   RAW_CAPTURE,
   VIDEO_APP_STATUS_REQ,
-  VIDEO_APP_STATUS_SET
+  VIDEO_APP_STATUS_SET,
 } cmdID;
 
 typedef enum {
@@ -47,11 +48,67 @@ typedef enum {
 
 typedef enum { RAW_CAP = 0x00, AVALIABLE } runStaus;
 
+#pragma pack(1)
+typedef struct Common_Cmd_s {
+  uint8_t RKID[8];
+  uint16_t cmdType;
+  uint16_t cmdID;
+  uint16_t datLen;
+  uint8_t dat[48]; // defined by command
+  uint16_t checkSum;
+} Common_Cmd_t;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct Common_OL_Cmd_s {
+  uint8_t RKID[8];
+  uint16_t cmdType;
+  uint16_t cmdID;
+  uint8_t version[8];
+  uint16_t datLen;
+  uint8_t dat[4];
+  uint16_t checkSum;
+} Common_OL_Cmd_t;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct Sensor_Params_s {
+  uint8_t status;
+  uint32_t fps;
+  uint32_t hts;
+  uint32_t vts;
+  uint32_t bits;
+} Sensor_Params_t;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct Capture_Params_s {
+  uint16_t gain;
+  uint16_t time;
+  uint8_t lhcg;
+  uint8_t bits;
+  uint8_t framenumber;
+  uint8_t multiframe;
+} Capture_Params_t;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct Capture_Reso_s {
+  uint16_t width;
+  uint16_t height;
+} Capture_Reso_t;
+#pragma pack()
+
+#define RKAIQ_TOOL_VERSION "v0.0.1"
+
 #define VIDEO_RAW0 "/dev/video0"
 #define SAVE_RAW0_PATH "/data/output.raw"
 
 #define TAG_PC_TO_DEVICE "RKISP-AK"
 #define TAG_DEVICE_TO_PC "RKISP-AS"
+
+#define TAG_OL_PC_TO_DEVICE "AIQ-REQ"
+#define TAG_OL_DEVICE_TO_PC "AIQ-ANS"
 
 #define STOP_RKLUNCH_CMD "sh /oem/RkLunch-stop.sh"
 
@@ -65,6 +122,8 @@ public:
   RKAiqProtocol() = default;
   virtual ~RKAiqProtocol() = default;
   static void HandlerTCPMessage(int sockfd, char *buffer, int size);
+  static void HandlerOnLineMessage(int sockfd, char *buffer, int size);
+  static void HandlerRawCapMessage(int sockfd, char *buffer, int size);
 };
 
 #endif

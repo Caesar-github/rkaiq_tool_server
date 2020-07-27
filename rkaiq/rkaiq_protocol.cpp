@@ -7,45 +7,6 @@
 #endif
 #define LOG_TAG "rkaiq_protocol.cpp"
 
-#pragma pack(1)
-typedef struct Common_Cmd_s {
-  uint8_t RKID[8];
-  uint16_t cmdType;
-  uint16_t cmdID;
-  uint16_t datLen;
-  uint8_t dat[48]; // defined by command
-  uint16_t checkSum;
-} Common_Cmd_t;
-#pragma pack()
-
-#pragma pack(1)
-typedef struct Sensor_Params_s {
-  uint8_t status;
-  uint32_t fps;
-  uint32_t hts;
-  uint32_t vts;
-  uint32_t bits;
-} Sensor_Params_t;
-#pragma pack()
-
-#pragma pack(1)
-typedef struct Capture_Params_s {
-  uint32_t gain;
-  uint32_t time;
-  uint8_t lhcg;
-  uint8_t bits;
-  uint8_t framenumber;
-  uint8_t multiframe;
-} Capture_Params_t;
-#pragma pack()
-
-#pragma pack(1)
-typedef struct Capture_Reso_s {
-  uint16_t width;
-  uint16_t height;
-} Capture_Reso_t;
-#pragma pack()
-
 static int capture_status = READY;
 static int capture_mode = CAPTURE_NORMAL;
 static int capture_frames = 0;
@@ -668,11 +629,23 @@ static void ReqAppStatus(Common_Cmd_t *cmd) {
 
 void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
   Common_Cmd_t *common_cmd = (Common_Cmd_t *)buffer;
+  LOG_INFO("HandlerTCPMessage:\n");
+  LOG_INFO("HandlerTCPMessage Common_Cmd_t: 0x%x\n", sizeof(Common_Cmd_t));
+  LOG_INFO("HandlerTCPMessage RKID: %s\n", (char *)common_cmd->RKID);
+  if (strcmp((char *)common_cmd->RKID, TAG_PC_TO_DEVICE) == 0) {
+    HandlerRawCapMessage(sockfd, buffer, size);
+  } else if (strcmp((char *)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
+    HandlerOnLineMessage(sockfd, buffer, size);
+  }
+}
+
+void RKAiqProtocol::HandlerRawCapMessage(int sockfd, char *buffer, int size) {
+  Common_Cmd_t *common_cmd = (Common_Cmd_t *)buffer;
   Common_Cmd_t send_cmd;
   char send_data[MAXPACKETSIZE];
   int ret_val, ret;
 
-  LOG_INFO("HandlerTCPMessage:\n");
+  LOG_INFO("HandlerRawCapMessage:\n");
 
   for (int i = 0; i < common_cmd->datLen; i++) {
     LOG_INFO("DATA[%d]: 0x%x\n", i, common_cmd->dat[i]);
@@ -787,6 +760,133 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
     LOG_INFO("VIDEO_APP_STATUS_SET end\n\n");
     break;
   default:
+    break;
+  }
+}
+
+static void DoAnswer(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id, int ret_status) {
+  char send_data[MAXPACKETSIZE];
+
+  strncpy((char *)cmd->RKID, TAG_OL_DEVICE_TO_PC, sizeof(cmd->RKID));
+  cmd->cmdType = DEVICE_TO_PC;
+  cmd->cmdID = cmd_id;
+  strncpy((char *)cmd->version, RKAIQ_TOOL_VERSION, sizeof(cmd->version));
+  cmd->datLen = 4;
+  memset(cmd->dat, 0, sizeof(cmd->dat));
+  cmd->dat[0] = 0x00;
+  cmd->dat[1] = ret_status;
+  cmd->checkSum = 0;
+  for (int i = 0; i < cmd->datLen; i++)
+    cmd->checkSum += cmd->dat[i];
+
+  memcpy(send_data, cmd, sizeof(Common_OL_Cmd_s));
+  send(sockfd, send_data, sizeof(Common_OL_Cmd_s), 0);
+}
+
+static int DoCheckSum(int sockfd, int check_sum) {
+  char recv_data[MAXPACKETSIZE];
+  int recv_size = 0;
+
+  //
+  usleep(1000*1000);
+
+  struct timeval interval = {3, 0};
+  setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval, sizeof(struct timeval));
+  recv_size = recv(sockfd, recv_data, sizeof(Common_OL_Cmd_s), 0);
+  LOG_INFO("recv_size: 0x%x expect 0x%x\n", recv_size, sizeof(Common_OL_Cmd_s));
+
+  Common_OL_Cmd_t *cmd = (Common_OL_Cmd_t *)recv_data;
+  LOG_INFO("check_sum local: 0x%x pc: 0x%x\n", check_sum, cmd->checkSum);
+
+  if (check_sum != cmd->checkSum) {
+    LOG_INFO("check_sum fail!\n");
+    return -1;
+  }
+
+  return 0;
+}
+
+static void Set1(int sockfd, Common_OL_Cmd_t *cmd) {
+  int recv_size = 0;
+  int param_size = *(int *)cmd->dat;
+  int remain_size = param_size;
+  LOG_INFO("ParamSize: 0x%x\n", param_size);
+
+  char *param = (char *)malloc(param_size);
+  while (remain_size > 0) {
+    int offset = param_size - remain_size;
+    recv_size = recv(sockfd, param + offset, remain_size, 0);
+    remain_size = param_size - recv_size;
+  }
+
+  // TODO Sycn Setting
+  LOG_INFO("TODO Sycn Setting, CmdId: 0x%x\n", cmd->cmdID);
+
+  free(param);
+}
+
+static int Get1(int sockfd, Common_OL_Cmd_t *cmd) {
+  int ret = 0;
+  int send_size = 0;
+  int param_size = *(int *)cmd->dat;
+  int remain_size = param_size;
+  LOG_INFO("ParamSize: 0x%x\n", param_size);
+
+  char *param = (char *)malloc(param_size);
+  // TODO Get Setting
+  LOG_INFO("TODO Get Setting, CmdId: 0x%x\n", cmd->cmdID);
+  memset(param, 0xF0, param_size);
+
+  while (remain_size > 0) {
+    int offset = param_size - remain_size;
+    send_size = send(sockfd, param + offset, remain_size, 0);
+    remain_size = param_size - send_size;
+  }
+
+ int check_sum = 0;
+  for (int i = 0; i < param_size; i++)
+    check_sum += param[i];
+  ret = DoCheckSum(sockfd, check_sum);
+
+  free(param);
+  return ret;
+}
+
+void RKAiqProtocol::HandlerOnLineMessage(int sockfd, char *buffer, int size) {
+  Common_OL_Cmd_t *common_cmd = (Common_OL_Cmd_t *)buffer;
+  Common_OL_Cmd_t send_cmd;
+  int ret_val, ret;
+
+  LOG_INFO("HandlerOnLineMessage:\n");
+  LOG_INFO("DATA datLen: 0x%x\n", common_cmd->datLen);
+
+  if (strcmp((char *)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
+    LOG_INFO("RKID: %s\n", common_cmd->RKID);
+  } else {
+    LOG_INFO("RKID: Unknow\n");
+    return;
+  }
+
+  LOG_INFO("cmdID: 0x%x\n", common_cmd->cmdID);
+
+  switch (common_cmd->cmdID) {
+  case ENUM_ID_GET_STATUS:
+    DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
+    break;
+  case ENUM_ID_AE_SETEXPSWATTR:
+    DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
+    Set1(sockfd, common_cmd);
+    DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
+    break;
+  case ENUM_ID_AE_GETEXPSWATTR:
+    ret = Get1(sockfd, common_cmd);
+    if (ret == 0)
+      DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
+    else
+      DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_FAILED);
+    break;
+  default:
+    LOG_INFO("cmdID: Unknow\n");
     break;
   }
 }
