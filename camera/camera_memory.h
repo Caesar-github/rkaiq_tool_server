@@ -36,6 +36,11 @@ enum io_method {
   IO_METHOD_USERPTR,
 };
 
+enum sensor_link {
+  link_to_vicap,
+  link_to_isp,
+};
+
 struct buffer {
   void *start;
   size_t length;
@@ -47,6 +52,13 @@ struct isp_t {
   char media_dev_path[DEV_PATH_LEN];
   char isp_main_path[DEV_PATH_LEN];
   char isp_sd_path[DEV_PATH_LEN];
+  int width;
+  int height;
+  __u32 sd_fmt;
+};
+
+struct vicap_t {
+  char cif_video_path[DEV_PATH_LEN];
   int width;
   int height;
   __u32 sd_fmt;
@@ -68,12 +80,14 @@ struct capture_info {
   enum io_method io;
   struct buffer *buffers;
   struct isp_t vd_path;
+  struct vicap_t cif_path;
   struct sensor_t sd_path;
   unsigned int n_buffers;
   __u32 format;
   int width;
   int height;
   int lhcg;
+  enum sensor_link link;
   enum v4l2_buf_type capture_buf_type;
   int frame_count;
   char out_file[255];

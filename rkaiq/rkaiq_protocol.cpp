@@ -30,8 +30,8 @@ typedef struct Sensor_Params_s {
 
 #pragma pack(1)
 typedef struct Capture_Params_s {
-  uint16_t gain;
-  uint16_t time;
+  uint32_t gain;
+  uint32_t time;
   uint8_t lhcg;
   uint8_t bits;
   uint8_t framenumber;
@@ -148,12 +148,20 @@ static void RawCaptureinit(Common_Cmd_t *cmd) {
   char *buf = (char *)(cmd->dat);
   Capture_Reso_t *Reso = (Capture_Reso_t *)(cmd->dat + 1);
   int ret = initCamHwInfos(&cap_info);
-  ret = setupLink(&cap_info, true);
-  if (ret < 0)
-    LOG_INFO(">>>>>>>>>setup link to isp output raw failed\n");
+  if (cap_info.link == link_to_isp) {
+    ret = setupLink(&cap_info, true);
+
+    if (ret < 0)
+      LOG_INFO(">>>>>>>>>setup link to isp output raw failed\n");
+  }
   cap_info.dev_fd = -1;
   cap_info.subdev_fd = -1;
-  cap_info.dev_name = cap_info.vd_path.isp_main_path;
+  if (cap_info.link == link_to_isp) {
+    cap_info.dev_name = cap_info.vd_path.isp_main_path;
+  } else {
+    cap_info.dev_name = cap_info.cif_path.cif_video_path;
+  }
+
   cap_info.io = IO_METHOD_MMAP;
   cap_info.height = Reso->height;
   cap_info.width = Reso->width;
@@ -231,14 +239,18 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
            cap_info.sd_path.bits);
 
   /* set isp subdev fmt to bayer raw*/
-  ret = rkisp_set_ispsd_fmt(&cap_info, fmt.format.width, fmt.format.height,
-                            fmt.format.code, cap_info.width, cap_info.height,
-                            fmt.format.code);
-  if (ret) {
-    LOG_ERROR("subdev choose the best fit fmt: %dx%d, 0x%08x\n",
-              fmt.format.width, fmt.format.height, fmt.format.code);
-  sensorParam->status = RES_FAILED;
-  goto end;
+  if (cap_info.link == link_to_isp) {
+    ret = rkisp_set_ispsd_fmt(&cap_info, fmt.format.width, fmt.format.height,
+                              fmt.format.code, cap_info.width, cap_info.height,
+                              fmt.format.code);
+    LOG_INFO("rkisp_set_ispsd_fmt: %d \n", ret);
+
+    if (ret) {
+      LOG_ERROR("subdev choose the best fit fmt: %dx%d, 0x%08x\n",
+                fmt.format.width, fmt.format.height, fmt.format.code);
+      sensorParam->status = RES_FAILED;
+      goto end;
+    }
   }
 
   memset(&finterval, 0, sizeof(finterval));
@@ -403,7 +415,7 @@ static void DoCapture(int socket) {
 
   if (capture_frames_index == 0) {
     for (int i = 0; i < skip_frame; i++) {
-      if (i == 0)
+      if (i == 0 && cap_info.lhcg != 2)
         SetLHcg(cap_info.lhcg);
       read_frame(socket, i, &cap_info, nullptr);
       LOG_INFO("DoCapture skip frame %d ...\n", i);
@@ -482,7 +494,7 @@ static void DoMultiFrameCapture(int socket) {
   int skip_frame = 5;
   if (capture_frames_index == 0) {
     for (int i = 0; i < skip_frame; i++) {
-      if (i == 0)
+      if (i == 0 && cap_info.lhcg != 2)
         SetLHcg(cap_info.lhcg);
       read_frame(socket, i, &cap_info, nullptr);
       LOG_INFO("DoCapture skip frame %d ...\n", i);
@@ -601,7 +613,8 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
     }
   } else if (*AppStatus == VIDEO_APP_ON) {
     LOG_INFO("run app start\n");
-    setupLink(&cap_info, false);
+    if (cap_info.link == link_to_isp)
+      setupLink(&cap_info, false);
     /* set isp subdev fmt to bayer raw*/
     if (rkisp_set_ispsd_fmt(&cap_info, cap_info.sd_path.width,
                             cap_info.sd_path.height, cap_info.sd_path.sen_fmt,

@@ -80,23 +80,25 @@ __u32 convert_to_v4l2fmt(struct capture_info *media_info, int code) {
 }
 
 int get_isp_subdevs(struct media_device *device, const char *devpath,
-                    isp_t *isp_info) {
+                    struct capture_info *media_info) {
   media_entity *entity = NULL;
   const char *entity_name = NULL;
+  uint32_t nents, j = 0;
+  const struct media_entity_desc *entity_info = NULL;
 
-  if (!device || !isp_info || !devpath)
+  if (!device || !media_info || !devpath)
     return -1;
 
-  strncpy(isp_info->media_dev_path, (char *)devpath,
-          sizeof(isp_info->media_dev_path));
-  LOG_INFO("get isp subdev: %s \n", isp_info->media_dev_path);
+  strncpy(media_info->vd_path.media_dev_path, (char *)devpath,
+          sizeof(media_info->vd_path.media_dev_path));
+  LOG_INFO("get isp subdev: %s \n", media_info->vd_path.media_dev_path);
   entity = media_get_entity_by_name(device, "rkisp_mainpath",
                                     strlen("rkisp_mainpath"));
   if (entity) {
     entity_name = media_entity_get_devname(entity);
     if (entity_name) {
-      strncpy(isp_info->isp_main_path, (char *)entity_name,
-              sizeof(isp_info->isp_main_path));
+      strncpy(media_info->vd_path.isp_main_path, (char *)entity_name,
+              sizeof(media_info->vd_path.isp_main_path));
     }
   }
   entity = media_get_entity_by_name(device, "rkisp-isp-subdev",
@@ -104,21 +106,11 @@ int get_isp_subdevs(struct media_device *device, const char *devpath,
   if (entity) {
     entity_name = media_entity_get_devname(entity);
     if (entity_name) {
-      strncpy(isp_info->isp_sd_path, (char *)entity_name,
-              sizeof(isp_info->isp_sd_path));
-      LOG_INFO("isp subdev path: %s\n", isp_info->isp_sd_path);
+      strncpy(media_info->vd_path.isp_sd_path, (char *)entity_name,
+              sizeof(media_info->vd_path.isp_sd_path));
+      LOG_INFO("isp subdev path: %s\n", media_info->vd_path.isp_sd_path);
     }
   }
-  return 0;
-}
-
-int get_sensor_info(struct media_device *device, const char *devpath,
-                    sensor_t *cam_info) {
-  uint32_t nents, j = 0;
-  const struct media_entity_desc *entity_info = NULL;
-  struct media_entity *entity = NULL;
-
-  device = media_device_new(devpath);
 
   /* Enumerate entities, pads and links. */
   media_device_enumerate(device);
@@ -127,14 +119,61 @@ int get_sensor_info(struct media_device *device, const char *devpath,
     entity = media_get_entity(device, j);
     entity_info = media_entity_get_info(entity);
     if ((NULL != entity_info) &&
-        (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR))
-      strncpy(cam_info->device_name, (char *)media_entity_get_devname(entity),
-              sizeof(cam_info->device_name));
-    strncpy(cam_info->sensor_name, entity_info->name,
-            sizeof(cam_info->sensor_name));
-    LOG_INFO("sensor subdev path: %s\n", cam_info->device_name);
+        (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR)) {
+      strncpy(media_info->sd_path.device_name,
+              (char *)media_entity_get_devname(entity),
+              sizeof(media_info->sd_path.device_name));
+      media_info->link = link_to_isp;
+      LOG_INFO("get vicap subdev: sensor link to %d \n", media_info->link);
+      strncpy(media_info->sd_path.sensor_name, entity_info->name,
+              sizeof(media_info->sd_path.sensor_name));
+      LOG_INFO("sensor subdev path: %s\n", media_info->sd_path.device_name);
+    }
   }
-  media_device_unref(device);
+
+  return 0;
+}
+
+int get_vicap_subdevs(struct media_device *device, const char *devpath,
+                      struct capture_info *media_info) {
+  media_entity *entity = NULL;
+  const char *entity_name = NULL;
+  uint32_t nents, j = 0;
+  const struct media_entity_desc *entity_info = NULL;
+
+  if (!device || !media_info || !devpath)
+    return -1;
+
+  entity = media_get_entity_by_name(device, "stream_cif_mipi_id0",
+                                    strlen("stream_cif_mipi_id0"));
+  if (entity) {
+    entity_name = media_entity_get_devname(entity);
+    if (entity_name) {
+      strncpy(media_info->cif_path.cif_video_path, (char *)entity_name,
+              sizeof(media_info->cif_path.cif_video_path));
+      LOG_INFO("get vicap subdev: %s \n", media_info->cif_path.cif_video_path);
+    }
+  }
+
+  /* Enumerate entities, pads and links. */
+  media_device_enumerate(device);
+  nents = media_get_entities_count(device);
+  for (j = 0; j < nents; ++j) {
+    entity = media_get_entity(device, j);
+    entity_info = media_entity_get_info(entity);
+    if ((NULL != entity_info) &&
+        (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR)) {
+      strncpy(media_info->sd_path.device_name,
+              (char *)media_entity_get_devname(entity),
+              sizeof(media_info->sd_path.device_name));
+      media_info->link = link_to_vicap;
+      LOG_INFO("get vicap subdev: sensor link to %d \n", media_info->link);
+      strncpy(media_info->sd_path.sensor_name, entity_info->name,
+              sizeof(media_info->sd_path.sensor_name));
+      LOG_INFO("sensor subdev path: %s\n", media_info->sd_path.device_name);
+    }
+  }
+
   return 0;
 }
 
@@ -226,8 +265,13 @@ int rkisp_set_ispsd_fmt(struct capture_info *media_info, int in_w, int in_h,
                         int in_code, int out_w, int out_h, int out_code) {
   const char *ispsd;
   int ret;
-
-  ispsd = media_info->vd_path.isp_sd_path;
+  if (media_info->link == link_to_isp) {
+    ispsd = media_info->vd_path.isp_sd_path;
+    LOG_INFO("ispsd: isp subdev path%s\n", media_info->vd_path.isp_sd_path);
+  } else if (media_info->link == link_to_vicap) {
+    ispsd = media_info->cif_path.cif_video_path;
+    LOG_INFO("ispsd: isp subdev path%s\n", media_info->cif_path.cif_video_path);
+  }
   // TODO: check source and sink pad
   ret = rkisp_sd_set_fmt(ispsd, 0, &in_w, &in_h, in_code);
   ret |= rkisp_sd_set_fmt(ispsd, 2, &out_w, &out_h, out_code);
@@ -313,6 +357,7 @@ int initCamHwInfos(struct capture_info *media_info) {
   uint32_t nents, j = 0, i = 0;
   const struct media_entity_desc *entity_info = NULL;
   struct media_entity *entity = NULL;
+  int ret = 0;
 
   LOG_INFO("init start!!!!!!\n");
   while (i < MAX_MEDIA_INDEX) {
@@ -327,10 +372,11 @@ int initCamHwInfos(struct capture_info *media_info) {
     media_device_enumerate(device);
 
     if (strcmp(device->info.model, "rkisp") == 0) {
-      int ret = get_isp_subdevs(device, sys_path, &media_info->vd_path);
+      ret = get_isp_subdevs(device, sys_path, media_info);
       if (ret)
         return ret;
-      ret = get_sensor_info(device, sys_path, &media_info->sd_path);
+    } else if (strcmp(device->info.model, "rkcif") == 0) {
+      ret = get_vicap_subdevs(device, sys_path, media_info);
       if (ret)
         return ret;
     } else {
