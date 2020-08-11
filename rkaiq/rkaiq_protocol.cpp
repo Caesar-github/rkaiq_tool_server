@@ -31,7 +31,7 @@ void RunCmd(const char *cmd, char *result) {
 static int SetLHcg(int mode) {
   char cmd[1024] = {0};
   char result[1024] = {0};
-  RunCmd("media-ctl -p | grep sensor -B 1 -i | "
+  RunCmd("media-ctl -p -d /dev/media1 | grep sensor -B 1 -i | "
          "head -1 | cut -d ' ' -f 5",
          result);
   snprintf(cmd, sizeof(cmd), "eval find "
@@ -50,7 +50,7 @@ static int ProcessExists(const char *process_name) {
   FILE *fp;
   char cmd[1024] = {0};
   char buf[1024] = {0};
-  snprintf(cmd, sizeof(cmd), "ps | grep %s | grep -v grep", process_name);
+  snprintf(cmd, sizeof(cmd), "ps -ef | grep %s | grep -v grep", process_name);
   fp = popen(cmd, "r");
   if (!fp) {
     LOG_INFO("popen ps | grep %s fail\n", process_name);
@@ -75,6 +75,19 @@ int StopProcess(const char *process, const char *str) {
     sleep(1);
     count++;
     if (count > 3)
+      return -1;
+  }
+  return 0;
+}
+
+int WaitProcessExit(const char *process, int sec) {
+  int count = 0;
+  LOG_INFO("WaitProcessExit %s... \n", process);
+  while (ProcessExists(process) > 0) {
+    LOG_INFO("WaitProcessExit %s... \n", process);
+    sleep(1);
+    count++;
+    if (count > sec)
       return -1;
   }
   return 0;
@@ -562,10 +575,6 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
   LOG_INFO("recv_cmd->dat[0] = %p>>\n", AppStatus);
   if (*AppStatus == VIDEO_APP_OFF) {
     LOG_INFO("kill app start\n");
-#ifdef ENABLE_RSTP_SERVER
-    deinit_rtsp();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-#endif
     int ret = system(STOP_RKLUNCH_CMD);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     if (ret < 0) {
@@ -582,17 +591,6 @@ static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
                             cap_info.width, cap_info.height,
                             MEDIA_BUS_FMT_YUYV8_2X8) < 0)
       LOG_ERROR("set isp subdev fmt to YUYV8_2X8 FAILED\n");
-#ifdef ENABLE_RSTP_SERVER
-    system(START_DBSERVER_CMD);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    system(START_ISPSERVER_CMD);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    int ret = init_rtsp(cap_info.width, cap_info.height);
-    if (ret < 0) {
-      LOG_ERROR("run app failed\n");
-      ret_status = RES_FAILED;
-    }
-#endif
   }
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
@@ -764,7 +762,10 @@ void RKAiqProtocol::HandlerRawCapMessage(int sockfd, char *buffer, int size) {
   }
 }
 
-static void DoAnswer(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id, int ret_status) {
+std::shared_ptr<RKAiqToolManager> RKAiqProtocol::rkaiq_manager_ = nullptr;
+
+static void DoAnswer(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id,
+                     int ret_status) {
   char send_data[MAXPACKETSIZE];
 
   strncpy((char *)cmd->RKID, TAG_OL_DEVICE_TO_PC, sizeof(cmd->RKID));
@@ -773,8 +774,7 @@ static void DoAnswer(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id, int ret_statu
   strncpy((char *)cmd->version, RKAIQ_TOOL_VERSION, sizeof(cmd->version));
   cmd->datLen = 4;
   memset(cmd->dat, 0, sizeof(cmd->dat));
-  cmd->dat[0] = 0x00;
-  cmd->dat[1] = ret_status;
+  cmd->dat[0] = ret_status;
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
@@ -787,11 +787,9 @@ static int DoCheckSum(int sockfd, int check_sum) {
   char recv_data[MAXPACKETSIZE];
   int recv_size = 0;
 
-  //
-  usleep(1000*1000);
-
   struct timeval interval = {3, 0};
-  setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval, sizeof(struct timeval));
+  setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval,
+             sizeof(struct timeval));
   recv_size = recv(sockfd, recv_data, sizeof(Common_OL_Cmd_s), 0);
   LOG_INFO("recv_size: 0x%x expect 0x%x\n", recv_size, sizeof(Common_OL_Cmd_s));
 
@@ -806,7 +804,7 @@ static int DoCheckSum(int sockfd, int check_sum) {
   return 0;
 }
 
-static void Set1(int sockfd, Common_OL_Cmd_t *cmd) {
+static void OnLineSet(int sockfd, Common_OL_Cmd_t *cmd) {
   int recv_size = 0;
   int param_size = *(int *)cmd->dat;
   int remain_size = param_size;
@@ -819,13 +817,14 @@ static void Set1(int sockfd, Common_OL_Cmd_t *cmd) {
     remain_size = param_size - recv_size;
   }
 
-  // TODO Sycn Setting
-  LOG_INFO("TODO Sycn Setting, CmdId: 0x%x\n", cmd->cmdID);
+  LOG_INFO("DO Sycn Setting, CmdId: 0x%x\n", cmd->cmdID);
+  if (RKAiqProtocol::rkaiq_manager_)
+    RKAiqProtocol::rkaiq_manager_->IoCtrl(cmd->cmdID, param, param_size);
 
   free(param);
 }
 
-static int Get1(int sockfd, Common_OL_Cmd_t *cmd) {
+static int OnLineGet(int sockfd, Common_OL_Cmd_t *cmd) {
   int ret = 0;
   int send_size = 0;
   int param_size = *(int *)cmd->dat;
@@ -833,9 +832,10 @@ static int Get1(int sockfd, Common_OL_Cmd_t *cmd) {
   LOG_INFO("ParamSize: 0x%x\n", param_size);
 
   char *param = (char *)malloc(param_size);
-  // TODO Get Setting
-  LOG_INFO("TODO Get Setting, CmdId: 0x%x\n", cmd->cmdID);
-  memset(param, 0xF0, param_size);
+
+  LOG_INFO("DO Get Setting, CmdId: 0x%x\n", cmd->cmdID);
+  if (RKAiqProtocol::rkaiq_manager_)
+    RKAiqProtocol::rkaiq_manager_->IoCtrl(cmd->cmdID, param, param_size);
 
   while (remain_size > 0) {
     int offset = param_size - remain_size;
@@ -843,7 +843,7 @@ static int Get1(int sockfd, Common_OL_Cmd_t *cmd) {
     remain_size = param_size - send_size;
   }
 
- int check_sum = 0;
+  int check_sum = 0;
   for (int i = 0; i < param_size; i++)
     check_sum += param[i];
   ret = DoCheckSum(sockfd, check_sum);
@@ -867,19 +867,20 @@ void RKAiqProtocol::HandlerOnLineMessage(int sockfd, char *buffer, int size) {
     return;
   }
 
-  LOG_INFO("cmdID: 0x%x\n", common_cmd->cmdID);
+  LOG_INFO("cmdID: 0x%x cmdType: 0x%x\n", common_cmd->cmdID,
+           common_cmd->cmdType);
 
-  switch (common_cmd->cmdID) {
-  case ENUM_ID_GET_STATUS:
+  switch (common_cmd->cmdType) {
+  case PACKET_TYPE_STATUS:
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
     break;
-  case ENUM_ID_AE_SETEXPSWATTR:
+  case PACKET_TYPE_SET:
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
-    Set1(sockfd, common_cmd);
+    OnLineSet(sockfd, common_cmd);
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
     break;
-  case ENUM_ID_AE_GETEXPSWATTR:
-    ret = Get1(sockfd, common_cmd);
+  case PACKET_TYPE_GET:
+    ret = OnLineGet(sockfd, common_cmd);
     if (ret == 0)
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
     else

@@ -1,7 +1,7 @@
 /*
  * V4L2 subdev interface library
  *
- * Copyright (C) 2010-2011 Ideas on board SPRL
+ * Copyright (C) 2010-2014 Ideas on board SPRL
  *
  * Contact: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
  *
@@ -24,6 +24,11 @@
 
 #include <linux/v4l2-subdev.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct media_device;
 struct media_entity;
 
 /**
@@ -134,6 +139,59 @@ int v4l2_subdev_set_selection(struct media_entity *entity,
                               enum v4l2_subdev_format_whence which);
 
 /**
+ * @brief Query the digital video capabilities of a pad.
+ * @param entity - subdev-device media entity.
+ * @param cap - capabilities to be filled.
+ *
+ * Retrieve the digital video capabilities of the @a entity pad specified by
+ * @a cap.pad and store it in the @a cap structure.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int v4l2_subdev_get_dv_timings_caps(struct media_entity *entity,
+                                    struct v4l2_dv_timings_cap *caps);
+
+/**
+ * @brief Query the digital video timings of a sub-device
+ * @param entity - subdev-device media entity.
+ * @param timings timings to be filled.
+ *
+ * Retrieve the detected digital video timings for the currently selected input
+ * of @a entity and store them in the @a timings structure.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int v4l2_subdev_query_dv_timings(struct media_entity *entity,
+                                 struct v4l2_dv_timings *timings);
+
+/**
+ * @brief Get the current digital video timings of a sub-device
+ * @param entity - subdev-device media entity.
+ * @param timings timings to be filled.
+ *
+ * Retrieve the current digital video timings for the currently selected input
+ * of @a entity and store them in the @a timings structure.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int v4l2_subdev_get_dv_timings(struct media_entity *entity,
+                               struct v4l2_dv_timings *timings);
+
+/**
+ * @brief Set the digital video timings of a sub-device
+ * @param entity - subdev-device media entity.
+ * @param timings timings to be set.
+ *
+ * Set the digital video timings of @a entity to @a timings. The driver is
+ * allowed to modify the requested format, in which case @a timings is updated
+ * with the modifications.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int v4l2_subdev_set_dv_timings(struct media_entity *entity,
+                               struct v4l2_dv_timings *timings);
+
+/**
  * @brief Retrieve the frame interval on a sub-device.
  * @param entity - subdev-device media entity.
  * @param interval - frame interval to be filled.
@@ -148,7 +206,8 @@ int v4l2_subdev_set_selection(struct media_entity *entity,
  */
 
 int v4l2_subdev_get_frame_interval(struct media_entity *entity,
-                                   struct v4l2_fract *interval);
+                                   struct v4l2_fract *interval,
+                                   unsigned int pad);
 
 /**
  * @brief Set the frame interval on a sub-device.
@@ -165,7 +224,8 @@ int v4l2_subdev_get_frame_interval(struct media_entity *entity,
  * @return 0 on success, or a negative error code on failure.
  */
 int v4l2_subdev_set_frame_interval(struct media_entity *entity,
-                                   struct v4l2_fract *interval);
+                                   struct v4l2_fract *interval,
+                                   unsigned int pad);
 
 /**
  * @brief Parse a string and apply format, crop and frame interval settings.
@@ -195,13 +255,130 @@ const char *v4l2_subdev_pixelcode_to_string(enum v4l2_mbus_pixelcode code);
 
 /**
  * @brief Parse string to media bus pixel code.
- * @param string - input string
- * @param lenght - length of the string
+ * @param string - nul terminalted string, textual media bus pixel code
  *
  * Parse human readable string @a string to an media bus pixel code.
  *
  * @return media bus pixelcode on success, -1 on failure.
  */
-enum v4l2_mbus_pixelcode v4l2_subdev_string_to_pixelcode(const char *string,
-                                                         unsigned int length);
+enum v4l2_mbus_pixelcode v4l2_subdev_string_to_pixelcode(const char *string);
+
+/**
+ * @brief Convert a field order to string.
+ * @param field - field order
+ *
+ * Convert field order @a field to a human-readable string.
+ *
+ * @return A pointer to a string on success, NULL on failure.
+ */
+const char *v4l2_subdev_field_to_string(enum v4l2_field field);
+
+/**
+ * @brief Parse string to field order.
+ * @param string - nul terminated string, textual media bus pixel code
+ *
+ * Parse human readable string @a string to field order.
+ *
+ * @return field order on success, -1 on failure.
+ */
+enum v4l2_field v4l2_subdev_string_to_field(const char *string);
+
+/**
+ * @brief Convert a colorspace to string.
+ * @param colorspace - colorspace
+ *
+ * Convert colorspace @a colorspace to a human-readable string.
+ *
+ * @return A pointer to a string on success, NULL on failure.
+ */
+const char *v4l2_subdev_colorspace_to_string(enum v4l2_colorspace colorspace);
+
+/**
+ * @brief Parse string to colorspace.
+ * @param string - nul terminated string, textual colorspace
+ *
+ * Parse human readable string @a string to colorspace.
+ *
+ * @return colorspace on success, -1 on failure.
+ */
+enum v4l2_colorspace v4l2_subdev_string_to_colorspace(const char *string);
+
+/**
+ * @brief Convert a transfer function to string.
+ * @param xfer_func - transfer function
+ *
+ * Convert transfer function @a xfer_func to a human-readable string.
+ *
+ * @return A pointer to a string on success, NULL on failure.
+ */
+const char *v4l2_subdev_xfer_func_to_string(enum v4l2_xfer_func xfer_func);
+
+/**
+ * @brief Parse string to transfer function.
+ * @param string - nul terminated string, textual transfer function
+ *
+ * Parse human readable string @a string to xfer_func.
+ *
+ * @return xfer_func on success, -1 on failure.
+ */
+enum v4l2_xfer_func v4l2_subdev_string_to_xfer_func(const char *string);
+
+/**
+ * @brief Convert a YCbCr encoding to string.
+ * @param ycbcr_enc - YCbCr encoding
+ *
+ * Convert YCbCr encoding @a ycbcr_enc to a human-readable string.
+ *
+ * @return A pointer to a string on success, NULL on failure.
+ */
+const char *
+v4l2_subdev_ycbcr_encoding_to_string(enum v4l2_ycbcr_encoding ycbcr_enc);
+
+/**
+ * @brief Parse string to YCbCr encoding.
+ * @param string - nul terminated string, textual YCbCr encoding
+ *
+ * Parse human readable string @a string to YCbCr encoding.
+ *
+ * @return ycbcr_enc on success, -1 on failure.
+ */
+enum v4l2_ycbcr_encoding
+v4l2_subdev_string_to_ycbcr_encoding(const char *string);
+
+/**
+ * @brief Convert a quantization to string.
+ * @param quantization - quantization
+ *
+ * Convert quantization @a quantization to a human-readable string.
+ *
+ * @return A pointer to a string on success, NULL on failure.
+ */
+const char *
+v4l2_subdev_quantization_to_string(enum v4l2_quantization quantization);
+
+/**
+ * @brief Parse string to quantization.
+ * @param string - nul terminated string, textual quantization
+ *
+ * Parse human readable string @a string to quantization.
+ *
+ * @return quantization on success, -1 on failure.
+ */
+enum v4l2_quantization v4l2_subdev_string_to_quantization(const char *string);
+
+/**
+ * @brief Enumerate library supported media bus pixel codes.
+ * @param length - the number of the supported pixel codes
+ *
+ * Obtain pixel codes supported by libv4l2subdev.
+ *
+ * @return A pointer to the pixel code array
+ */
+const enum v4l2_mbus_pixelcode *
+v4l2_subdev_pixelcode_list(unsigned int *length);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

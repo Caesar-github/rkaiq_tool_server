@@ -30,7 +30,7 @@ using RecvCallBack =
 
 class TCPServer {
 public:
-  TCPServer() = default;
+  TCPServer() { quit_ = 0; };
   virtual ~TCPServer();
 
   int Send(int cilent_socket, char *buff, int size);
@@ -38,6 +38,7 @@ public:
 
   void RegisterRecvCallBack(RecvCallBack cb) { callback_ = cb; }
   void UnRegisterRecvCallBack() { callback_ = nullptr; }
+  void SaveEixt();
 
 private:
   void Accepted();
@@ -45,6 +46,7 @@ private:
 
 private:
   int sockfd;
+  int quit_;
   struct sockaddr_in serverAddress;
   struct sockaddr_in clientAddress;
   vector<shared_ptr<thread>> accept_threads_;

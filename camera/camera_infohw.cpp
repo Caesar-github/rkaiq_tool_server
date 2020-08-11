@@ -92,8 +92,7 @@ int get_isp_subdevs(struct media_device *device, const char *devpath,
   strncpy(media_info->vd_path.media_dev_path, (char *)devpath,
           sizeof(media_info->vd_path.media_dev_path));
   LOG_INFO("get isp subdev: %s \n", media_info->vd_path.media_dev_path);
-  entity = media_get_entity_by_name(device, "rkisp_mainpath",
-                                    strlen("rkisp_mainpath"));
+  entity = media_get_entity_by_name(device, "rkisp_mainpath");
   if (entity) {
     entity_name = media_entity_get_devname(entity);
     if (entity_name) {
@@ -101,8 +100,7 @@ int get_isp_subdevs(struct media_device *device, const char *devpath,
               sizeof(media_info->vd_path.isp_main_path));
     }
   }
-  entity = media_get_entity_by_name(device, "rkisp-isp-subdev",
-                                    strlen("rkisp-isp-subdev"));
+  entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
   if (entity) {
     entity_name = media_entity_get_devname(entity);
     if (entity_name) {
@@ -144,8 +142,7 @@ int get_vicap_subdevs(struct media_device *device, const char *devpath,
   if (!device || !media_info || !devpath)
     return -1;
 
-  entity = media_get_entity_by_name(device, "stream_cif_mipi_id0",
-                                    strlen("stream_cif_mipi_id0"));
+  entity = media_get_entity_by_name(device, "stream_cif_mipi_id0");
   if (entity) {
     entity_name = media_entity_get_devname(entity);
     if (entity_name) {
@@ -283,6 +280,7 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
   media_device *device = NULL;
   media_entity *entity = NULL;
   media_pad *src_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
+  media_pad *sink_pad = NULL, *src_raw2_s = NULL;
   int ret;
 
   device = media_device_new(media_info->vd_path.media_dev_path);
@@ -292,8 +290,7 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
 
   /* Enumerate entities, pads and links. */
   media_device_enumerate(device);
-  entity = media_get_entity_by_name(device, "rkisp-isp-subdev",
-                                    strlen("rkisp-isp-subdev"));
+  entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
   if (entity) {
     src_pad = (media_pad *)media_entity_get_pad(entity, 2);
     if (!src_pad) {
@@ -302,8 +299,7 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
     }
   }
 
-  entity = media_get_entity_by_name(device, "rkisp-bridge-ispp",
-                                    strlen("rkisp-bridge-ispp"));
+  entity = media_get_entity_by_name(device, "rkisp-bridge-ispp");
   if (entity) {
     sink_pad_bridge = (media_pad *)media_entity_get_pad(entity, 0);
     if (!sink_pad_bridge) {
@@ -312,8 +308,7 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
     }
   }
 
-  entity = media_get_entity_by_name(device, "rkisp_mainpath",
-                                    strlen("rkisp_mainpath"));
+  entity = media_get_entity_by_name(device, "rkisp_mainpath");
   if (entity) {
     sink_pad_mp = (media_pad *)media_entity_get_pad(entity, 0);
     if (!sink_pad_mp) {
@@ -322,21 +317,42 @@ int setupLink(struct capture_info *media_info, bool raw_mode) {
     }
   }
 
+  entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
+  if (entity) {
+    sink_pad = (media_pad *)media_entity_get_pad(entity, 0);
+    if (!sink_pad) {
+      LOG_DEBUG("get rkisp-isp-subdev source pad failed!\n");
+      goto FAIL;
+    }
+  }
+
+  entity = media_get_entity_by_name(device, "rkisp_rawrd2_s");
+  if (entity) {
+    src_raw2_s = (media_pad *)media_entity_get_pad(entity, 0);
+    if (!src_raw2_s) {
+      LOG_DEBUG("get rkisp_rawrd2_s sink pad failed!\n");
+      goto FAIL;
+    }
+  }
+
   if (raw_mode) {
+    ret = media_setup_link(device, src_raw2_s, sink_pad, 0);
+    if (ret)
+      LOG_ERROR("media_setup_link src_raw2_s sink_pad FAILED: %d\n", ret);
     ret = media_setup_link(device, src_pad, sink_pad_bridge, 0);
     if (ret)
-      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+      LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n", ret);
     ret = media_setup_link(device, src_pad, sink_pad_mp, MEDIA_LNK_FL_ENABLED);
     if (ret)
-      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+      LOG_ERROR("media_setup_link src_pad src_pad FAILED: %d\n", ret);
   } else {
     ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
     if (ret)
-      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+      LOG_ERROR("media_setup_link src_pad  sink_pad_mp FAILED: %d\n", ret);
     ret = media_setup_link(device, src_pad, sink_pad_bridge,
                            MEDIA_LNK_FL_ENABLED);
     if (ret)
-      LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+      LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n", ret);
   }
   media_device_unref(device);
   return 0;

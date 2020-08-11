@@ -8,6 +8,7 @@
 
 #include "camera_capture.h"
 #include "camera_infohw.h"
+#include "rkaiq_manager.h"
 #ifdef ENABLE_RSTP_SERVER
 #include "rtsp_server.h"
 #endif
@@ -45,6 +46,12 @@ typedef enum {
   RES_FAILED = 0x00,
   RES_SUCCESS
 } cmdStatus;
+
+typedef enum {
+  PACKET_TYPE_SET = 0x00,
+  PACKET_TYPE_GET = 0x01,
+  PACKET_TYPE_STATUS = 0x80
+} packeType;
 
 typedef enum { RAW_CAP = 0x00, AVALIABLE } runStaus;
 
@@ -113,9 +120,10 @@ typedef struct Capture_Reso_s {
 #define STOP_RKLUNCH_CMD "sh /oem/RkLunch-stop.sh"
 
 #define START_DBSERVER_CMD "dbserver &"
-#define START_ISPSERVER_CMD "ispserver &"
+#define START_ISPSERVER_CMD "ispserver -no-sync-db &"
 
 int StopProcess(const char *process, const char *str);
+int WaitProcessExit(const char *process, int sec);
 
 class RKAiqProtocol {
 public:
@@ -124,6 +132,7 @@ public:
   static void HandlerTCPMessage(int sockfd, char *buffer, int size);
   static void HandlerOnLineMessage(int sockfd, char *buffer, int size);
   static void HandlerRawCapMessage(int sockfd, char *buffer, int size);
+  static std::shared_ptr<RKAiqToolManager> rkaiq_manager_;
 };
 
 #endif

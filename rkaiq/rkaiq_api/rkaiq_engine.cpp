@@ -15,7 +15,7 @@ int RKAiqEngine::GetDevName(struct media_device *device, const char *name,
   const char *devname;
   struct media_entity *entity = NULL;
 
-  entity = media_get_entity_by_name(device, name, strlen(name));
+  entity = media_get_entity_by_name(device, name);
   if (!entity)
     return -1;
 
@@ -31,6 +31,89 @@ int RKAiqEngine::GetDevName(struct media_device *device, const char *name,
   LOG_DEBUG("get %s devname: %s\n", name, dev_name);
 
   return 0;
+}
+
+int RKAiqEngine::LinkToIsp() {
+  int ret;
+  int index = 0;
+  char sys_path[64];
+  media_device *device = NULL;
+  media_entity *entity = NULL;
+  media_pad *src_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
+  while (index < 10) {
+    snprintf(sys_path, 64, "/dev/media%d", index++);
+    if (access(sys_path, F_OK))
+      continue;
+    device = media_device_new(sys_path);
+    if (device == NULL) {
+      LOG_ERROR("Failed to create media %s\n", sys_path);
+      continue;
+    }
+    ret = media_device_enumerate(device);
+    if (ret < 0) {
+      LOG_ERROR("Failed to enumerate %s (%d)\n", sys_path, ret);
+      media_device_unref(device);
+      continue;
+    }
+    const struct media_device_info *info = media_get_info(device);
+    LOG_INFO("%s: model %s\n", sys_path, info->model);
+    if (strcmp(info->model, "rkisp0") != 0 &&
+        strcmp(info->model, "rkisp1") != 0 &&
+        strcmp(info->model, "rkisp") != 0) {
+      media_device_unref(device);
+      continue;
+    }
+    LOG_INFO("%s: setup link to isp\n", sys_path);
+    entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
+    if (entity) {
+      const struct media_entity_desc *info = media_entity_get_info(entity);
+      src_pad = (media_pad *)media_entity_get_pad(entity, 2);
+      if (!src_pad) {
+        LOG_ERROR("get rkisp-isp-subdev source pad failed!\n");
+      }
+
+      struct v4l2_mbus_framefmt format;
+      ret = v4l2_subdev_get_format(src_pad->entity, &format, src_pad->index,
+                                   V4L2_SUBDEV_FORMAT_ACTIVE);
+      if (ret != 0)
+        LOG_ERROR("v4l2_subdev_get_format failed!\n");
+      char set_fmt[128];
+      sprintf(set_fmt, "\"%s\":%d [fmt:%s/%dx%d field:none]", info->name,
+              src_pad->index, "YUYV8_2X8", format.width, format.height);
+      ret = v4l2_subdev_parse_setup_formats(device, set_fmt);
+      if (ret)
+        LOG_ERROR("Unable to setup formats: %s (%d)\n", strerror(-ret), -ret);
+    }
+
+    entity = media_get_entity_by_name(device, "rkisp-bridge-ispp");
+    if (entity) {
+      sink_pad_bridge = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!sink_pad_bridge) {
+        LOG_ERROR("get rkisp-bridge-ispp sink pad failed!\n");
+      }
+    }
+    entity = media_get_entity_by_name(device, "rkisp_mainpath");
+    if (entity) {
+      sink_pad_mp = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!sink_pad_mp) {
+        LOG_ERROR("get rkisp_mainpath sink pad failed!\n");
+      }
+    }
+    if (src_pad && sink_pad_bridge && sink_pad_mp) {
+      ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
+      if (ret)
+        LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+      ret = media_setup_link(device, src_pad, sink_pad_bridge,
+                             MEDIA_LNK_FL_ENABLED);
+      if (ret)
+        LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+    }
+
+    // ret = v4l2_subdev_parse_setup_formats(device, "crop:(0,0)/2688x1520");
+
+    media_device_unref(device);
+  }
+  return ret;
 }
 
 int RKAiqEngine::EnumrateModules(struct media_device *device,
@@ -83,6 +166,7 @@ int RKAiqEngine::EnumrateModules(struct media_device *device,
         media_info->cams[module_idx].link_enabled = true;
         active_sensor = module_idx;
         strcpy(media_info->cams[module_idx].sensor_entity_name, ef->name);
+        sensor_entity_name_ = ef->name;
       }
       break;
     case MEDIA_ENT_T_V4L2_SUBDEV_FLASH:
@@ -107,57 +191,69 @@ int RKAiqEngine::EnumrateModules(struct media_device *device,
   return 0;
 }
 
-int RKAiqEngine::GetMedia0Info(struct rkaiq_media_info *media_info_) {
+int RKAiqEngine::GetMediaInfo(struct rkaiq_media_info *media_info_) {
   struct media_device *device = NULL;
   int ret;
+  char sys_path[64];
+  unsigned int index = 0, i;
+  int find_sensor = 0;
+  int find_isp = 0;
+  int find_ispp = 0;
 
-  device = media_device_new("/dev/media0");
-  if (!device)
-    return -ENOMEM;
-  /* Enumerate entities, pads and links. */
-  ret = media_device_enumerate(device);
-  if (ret)
-    return ret;
-  if (!ret) {
+  while (index < 10) {
+    snprintf(sys_path, 64, "/dev/media%d", index++);
+    if (access(sys_path, F_OK))
+      continue;
+
+    device = media_device_new(sys_path);
+    if (!device)
+      return -ENOMEM;
+
+    ret = media_device_enumerate(device);
+    if (ret) {
+      media_device_unref(device);
+      return ret;
+    }
+
+    /* Try Sensor */
+    if (!find_sensor && !ret) {
+      unsigned int nents = media_get_entities_count(device);
+      for (i = 0; i < nents; ++i) {
+        struct media_entity *entity = media_get_entity(device, i);
+        const struct media_entity_desc *info = media_entity_get_info(entity);
+        unsigned int type = info->type;
+        if (MEDIA_ENT_T_V4L2_SUBDEV == (type & MEDIA_ENT_TYPE_MASK)) {
+          unsigned int subtype = type & MEDIA_ENT_SUBTYPE_MASK;
+          if (subtype == 1) {
+            ret = EnumrateModules(device, media_info_);
+            find_sensor = 1;
+          }
+        }
+      }
+    }
+
     /* Try rkisp */
-    ret = GetDevName(device, "rkisp-isp-subdev", media_info_->sd_isp_path);
-    ret |=
-        GetDevName(device, "rkisp-input-params", media_info_->vd_params_path);
-    ret |= GetDevName(device, "rkisp-statistics", media_info_->vd_stats_path);
-  }
-  if (ret) {
+    if (!find_isp && !ret) {
+      ret = GetDevName(device, "rkisp-isp-subdev", media_info_->sd_isp_path);
+      ret |=
+          GetDevName(device, "rkisp-input-params", media_info_->vd_params_path);
+      ret |= GetDevName(device, "rkisp-statistics", media_info_->vd_stats_path);
+      if (ret == 0) {
+        find_isp = 1;
+      }
+    }
+
+    /* Try rkispp */
+    if (!find_ispp && !ret) {
+      ret =
+          GetDevName(device, "rkispp_input_params", media_info_->sd_ispp_path);
+      if (ret == 0) {
+        find_ispp = 1;
+      }
+    }
+
     media_device_unref(device);
-    return ret;
   }
-
-  ret = EnumrateModules(device, media_info_);
-  media_device_unref(device);
-
-  return ret;
-}
-
-int RKAiqEngine::GetMedia1Info(struct rkaiq_media_info *media_info_) {
-  struct media_device *device = NULL;
-  int ret;
-
-  device = media_device_new("/dev/media1");
-  if (!device)
-    return -ENOMEM;
-  /* Enumerate entities, pads and links. */
-  ret = media_device_enumerate(device);
-  if (ret)
-    return ret;
-  if (!ret) {
-    /* Try rkisp */
-    ret = GetDevName(device, "rkispp_input_params", media_info_->sd_ispp_path);
-  }
-  if (ret) {
-    media_device_unref(device);
-    return ret;
-  }
-
-  media_device_unref(device);
-
   return ret;
 }
 
@@ -211,26 +307,12 @@ int RKAiqEngine::SubcribleStreamEvent(int fd, bool subs) {
 }
 
 int RKAiqEngine::InitEngine() {
-  int index;
-
-  char *hdr_mode = getenv("HDR_MODE");
-  if (hdr_mode) {
-    LOG_DEBUG("hdr mode: %s \n", hdr_mode);
-    if (0 == atoi(hdr_mode))
-      mode_ = RK_AIQ_WORKING_MODE_NORMAL;
-    else if (1 == atoi(hdr_mode))
-      mode_ = RK_AIQ_WORKING_MODE_ISP_HDR2;
-    else if (2 == atoi(hdr_mode))
-      mode_ = RK_AIQ_WORKING_MODE_ISP_HDR3;
-  }
-
-  std::string sensor_entity_name;
-  std::string iq_file_dir;
-  int width, height;
-
-  ctx_ = rk_aiq_uapi_sysctl_init(sensor_entity_name.c_str(),
-                                 iq_file_dir.c_str(), NULL, NULL);
-
+  int width = 2688;
+  int height = 1520;
+  mode_ = RK_AIQ_WORKING_MODE_NORMAL;
+  iq_file_dir_ = "/oem/etc/iqfiles";
+  ctx_ = rk_aiq_uapi_sysctl_init(sensor_entity_name_.c_str(),
+                                 iq_file_dir_.c_str(), NULL, NULL);
   if (rk_aiq_uapi_sysctl_prepare(ctx_, width, height, mode_)) {
     LOG_DEBUG("rkaiq engine prepare failed !\n");
     return -1;
@@ -295,15 +377,13 @@ void RKAiqEngine::RKAiqEngineLoop(void *arg) {
 }
 
 RKAiqEngine::RKAiqEngine() : ctx_(nullptr) {
-  if (GetMedia0Info(&media_info_)) {
-    LOG_DEBUG("Bad media0 topology error %d, %s\n", errno, strerror(errno));
-    return;
-  }
-  if (GetMedia1Info(&media_info_)) {
-    LOG_DEBUG("Bad media1 topology error %d, %s\n", errno, strerror(errno));
+  LinkToIsp();
+  if (GetMediaInfo(&media_info_)) {
+    LOG_DEBUG("Bad media topology error %d, %s\n", errno, strerror(errno));
     return;
   }
   rkaiq_engine_thread_ = new std::thread(RKAiqEngineLoop, this);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 
 RKAiqEngine::~RKAiqEngine() {

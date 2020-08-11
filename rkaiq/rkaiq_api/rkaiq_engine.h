@@ -5,11 +5,11 @@
 #include <memory>
 #include <thread>
 
+#include "camera_memory.h"
 #include "mediactl-priv.h"
 #include "mediactl.h"
+#include "v4l2subdev.h"
 #include <linux/videodev2.h>
-
-#include "camera_memory.h"
 
 #include "logger/log.h"
 
@@ -48,10 +48,10 @@ public:
   static void RKAiqEngineLoop(void *arg);
   rk_aiq_sys_ctx_t *GetContext() { return ctx_; }
   int GetDevName(struct media_device *device, const char *name, char *dev_name);
+  int LinkToIsp();
   int EnumrateModules(struct media_device *device,
                       struct rkaiq_media_info *media_info);
-  int GetMedia0Info(struct rkaiq_media_info *media_info_);
-  int GetMedia1Info(struct rkaiq_media_info *media_info_);
+  int GetMediaInfo(struct rkaiq_media_info *media_info_);
   int WaitStreamEvent(int fd, unsigned int event_type, int time_out_ms);
   int SubcribleStreamEvent(int fd, bool subs);
   int InitEngine();
@@ -59,12 +59,16 @@ public:
   int StopEngine();
   int DeInitEngine();
 
+  friend class RKAiqToolManager;
+
 private:
   rk_aiq_sys_ctx_t *ctx_;
   rk_aiq_working_mode_t mode_;
   std::thread *rkaiq_engine_thread_;
   static int thread_quit_;
   struct rkaiq_media_info media_info_;
+  std::string sensor_entity_name_;
+  std::string iq_file_dir_;
 };
 
 #endif // _TOOL_RKAIQ_API_ENGINE_H_

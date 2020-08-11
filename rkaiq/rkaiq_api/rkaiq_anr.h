@@ -10,6 +10,8 @@ public:
 
   int SetAttrib(rk_aiq_nr_attrib_t *attr);
   int GetAttrib(rk_aiq_nr_attrib_t *attr);
+  int SetIQPara(rk_aiq_nr_IQPara_t *attr);
+  int GetIQPara(rk_aiq_nr_IQPara_t *attr);
   int SetLumaSFStrength(float fPercnt);
   int SetLumaTFStrength(float fPercnt);
   int GetLumaSFStrength(float *pPercnt);

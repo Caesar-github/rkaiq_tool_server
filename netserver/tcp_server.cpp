@@ -6,9 +6,19 @@
 #define LOG_TAG "tcp_server.cpp"
 
 TCPServer::~TCPServer() {
+  for (auto &iter : recv_threads_) {
+    iter->join();
+    iter = nullptr;
+  }
   recv_threads_.clear();
+  for (auto &iter : accept_threads_) {
+    iter->join();
+    iter = nullptr;
+  }
   accept_threads_.clear();
 }
+
+void TCPServer::SaveEixt() { quit_ = 1; }
 
 int TCPServer::Send(int cilent_socket, char *buff, int size) {
   return send(cilent_socket, buff, size, 0);
@@ -18,7 +28,10 @@ int TCPServer::Recvieve(int cilent_socket) {
   LOG_INFO("TCPServer::Recvieve\n");
   char buffer[MAXPACKETSIZE];
   int size = sizeof(buffer);
-  while (1) {
+  struct timeval interval = {3, 0};
+  setsockopt(cilent_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval,
+             sizeof(struct timeval));
+  while (!quit_) {
     int length = recv(cilent_socket, buffer, size, 0);
     LOG_INFO("socket recvieve length: %d\n", length);
     if (length <= 0) {
@@ -34,12 +47,16 @@ int TCPServer::Recvieve(int cilent_socket) {
 
 void TCPServer::Accepted() {
   LOG_INFO("TCPServer::Accepted\n");
-  while (1) {
+  struct timeval interval = {3, 0};
+  setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval,
+             sizeof(struct timeval));
+  while (!quit_) {
     int cilent_socket;
     socklen_t sosize = sizeof(clientAddress);
     cilent_socket = accept(sockfd, (struct sockaddr *)&clientAddress, &sosize);
     if (cilent_socket < 0) {
-      LOG_ERROR("Error socket accept failed\n");
+      if (errno != EAGAIN)
+        LOG_ERROR("Error socket accept failed %d %d\n", cilent_socket, errno);
       continue;
     }
     LOG_INFO("socket accept ip %s\n", inet_ntoa(clientAddress.sin_addr));

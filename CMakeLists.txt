@@ -74,9 +74,15 @@ set(RKAIQ_TOOL_SERVER_SOURCE
 	${RKMEDIA_SOURCE}
 	${MEDIACTL_SOURCE}
 	rkaiq_tool_server.cpp)
-add_executable(rkaiq_tool_server ${RKAIQ_TOOL_SERVER_SOURCE})
-target_link_libraries(rkaiq_tool_server pthread)
-install(TARGETS rkaiq_tool_server RUNTIME DESTINATION bin)
+
+
+add_executable(rkaiq_tool_server_capture ${RKAIQ_TOOL_SERVER_SOURCE})
+target_link_libraries(rkaiq_tool_server_capture pthread)
+install(TARGETS rkaiq_tool_server_capture RUNTIME DESTINATION bin)
+
+add_executable(rkaiq_tool_server_turning ${RKAIQ_TOOL_SERVER_SOURCE})
+target_link_libraries(rkaiq_tool_server_turning pthread)
+install(TARGETS rkaiq_tool_server_turning RUNTIME DESTINATION bin)
 
 option(BUILD_TEST "build test demo" OFF)
 if(BUILD_TEST)

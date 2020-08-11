@@ -6,6 +6,7 @@
 #include "rkaiq_cmdid.h"
 #include "rkaiq_engine.h"
 #include "rkaiq_imgproc.h"
+#include "rkaiq_sharp.h"
 #include <memory>
 #include <thread>
 
@@ -15,6 +16,12 @@ class RKAiqToolManager {
 public:
   RKAiqToolManager();
   virtual ~RKAiqToolManager();
+  int AeIoCtrl(int id, void *data, int size);
+  int ImgProcIoCtrl(int id, void *data, int size);
+  int AnrIoCtrl(int id, void *data, int size);
+  int SharpIoCtrl(int id, void *data, int size);
+  int IoCtrl(int id, void *data, int size);
+  void SaveExit();
 
 private:
   rk_aiq_sys_ctx_t *ctx_;
@@ -24,6 +31,7 @@ private:
   std::unique_ptr<RKAiqToolImgProc> imgproc_;
   std::unique_ptr<RKAiqToolAE> ae_;
   std::unique_ptr<RKAiqToolANR> anr_;
+  std::unique_ptr<RKAiqToolSharp> asharp_;
 };
 
 #endif // _TOOL_RKAIQ_API_MANAGER_H_

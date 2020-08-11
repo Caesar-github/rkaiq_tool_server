@@ -1,6 +1,11 @@
 #include "rkaiq_ae.h"
 
-RKAiqToolAE::RKAiqToolAE(rk_aiq_sys_ctx_t *ctx) {}
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "rkaiq_ae.cpp"
+
+RKAiqToolAE::RKAiqToolAE(rk_aiq_sys_ctx_t *ctx) : ctx_(ctx) {}
 
 RKAiqToolAE::~RKAiqToolAE() {}
 
@@ -12,20 +17,42 @@ int RKAiqToolAE::getExpSwAttr(Uapi_ExpSwAttr_t *pExpSwAttr) {
   return rk_aiq_user_api_ae_getExpSwAttr(ctx_, pExpSwAttr);
 }
 
-int RKAiqToolAE::setLinAeRouteAttr(const Uapi_LinAeRouteAttr_t linAeRouteAttr) {
-  return rk_aiq_user_api_ae_setLinAeRouteAttr(ctx_, linAeRouteAttr);
+int RKAiqToolAE::setLinAeDayRouteAttr(
+    const Uapi_LinAeRouteAttr_t linAeRouteAttr) {
+  return rk_aiq_user_api_ae_setLinAeDayRouteAttr(ctx_, linAeRouteAttr);
 }
 
-int RKAiqToolAE::getLinAeRouteAttr(Uapi_LinAeRouteAttr_t *pLinAeRouteAttr) {
-  return rk_aiq_user_api_ae_getLinAeRouteAttr(ctx_, pLinAeRouteAttr);
+int RKAiqToolAE::getLinAeDayRouteAttr(Uapi_LinAeRouteAttr_t *pLinAeRouteAttr) {
+  return rk_aiq_user_api_ae_getLinAeDayRouteAttr(ctx_, pLinAeRouteAttr);
 }
 
-int RKAiqToolAE::setHdrAeRouteAttr(const Uapi_HdrAeRouteAttr_t hdrAeRouteAttr) {
-  return rk_aiq_user_api_ae_setHdrAeRouteAttr(ctx_, hdrAeRouteAttr);
+int RKAiqToolAE::setLinAeNightRouteAttr(
+    const Uapi_LinAeRouteAttr_t linAeRouteAttr) {
+  return rk_aiq_user_api_ae_setLinAeNightRouteAttr(ctx_, linAeRouteAttr);
 }
 
-int RKAiqToolAE::getHdrAeRouteAttr(Uapi_HdrAeRouteAttr_t *pHdrAeRouteAttr) {
-  return rk_aiq_user_api_ae_getHdrAeRouteAttr(ctx_, pHdrAeRouteAttr);
+int RKAiqToolAE::getLinAeNightRouteAttr(
+    Uapi_LinAeRouteAttr_t *pLinAeRouteAttr) {
+  return rk_aiq_user_api_ae_getLinAeNightRouteAttr(ctx_, pLinAeRouteAttr);
+}
+
+int RKAiqToolAE::setHdrAeDayRouteAttr(
+    const Uapi_HdrAeRouteAttr_t hdrAeRouteAttr) {
+  return rk_aiq_user_api_ae_setHdrAeDayRouteAttr(ctx_, hdrAeRouteAttr);
+}
+
+int RKAiqToolAE::getHdrAeDayRouteAttr(Uapi_HdrAeRouteAttr_t *pHdrAeRouteAttr) {
+  return rk_aiq_user_api_ae_getHdrAeDayRouteAttr(ctx_, pHdrAeRouteAttr);
+}
+
+int RKAiqToolAE::setHdrAeNightRouteAttr(
+    const Uapi_HdrAeRouteAttr_t hdrAeRouteAttr) {
+  return rk_aiq_user_api_ae_setHdrAeNightRouteAttr(ctx_, hdrAeRouteAttr);
+}
+
+int RKAiqToolAE::getHdrAeNightRouteAttr(
+    Uapi_HdrAeRouteAttr_t *pHdrAeRouteAttr) {
+  return rk_aiq_user_api_ae_getHdrAeNightRouteAttr(ctx_, pHdrAeRouteAttr);
 }
 
 int RKAiqToolAE::queryExpResInfo(Uapi_ExpQueryInfo_t *pExpResInfo) {
