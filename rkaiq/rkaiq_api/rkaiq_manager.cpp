@@ -269,18 +269,54 @@ int RKAiqToolManager::ImgProcIoCtrl(int id, void *data, int size) {
 int RKAiqToolManager::AnrIoCtrl(int id, void *data, int size) {
   LOG_INFO("AnrIoCtrl id: 0x%x\n", id);
   switch (id) {
-  case ENUM_ID_ANR_SETBAYERNRATTR:
-  case ENUM_ID_ANR_SETMFNRATTR:
-  case ENUM_ID_ANR_SETUVNRATTR:
-  case ENUM_ID_ANR_SETYNRATTR:
-    anr_->SetIQPara((rk_aiq_nr_IQPara_t *)data);
-    break;
-  case ENUM_ID_ANR_GETBAYERNRATTR:
-  case ENUM_ID_ANR_GETMFNRATTR:
-  case ENUM_ID_ANR_GETUVNRATTR:
-  case ENUM_ID_ANR_GETYNRATTR:
-    anr_->GetIQPara((rk_aiq_nr_IQPara_t *)data);
-    break;
+  case ENUM_ID_ANR_SETBAYERNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_BAYERNR;
+    param.stBayernrPara = *(CalibDb_BayerNr_t *)data;
+    anr_->SetIQPara(&param);
+  } break;
+  case ENUM_ID_ANR_SETMFNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_MFNR;
+    param.stMfnrPara = *(CalibDb_MFNR_t *)data;
+    anr_->SetIQPara(&param);
+  } break;
+  case ENUM_ID_ANR_SETUVNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_UVNR;
+    param.stUvnrPara = *(CalibDb_UVNR_t *)data;
+    anr_->SetIQPara(&param);
+  } break;
+  case ENUM_ID_ANR_SETYNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_YNR;
+    param.stYnrPara = *(CalibDb_YNR_t *)data;
+    anr_->SetIQPara(&param);
+  } break;
+  case ENUM_ID_ANR_GETBAYERNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_BAYERNR;
+    anr_->GetIQPara(&param);
+    memcpy(data, &param.stBayernrPara, sizeof(CalibDb_BayerNr_t));
+  } break;
+  case ENUM_ID_ANR_GETMFNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_MFNR;
+    anr_->GetIQPara(&param);
+    memcpy(data, &param.stMfnrPara, sizeof(CalibDb_MFNR_t));
+  } break;
+  case ENUM_ID_ANR_GETUVNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_UVNR;
+    anr_->GetIQPara(&param);
+    memcpy(data, &param.stUvnrPara, sizeof(CalibDb_UVNR_t));
+  } break;
+  case ENUM_ID_ANR_GETYNRATTR: {
+    rk_aiq_nr_IQPara_t param;
+    param.module_bits = ANR_MODULE_YNR;
+    anr_->GetIQPara(&param);
+    memcpy(data, &param.stYnrPara, sizeof(CalibDb_YNR_t));
+  } break;
   case ENUM_ID_ANR_SETATTRIB:
     anr_->SetAttrib((rk_aiq_nr_attrib_t *)data);
     break;
