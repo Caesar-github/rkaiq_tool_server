@@ -7,6 +7,11 @@
 #endif
 #define LOG_TAG "rkaiq_protocol.cpp"
 
+extern int app_run_mode;
+extern int g_width;
+extern int g_height;
+extern std::shared_ptr<RKAiqToolManager> rkaiq_manager;
+
 static int capture_status = READY;
 static int capture_mode = CAPTURE_NORMAL;
 static int capture_frames = 0;
@@ -625,14 +630,37 @@ static void ReqAppStatus(Common_Cmd_t *cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
+int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
+  if (app_run_mode == mode) {
+    return 0;
+  }
+  if (mode == APP_RUN_STATUS_CAPTURE) {
+    LOG_INFO("Switch to APP_RUN_STATUS_CAPTURE\n");
+    deinit_rtsp();
+    rkaiq_manager.reset();
+    rkaiq_manager = nullptr;
+  } else {
+    LOG_INFO("Switch to APP_RUN_STATUS_TUNRING\n");
+    rkaiq_manager = std::make_shared<RKAiqToolManager>();
+    init_rtsp(g_width, g_height);
+  }
+  app_run_mode = mode;
+  return 0;
+}
+
 void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
   Common_Cmd_t *common_cmd = (Common_Cmd_t *)buffer;
   LOG_INFO("HandlerTCPMessage:\n");
   LOG_INFO("HandlerTCPMessage Common_Cmd_t: 0x%x\n", sizeof(Common_Cmd_t));
   LOG_INFO("HandlerTCPMessage RKID: %s\n", (char *)common_cmd->RKID);
+
+  // TODO Check APP Mode
+
   if (strcmp((char *)common_cmd->RKID, TAG_PC_TO_DEVICE) == 0) {
+    DoChangeAppMode(APP_RUN_STATUS_CAPTURE);
     HandlerRawCapMessage(sockfd, buffer, size);
   } else if (strcmp((char *)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
+    DoChangeAppMode(APP_RUN_STATUS_TUNRING);
     HandlerOnLineMessage(sockfd, buffer, size);
   }
 }
@@ -762,8 +790,6 @@ void RKAiqProtocol::HandlerRawCapMessage(int sockfd, char *buffer, int size) {
   }
 }
 
-std::shared_ptr<RKAiqToolManager> RKAiqProtocol::rkaiq_manager_ = nullptr;
-
 static void DoAnswer(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id,
                      int ret_status) {
   char send_data[MAXPACKETSIZE];
@@ -808,7 +834,6 @@ static void OnLineSet(int sockfd, Common_OL_Cmd_t *cmd) {
   int recv_size = 0;
   int param_size = *(int *)cmd->dat;
   int remain_size = param_size;
-  LOG_INFO("ParamSize: 0x%x\n", param_size);
 
   char *param = (char *)malloc(param_size);
   while (remain_size > 0) {
@@ -817,9 +842,10 @@ static void OnLineSet(int sockfd, Common_OL_Cmd_t *cmd) {
     remain_size = param_size - recv_size;
   }
 
-  LOG_INFO("DO Sycn Setting, CmdId: 0x%x\n", cmd->cmdID);
-  if (RKAiqProtocol::rkaiq_manager_)
-    RKAiqProtocol::rkaiq_manager_->IoCtrl(cmd->cmdID, param, param_size);
+  LOG_INFO("DO Sycn Setting, CmdId: 0x%x, expect ParamSize 0x%x\n", cmd->cmdID,
+           param_size);
+  if (rkaiq_manager)
+    rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
 
   free(param);
 }
@@ -833,9 +859,10 @@ static int OnLineGet(int sockfd, Common_OL_Cmd_t *cmd) {
 
   char *param = (char *)malloc(param_size);
 
-  LOG_INFO("DO Get Setting, CmdId: 0x%x\n", cmd->cmdID);
-  if (RKAiqProtocol::rkaiq_manager_)
-    RKAiqProtocol::rkaiq_manager_->IoCtrl(cmd->cmdID, param, param_size);
+  LOG_INFO("DO Get Setting, CmdId: 0x%x, expect ParamSize 0x%x\n", cmd->cmdID,
+           param_size);
+  if (rkaiq_manager)
+    rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
 
   while (remain_size > 0) {
     int offset = param_size - remain_size;

@@ -40,6 +40,11 @@ typedef enum {
 typedef enum { VIDEO_APP_OFF = 0x80, VIDEO_APP_ON } videoAppStatus;
 
 typedef enum {
+  APP_RUN_STATUS_TUNRING = 0,
+  APP_RUN_STATUS_CAPTURE = 1,
+} appRunStatus;
+
+typedef enum {
   KNOCK_KNOCK = 0x80,
   READY,
   BUSY,
@@ -90,8 +95,8 @@ typedef struct Sensor_Params_s {
 
 #pragma pack(1)
 typedef struct Capture_Params_s {
-  uint16_t gain;
-  uint16_t time;
+  uint32_t gain;
+  uint32_t time;
   uint8_t lhcg;
   uint8_t bits;
   uint8_t framenumber;
@@ -129,6 +134,7 @@ class RKAiqProtocol {
 public:
   RKAiqProtocol() = default;
   virtual ~RKAiqProtocol() = default;
+  static int DoChangeAppMode(appRunStatus mode);
   static void HandlerTCPMessage(int sockfd, char *buffer, int size);
   static void HandlerOnLineMessage(int sockfd, char *buffer, int size);
   static void HandlerRawCapMessage(int sockfd, char *buffer, int size);

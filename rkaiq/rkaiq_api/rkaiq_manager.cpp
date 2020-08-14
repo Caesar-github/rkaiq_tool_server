@@ -8,6 +8,7 @@
 RKAiqToolManager::RKAiqToolManager() : ctx_(nullptr) {
   engine_.reset(new RKAiqEngine());
   ctx_ = engine_->GetContext();
+  LOG_ERROR("ctx_ %p\n", ctx_);
   imgproc_.reset(new RKAiqToolImgProc(ctx_));
   ae_.reset(new RKAiqToolAE(ctx_));
   anr_.reset(new RKAiqToolANR(ctx_));
@@ -19,6 +20,7 @@ RKAiqToolManager::~RKAiqToolManager() {
   ae_.reset(nullptr);
   imgproc_.reset(nullptr);
   engine_.reset(nullptr);
+  RKAiqEngine::thread_quit_ = 0;
 }
 
 void RKAiqToolManager::SaveExit() { RKAiqEngine::thread_quit_ = 1; }
@@ -39,48 +41,63 @@ int RKAiqToolManager::AeIoCtrl(int id, void *data, int size) {
   LOG_INFO("AeIoCtrl id: 0x%x\n", id);
   switch (id) {
   case ENUM_ID_AE_SETEXPSWATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_ExpSwAttr_t));
     ae_->setExpSwAttr(*(Uapi_ExpSwAttr_t *)data);
     break;
   case ENUM_ID_AE_GETEXPSWATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_ExpSwAttr_t));
     ae_->getExpSwAttr((Uapi_ExpSwAttr_t *)data);
     break;
   case ENUM_ID_AE_SETLINAEDAYROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
     ae_->setLinAeDayRouteAttr(*(Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETLINAEDAYROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
     ae_->getLinAeDayRouteAttr((Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_SETLINAENIGHTROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
     ae_->setLinAeNightRouteAttr(*(Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETLINAENIGHTROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
     ae_->getLinAeNightRouteAttr((Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_SETHDRAEDAYROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
     ae_->setHdrAeDayRouteAttr(*(Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETHDRAEDAYROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
     ae_->getHdrAeDayRouteAttr((Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_SETHDRAENIGHTROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
     ae_->setHdrAeNightRouteAttr(*(Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETHDRAENIGHTROUTEATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
     ae_->getHdrAeNightRouteAttr((Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_QUERYEXPRESINFO:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_ExpQueryInfo_t));
     ae_->queryExpResInfo((Uapi_ExpQueryInfo_t *)data);
     break;
   case ENUM_ID_AE_SETLINEXPATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinExpAttr_t));
     ae_->setLinExpAttr(*(Uapi_LinExpAttr_t *)data);
     break;
   case ENUM_ID_AE_GETLINEXPATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinExpAttr_t));
     ae_->getLinExpAttr((Uapi_LinExpAttr_t *)data);
     break;
   case ENUM_ID_AE_SETHDREXPATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrExpAttr_t));
     ae_->setHdrExpAttr(*(Uapi_HdrExpAttr_t *)data);
     break;
   case ENUM_ID_AE_GETHDREXPATTR:
+    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrExpAttr_t));
     ae_->getHdrExpAttr((Uapi_HdrExpAttr_t *)data);
     break;
   default:

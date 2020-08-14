@@ -349,16 +349,17 @@ void RKAiqEngine::RKAiqEngineLoop(void *arg) {
 
   LOG_DEBUG("RKAiqEngineLoop entry\n");
 
-  isp_fd = open(rkaiq_engine->media_info_.sd_ispp_path, O_RDWR);
-  if (isp_fd < 0) {
-    LOG_ERROR("open %s failed %s\n", rkaiq_engine->media_info_.sd_ispp_path,
-              strerror(errno));
-    return;
-  }
-  rkaiq_engine->SubcribleStreamEvent(isp_fd, true);
-  rkaiq_engine->InitEngine();
-
   while (!thread_quit_) {
+    isp_fd = open(rkaiq_engine->media_info_.sd_ispp_path, O_RDWR);
+    if (isp_fd < 0) {
+      LOG_ERROR("open %s failed %s\n", rkaiq_engine->media_info_.sd_ispp_path,
+                strerror(errno));
+      return;
+    }
+    LOG_DEBUG("subcrible stream event yes ...\n");
+    rkaiq_engine->SubcribleStreamEvent(isp_fd, true);
+    LOG_DEBUG("init engine...\n");
+    rkaiq_engine->InitEngine();
     LOG_DEBUG("wait stream start event...\n");
     rkaiq_engine->WaitStreamEvent(isp_fd, CIFISP_V4L2_EVENT_STREAM_START, -1);
     LOG_DEBUG("wait stream start event success ...\n");
@@ -368,11 +369,13 @@ void RKAiqEngine::RKAiqEngineLoop(void *arg) {
     LOG_DEBUG("wait stream stop event success ...\n");
     LOG_DEBUG("stop engine...\n");
     rkaiq_engine->StopEngine();
+    LOG_DEBUG("deinit engine...\n");
+    rkaiq_engine->DeInitEngine();
+    LOG_DEBUG("subcrible stream event no ...\n");
+    rkaiq_engine->SubcribleStreamEvent(isp_fd, false);
+    close(isp_fd);
   }
 
-  rkaiq_engine->DeInitEngine();
-  rkaiq_engine->SubcribleStreamEvent(isp_fd, false);
-  close(isp_fd);
   LOG_DEBUG("RKAiqEngineLoop exit\n\n");
 }
 
@@ -382,14 +385,18 @@ RKAiqEngine::RKAiqEngine() : ctx_(nullptr) {
     LOG_DEBUG("Bad media topology error %d, %s\n", errno, strerror(errno));
     return;
   }
-  rkaiq_engine_thread_ = new std::thread(RKAiqEngineLoop, this);
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  InitEngine();
+  StartEngine();
+  // rkaiq_engine_thread_ = new std::thread(RKAiqEngineLoop, this);
+  // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 
 RKAiqEngine::~RKAiqEngine() {
-  if (rkaiq_engine_thread_) {
-    rkaiq_engine_thread_->join();
-    delete rkaiq_engine_thread_;
-    rkaiq_engine_thread_ = nullptr;
-  }
+  StopEngine();
+  DeInitEngine();
+  // if (rkaiq_engine_thread_) {
+  //   rkaiq_engine_thread_->join();
+  //   delete rkaiq_engine_thread_;
+  //   rkaiq_engine_thread_ = nullptr;
+  // }
 }

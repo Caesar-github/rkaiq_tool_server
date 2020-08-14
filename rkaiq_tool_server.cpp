@@ -9,6 +9,9 @@
 
 int quit = 0;
 bool is_turning_mode = false;
+int app_run_mode = APP_RUN_STATUS_TUNRING;
+int g_width = 1920;
+int g_height = 1080;
 std::shared_ptr<RKAiqToolManager> rkaiq_manager;
 
 static int get_env(const char *name, int *value, int default_value) {
@@ -48,14 +51,12 @@ int main(int argc, char **argv) {
   WaitProcessExit("mediaserver", 10);
   WaitProcessExit("ispserver", 10);
 
-  if (exe_name.find("turning") != exe_name.npos) {
-    is_turning_mode = true;
-    LOG_INFO("is_turning_mode %d\n", is_turning_mode);
+  if (app_run_mode == APP_RUN_STATUS_TUNRING) {
+    LOG_INFO("app_run_mode %d  [0: turning 1: capture]\n", app_run_mode);
 #ifdef ENABLE_RSTP_SERVER
     rkaiq_manager = std::make_shared<RKAiqToolManager>();
-    RKAiqProtocol::rkaiq_manager_ = rkaiq_manager;
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    init_rtsp(1920, 1080);
+    init_rtsp(g_width, g_height);
 #endif
   }
 
@@ -67,9 +68,8 @@ int main(int argc, char **argv) {
   }
   fprintf(stderr, "go quit %d\n", quit);
   tcp.SaveEixt();
-  if (is_turning_mode) {
+  if (app_run_mode == APP_RUN_STATUS_TUNRING) {
 #ifdef ENABLE_RSTP_SERVER
-    RKAiqProtocol::rkaiq_manager_ = nullptr;
     rkaiq_manager->SaveExit();
     deinit_rtsp();
     rkaiq_manager.reset();
