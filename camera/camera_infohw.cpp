@@ -387,7 +387,7 @@ int initCamHwInfos(struct capture_info *media_info) {
     /* Enumerate entities, pads and links. */
     media_device_enumerate(device);
 
-    if (strcmp(device->info.model, "rkisp") == 0) {
+    if (strcmp(device->info.model, "rkisp0") == 0 || strcmp(device->info.model, "rkisp") == 0) {
       ret = get_isp_subdevs(device, sys_path, media_info);
       if (ret)
         return ret;

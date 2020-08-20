@@ -90,6 +90,7 @@ typedef struct Sensor_Params_s {
   uint32_t hts;
   uint32_t vts;
   uint32_t bits;
+  uint8_t endianness;
 } Sensor_Params_t;
 #pragma pack()
 

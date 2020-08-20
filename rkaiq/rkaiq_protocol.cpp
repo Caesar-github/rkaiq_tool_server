@@ -173,6 +173,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   int hblank, vblank;
   int vts, hts, ret;
   float fps;
+  int endianness = 0;
 
   cap_info.dev_fd = device_open(cap_info.dev_name);
   cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
@@ -222,7 +223,9 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
     ret = rkisp_set_ispsd_fmt(&cap_info, fmt.format.width, fmt.format.height,
                               fmt.format.code, cap_info.width, cap_info.height,
                               fmt.format.code);
-    LOG_INFO("rkisp_set_ispsd_fmt: %d \n", ret);
+    endianness = 1;
+    LOG_INFO("rkisp_set_ispsd_fmt: %d endianness = %d\n", ret, endianness);
+
 
     if (ret) {
       LOG_ERROR("subdev choose the best fit fmt: %dx%d, 0x%08x\n",
@@ -252,6 +255,8 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   sensorParam->hts = hts;
   sensorParam->vts = vts;
   sensorParam->bits = cap_info.sd_path.bits;
+  sensorParam->endianness = endianness;
+  LOG_INFO("sensorParam->endianness: %f\n", endianness);
 
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++) {
