@@ -13,6 +13,18 @@ RKAiqToolManager::RKAiqToolManager() : ctx_(nullptr) {
   ae_.reset(new RKAiqToolAE(ctx_));
   anr_.reset(new RKAiqToolANR(ctx_));
   asharp_.reset(new RKAiqToolSharp(ctx_));
+  sysctl_.reset(new RKAiqToolSysCtl(ctx_));
+
+  rk_aiq_ver_info_t vers;
+  sysctl_->GetVersionInfo(&vers);
+  LOG_ERROR("vers aiq_ver %s iq_parser_ver %s\n",
+            vers.aiq_ver, vers.iq_parser_ver);
+  if (strcmp(MATCH_RKAIQ_VERSION, vers.aiq_ver) ||
+      strcmp(MATCH_IQ_PARSER_VERSION, vers.iq_parser_ver)) {
+    LOG_ERROR("vers aiq_ver %s iq_parser_ver %s should be match aiq_ver %s iq_parser_ver %s\n",
+            vers.aiq_ver, vers.iq_parser_ver, MATCH_RKAIQ_VERSION, MATCH_IQ_PARSER_VERSION);
+    exit(-1);
+  }
 }
 
 RKAiqToolManager::~RKAiqToolManager() {
@@ -33,6 +45,8 @@ int RKAiqToolManager::IoCtrl(int id, void *data, int size) {
     ImgProcIoCtrl(id, data, size);
   } else if (id > ENUM_ID_ANR_START && id < ENUM_ID_ANR_END) {
     AnrIoCtrl(id, data, size);
+  } else if (id > ENUM_ID_SYSCTL_START && id < ENUM_ID_SYSCTL_END) {
+    SysCtlIoCtrl(id, data, size);
   }
   return 0;
 }
@@ -397,6 +411,25 @@ int RKAiqToolManager::SharpIoCtrl(int id, void *data, int size) {
     break;
   case ENUM_ID_SHARP_GET_STRENGTH:
     asharp_->GetStrength((float *)data);
+    break;
+  default:
+    LOG_INFO("cmdID: Unknow\n");
+    break;
+  }
+  return 0;
+}
+
+int RKAiqToolManager::SysCtlIoCtrl(int id, void *data, int size) {
+  LOG_INFO("SysCtlIoCtrl id: 0x%x\n", id);
+  switch (id) {
+  case ENUM_ID_SYSCTL_SETCPSLTCFG:
+    sysctl_->SetCpsLtCfg((rk_aiq_cpsl_cfg_t *)data);
+    break;
+  case ENUM_ID_SYSCTL_GETCPSLTINFO:
+    sysctl_->GetCpsLtInfo((rk_aiq_cpsl_info_t *)data);
+    break;
+  case ENUM_ID_SYSCTL_QUERYCPSLTCAP:
+    sysctl_->QueryCpsLtCap((rk_aiq_cpsl_cap_t *)data);
     break;
   default:
     LOG_INFO("cmdID: Unknow\n");
