@@ -421,7 +421,10 @@ static void DoMultiFrameCallBack(int socket, int index, void *buffer,
   }
 
   DumpRawData((uint16_t *)buffer, size, 2);
-  MultiFrameAddition(averge_frame0, (uint16_t *)buffer, width, height);
+  if(cap_info.link == link_to_vicap)
+    MultiFrameAddition(averge_frame0, (uint16_t *)buffer, width, height, false);
+  else
+    MultiFrameAddition(averge_frame0, (uint16_t *)buffer, width, height);
   DumpRawData32(averge_frame0, size, 2);
   LOG_INFO("index %d MultiFrameAddition %lld ms %lld us\n", index,
            ad.Get() / 1000, ad.Get() % 1000);

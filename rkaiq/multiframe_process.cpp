@@ -87,11 +87,14 @@ void MultiFrameAverage(uint32_t *pIn1_pOut, uint16_t *POut, uint16_t width,
 }
 
 void MultiFrameAddition(uint32_t *pIn1_pOut, uint16_t *pIn2, uint16_t width,
-                        uint16_t height) {
+                        uint16_t height, bool biToLi) {
   int n;
   int len = height * width;
   for (n = 0; n < len; n++) {
-    pIn1_pOut[n] += ((uint16_t)(pIn2[n] >> 8) | (uint16_t)(pIn2[n] << 8));
+    if (biToLi)
+      pIn1_pOut[n] += ((uint16_t)(pIn2[n] >> 8) | (uint16_t)(pIn2[n] << 8));
+    else
+      pIn1_pOut[n] += pIn2[n];
   }
 }
 
