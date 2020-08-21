@@ -205,6 +205,8 @@ int RKAiqEngine::GetMediaInfo(struct rkaiq_media_info *media_info_) {
     if (access(sys_path, F_OK))
       continue;
 
+    LOG_ERROR("access %s\n", sys_path);
+
     device = media_device_new(sys_path);
     if (!device)
       return -ENOMEM;
@@ -245,15 +247,35 @@ int RKAiqEngine::GetMediaInfo(struct rkaiq_media_info *media_info_) {
 
     /* Try rkispp */
     if (!find_ispp && !ret) {
-      ret =
-          GetDevName(device, "rkispp_input_params", media_info_->sd_ispp_path);
+      ret = GetDevName(device, "rkispp-subdev", media_info_->sd_ispp_path);
       if (ret == 0) {
         find_ispp = 1;
+        struct media_entity *entity =
+            media_get_entity_by_name(device, "rkispp-subdev");
+        if (entity) {
+          const struct media_pad *pad = media_entity_get_pad(entity, 0);
+          if (entity) {
+            struct v4l2_mbus_framefmt format;
+            ret = v4l2_subdev_get_format(pad->entity, &format, pad->index,
+                                         V4L2_SUBDEV_FORMAT_ACTIVE);
+            if (ret) {
+              LOG_ERROR("Cann't Get camera resolution\n");
+            } else {
+              width_ = format.width;
+              height_ = format.height;
+              LOG_ERROR("Get camera resolution %dx%d\n", width_, height_);
+            }
+          }
+        }
       }
     }
 
     media_device_unref(device);
   }
+
+  LOG_ERROR("find_sensor %d find_isp %d find_ispp %d\n", find_sensor, find_isp,
+            find_ispp);
+
   return ret;
 }
 
@@ -307,16 +329,26 @@ int RKAiqEngine::SubcribleStreamEvent(int fd, bool subs) {
 }
 
 int RKAiqEngine::InitEngine() {
-  int width = 2688;
-  int height = 1520;
-  mode_ = RK_AIQ_WORKING_MODE_NORMAL;
-  iq_file_dir_ = "/oem/etc/iqfiles";
+  LOG_ERROR("iqfile path %s\n", iqfiles_path_.c_str());
+  LOG_ERROR("mode_       %x\n", mode_);
   ctx_ = rk_aiq_uapi_sysctl_init(sensor_entity_name_.c_str(),
-                                 iq_file_dir_.c_str(), NULL, NULL);
-  if (rk_aiq_uapi_sysctl_prepare(ctx_, width, height, mode_)) {
+                                 iqfiles_path_.c_str(), NULL, NULL);
+  if (rk_aiq_uapi_sysctl_prepare(ctx_, width_, height_, mode_)) {
     LOG_DEBUG("rkaiq engine prepare failed !\n");
     return -1;
   }
+  return 0;
+}
+
+int RKAiqEngine::InitEngine(int mode) {
+  if (mode == 0) {
+    mode_ = RK_AIQ_WORKING_MODE_NORMAL;
+  } else if (mode == 1) {
+    mode_ = RK_AIQ_WORKING_MODE_ISP_HDR2;
+  } else if (mode == 2) {
+    mode_ = RK_AIQ_WORKING_MODE_ISP_HDR3;
+  }
+  InitEngine();
   return 0;
 }
 
@@ -379,14 +411,14 @@ void RKAiqEngine::RKAiqEngineLoop(void *arg) {
   LOG_DEBUG("RKAiqEngineLoop exit\n\n");
 }
 
-RKAiqEngine::RKAiqEngine() : ctx_(nullptr) {
+RKAiqEngine::RKAiqEngine(std::string iqfiles_path)
+    : iqfiles_path_(iqfiles_path), ctx_(nullptr), width_(1920), height_(1080) {
+  mode_ = RK_AIQ_WORKING_MODE_NORMAL;
   LinkToIsp();
   if (GetMediaInfo(&media_info_)) {
     LOG_DEBUG("Bad media topology error %d, %s\n", errno, strerror(errno));
     return;
   }
-  InitEngine();
-  StartEngine();
   // rkaiq_engine_thread_ = new std::thread(RKAiqEngineLoop, this);
   // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }

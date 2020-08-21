@@ -237,7 +237,7 @@ int init_rtsp(int width, int height) {
   std::string yuv_format = IMAGE_NV12;
   std::string enc_type = VIDEO_H264;
   const char *video_dev = "rkispp_scale0";
-  printf("init_2688p video_dev %s\n", video_dev);
+  printf("init_rtsp video_dev %s\n", video_dev);
 
   video_cap_flow =
       create_video_capture_flow(video_dev, yuv_format, width, height);

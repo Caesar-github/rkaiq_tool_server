@@ -5,8 +5,13 @@
 #endif
 #define LOG_TAG "rkaiq_manager.cpp"
 
-RKAiqToolManager::RKAiqToolManager() : ctx_(nullptr) {
-  engine_.reset(new RKAiqEngine());
+extern int g_mode;
+
+RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path)
+    : iqfiles_path_(iqfiles_path), ctx_(nullptr) {
+  engine_.reset(new RKAiqEngine(iqfiles_path_));
+  engine_->InitEngine(g_mode);
+  engine_->StartEngine();
   ctx_ = engine_->GetContext();
   LOG_ERROR("ctx_ %p\n", ctx_);
   imgproc_.reset(new RKAiqToolImgProc(ctx_));
@@ -17,12 +22,17 @@ RKAiqToolManager::RKAiqToolManager() : ctx_(nullptr) {
 
   rk_aiq_ver_info_t vers;
   sysctl_->GetVersionInfo(&vers);
-  LOG_ERROR("vers aiq_ver %s iq_parser_ver %s\n",
-            vers.aiq_ver, vers.iq_parser_ver);
-  if (strcmp(MATCH_RKAIQ_VERSION, vers.aiq_ver) ||
-      strcmp(MATCH_IQ_PARSER_VERSION, vers.iq_parser_ver)) {
-    LOG_ERROR("vers aiq_ver %s iq_parser_ver %s should be match aiq_ver %s iq_parser_ver %s\n",
-            vers.aiq_ver, vers.iq_parser_ver, MATCH_RKAIQ_VERSION, MATCH_IQ_PARSER_VERSION);
+  LOG_ERROR("vers aiq_ver %s iq_parser_ver %s\n", vers.aiq_ver,
+            vers.iq_parser_ver);
+  if (strcmp(MATCH_RKAIQ_VERSION_1, vers.aiq_ver) &&
+      strcmp(MATCH_RKAIQ_VERSION_2, vers.aiq_ver) &&
+      strcmp(MATCH_RKAIQ_VERSION_3, vers.aiq_ver)) {
+    LOG_ERROR("version: aiq_ver %s iq_parser_ver %s should be match \n"
+              "   aiq_ver %s \n"
+              "or aiq_ver %s \n"
+              "or aiq_ver %s \n",
+              vers.aiq_ver, vers.iq_parser_ver, MATCH_RKAIQ_VERSION_1,
+              MATCH_RKAIQ_VERSION_2, MATCH_RKAIQ_VERSION_3);
     exit(-1);
   }
 }
@@ -45,9 +55,12 @@ int RKAiqToolManager::IoCtrl(int id, void *data, int size) {
     ImgProcIoCtrl(id, data, size);
   } else if (id > ENUM_ID_ANR_START && id < ENUM_ID_ANR_END) {
     AnrIoCtrl(id, data, size);
+  } else if (id > ENUM_ID_SHARP_START && id < ENUM_ID_SHARP_END) {
+    SharpIoCtrl(id, data, size);
   } else if (id > ENUM_ID_SYSCTL_START && id < ENUM_ID_SYSCTL_END) {
     SysCtlIoCtrl(id, data, size);
   }
+  LOG_INFO("IoCtrl id: 0x%x exit\n", id);
   return 0;
 }
 
@@ -55,63 +68,63 @@ int RKAiqToolManager::AeIoCtrl(int id, void *data, int size) {
   LOG_INFO("AeIoCtrl id: 0x%x\n", id);
   switch (id) {
   case ENUM_ID_AE_SETEXPSWATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_ExpSwAttr_t));
+    CHECK_PARAM_SIZE(Uapi_ExpSwAttr_t, size);
     ae_->setExpSwAttr(*(Uapi_ExpSwAttr_t *)data);
     break;
   case ENUM_ID_AE_GETEXPSWATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_ExpSwAttr_t));
+    CHECK_PARAM_SIZE(Uapi_ExpSwAttr_t, size);
     ae_->getExpSwAttr((Uapi_ExpSwAttr_t *)data);
     break;
   case ENUM_ID_AE_SETLINAEDAYROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_LinAeRouteAttr_t, size);
     ae_->setLinAeDayRouteAttr(*(Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETLINAEDAYROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_LinAeRouteAttr_t, size);
     ae_->getLinAeDayRouteAttr((Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_SETLINAENIGHTROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_LinAeRouteAttr_t, size);
     ae_->setLinAeNightRouteAttr(*(Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETLINAENIGHTROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_LinAeRouteAttr_t, size);
     ae_->getLinAeNightRouteAttr((Uapi_LinAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_SETHDRAEDAYROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_HdrAeRouteAttr_t, size);
     ae_->setHdrAeDayRouteAttr(*(Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETHDRAEDAYROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_HdrAeRouteAttr_t, size);
     ae_->getHdrAeDayRouteAttr((Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_SETHDRAENIGHTROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_HdrAeRouteAttr_t, size);
     ae_->setHdrAeNightRouteAttr(*(Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_GETHDRAENIGHTROUTEATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrAeRouteAttr_t));
+    CHECK_PARAM_SIZE(Uapi_HdrAeRouteAttr_t, size);
     ae_->getHdrAeNightRouteAttr((Uapi_HdrAeRouteAttr_t *)data);
     break;
   case ENUM_ID_AE_QUERYEXPRESINFO:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_ExpQueryInfo_t));
+    CHECK_PARAM_SIZE(Uapi_ExpQueryInfo_t, size);
     ae_->queryExpResInfo((Uapi_ExpQueryInfo_t *)data);
     break;
   case ENUM_ID_AE_SETLINEXPATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinExpAttr_t));
+    CHECK_PARAM_SIZE(Uapi_LinExpAttr_t, size);
     ae_->setLinExpAttr(*(Uapi_LinExpAttr_t *)data);
     break;
   case ENUM_ID_AE_GETLINEXPATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_LinExpAttr_t));
+    CHECK_PARAM_SIZE(Uapi_LinExpAttr_t, size);
     ae_->getLinExpAttr((Uapi_LinExpAttr_t *)data);
     break;
   case ENUM_ID_AE_SETHDREXPATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrExpAttr_t));
+    CHECK_PARAM_SIZE(Uapi_HdrExpAttr_t, size);
     ae_->setHdrExpAttr(*(Uapi_HdrExpAttr_t *)data);
     break;
   case ENUM_ID_AE_GETHDREXPATTR:
-    LOG_INFO("real struct size : 0x%x\n", sizeof(Uapi_HdrExpAttr_t));
+    CHECK_PARAM_SIZE(Uapi_HdrExpAttr_t, size);
     ae_->getHdrExpAttr((Uapi_HdrExpAttr_t *)data);
     break;
   default:
@@ -124,172 +137,6 @@ int RKAiqToolManager::AeIoCtrl(int id, void *data, int size) {
 int RKAiqToolManager::ImgProcIoCtrl(int id, void *data, int size) {
   LOG_INFO("ImgProcIoCtrl id: 0x%x\n", id);
   switch (id) {
-  case ENUM_ID_IMGPROC_SETEXPMODE:
-    imgproc_->setExpMode(*(opMode_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_GETEXPMODE:
-    imgproc_->getExpMode((opMode_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_SETAEMODE:
-    imgproc_->setAeMode(*(aeMode_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_GETAEMODE:
-    imgproc_->getAeMode((aeMode_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_SETEXPGAINRANGE:
-    imgproc_->setExpGainRange((paRange_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_GETEXPGAINRANGE:
-    imgproc_->getExpGainRange((paRange_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_SETEXPTIMERANGE:
-    imgproc_->setExpTimeRange((paRange_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_GETEXPTIMERANGE:
-    imgproc_->getExpTimeRange((paRange_t *)data);
-    break;
-  case ENUM_ID_IMGPROC_SETBLCMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETHLCMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETLEXPMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETLEXPMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETMLEXP:
-    break;
-  case ENUM_ID_IMGPROC_GETMLEXP:
-    break;
-  case ENUM_ID_IMGPROC_SETANTIFLICKERMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETANTIFLICKERMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETEXPPWRLINEFREQMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETEXPPWRLINEFREQMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETDAYNSWMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETDAYNSWMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETMDNSCENE:
-    break;
-  case ENUM_ID_IMGPROC_GETMDNSCENE:
-    break;
-  case ENUM_ID_IMGPROC_SETADNSENS:
-    break;
-  case ENUM_ID_IMGPROC_GETADNSENS:
-    break;
-  case ENUM_ID_IMGPROC_SETFLIGHTMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETFLIGHTMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETMFLIGHT:
-    break;
-  case ENUM_ID_IMGPROC_GETMFLIGHT:
-    break;
-  case ENUM_ID_IMGPROC_SETWBMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETWBMODE:
-    break;
-  case ENUM_ID_IMGPROC_LOCKAWB:
-    break;
-  case ENUM_ID_IMGPROC_UNLOCKAWB:
-    break;
-  case ENUM_ID_IMGPROC_SETAWBRANGE:
-    break;
-  case ENUM_ID_IMGPROC_GETAWBRANGE:
-    break;
-  case ENUM_ID_IMGPROC_SETMWBSCENE:
-    break;
-  case ENUM_ID_IMGPROC_GETMWBSCENE:
-    break;
-  case ENUM_ID_IMGPROC_SETMWBGAIN:
-    break;
-  case ENUM_ID_IMGPROC_GETMWBGAIN:
-    break;
-  case ENUM_ID_IMGPROC_SETMWBCT:
-    break;
-  case ENUM_ID_IMGPROC_GETMWBCT:
-    break;
-  case ENUM_ID_IMGPROC_SETCRSUPPSN:
-    break;
-  case ENUM_ID_IMGPROC_GETCRSUPPSN:
-    break;
-  case ENUM_ID_IMGPROC_SETFOCUSMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETFOCUSMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETFOCUSWIN:
-    break;
-  case ENUM_ID_IMGPROC_GETFOCUSWIN:
-    break;
-  case ENUM_ID_IMGPROC_SETFIXEDMODECODE:
-    break;
-  case ENUM_ID_IMGPROC_GETFIXEDMODECODE:
-    break;
-  case ENUM_ID_IMGPROC_SETMINFOCUSDIS:
-    break;
-  case ENUM_ID_IMGPROC_GETMINFOCUSDIS:
-    break;
-  case ENUM_ID_IMGPROC_SETOPZOOMRANGE:
-    break;
-  case ENUM_ID_IMGPROC_GETOPZOOMRANGE:
-    break;
-  case ENUM_ID_IMGPROC_SETOPZOOMSPEED:
-    break;
-  case ENUM_ID_IMGPROC_GETOPZOOMSPEED:
-    break;
-  case ENUM_ID_IMGPROC_SETHDRMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETHDRMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETMHDRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_GETMHDRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_SETNRMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETNRMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETANRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_GETANRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_SETMSPANRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_GETMSPANRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_SETMTNRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_GETMTNRSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_SETDHZMODE:
-    break;
-  case ENUM_ID_IMGPROC_GETDHZMODE:
-    break;
-  case ENUM_ID_IMGPROC_SETMDHZSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_GETMDHZSTRTH:
-    break;
-  case ENUM_ID_IMGPROC_SETCONTRAST:
-    break;
-  case ENUM_ID_IMGPROC_GETCONTRAST:
-    break;
-  case ENUM_ID_IMGPROC_SETBRIGHTNESS:
-    break;
-  case ENUM_ID_IMGPROC_GETBRIGHTNESS:
-    break;
-  case ENUM_ID_IMGPROC_SETSATURATION:
-    break;
-  case ENUM_ID_IMGPROC_GETSATURATION:
-    break;
-  case ENUM_ID_IMGPROC_SETSHARPNESS:
-    break;
-  case ENUM_ID_IMGPROC_GETSHARPNESS:
-    break;
-  case ENUM_ID_IMGPROC_SETGAMMACOEF:
-    break;
   default:
     LOG_INFO("cmdID: Unknow\n");
     break;
@@ -302,86 +149,106 @@ int RKAiqToolManager::AnrIoCtrl(int id, void *data, int size) {
   switch (id) {
   case ENUM_ID_ANR_SETBAYERNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_BAYERNR;
+    param.module_bits = 1 << ANR_MODULE_BAYERNR;
     param.stBayernrPara = *(CalibDb_BayerNr_t *)data;
+    CHECK_PARAM_SIZE(CalibDb_BayerNr_t, size);
     anr_->SetIQPara(&param);
   } break;
   case ENUM_ID_ANR_SETMFNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_MFNR;
+    param.module_bits = 1 << ANR_MODULE_MFNR;
     param.stMfnrPara = *(CalibDb_MFNR_t *)data;
+    CHECK_PARAM_SIZE(CalibDb_MFNR_t, size);
     anr_->SetIQPara(&param);
   } break;
   case ENUM_ID_ANR_SETUVNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_UVNR;
+    param.module_bits = 1 << ANR_MODULE_UVNR;
     param.stUvnrPara = *(CalibDb_UVNR_t *)data;
+    CHECK_PARAM_SIZE(CalibDb_UVNR_t, size);
     anr_->SetIQPara(&param);
   } break;
   case ENUM_ID_ANR_SETYNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_YNR;
+    param.module_bits = 1 << ANR_MODULE_YNR;
     param.stYnrPara = *(CalibDb_YNR_t *)data;
+    CHECK_PARAM_SIZE(CalibDb_YNR_t, size);
     anr_->SetIQPara(&param);
   } break;
   case ENUM_ID_ANR_GETBAYERNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_BAYERNR;
+    param.module_bits = 1 << ANR_MODULE_BAYERNR;
+    CHECK_PARAM_SIZE(CalibDb_BayerNr_t, size);
     anr_->GetIQPara(&param);
     memcpy(data, &param.stBayernrPara, sizeof(CalibDb_BayerNr_t));
   } break;
   case ENUM_ID_ANR_GETMFNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_MFNR;
+    param.module_bits = 1 << ANR_MODULE_MFNR;
+    CHECK_PARAM_SIZE(CalibDb_MFNR_t, size);
     anr_->GetIQPara(&param);
     memcpy(data, &param.stMfnrPara, sizeof(CalibDb_MFNR_t));
   } break;
   case ENUM_ID_ANR_GETUVNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_UVNR;
+    param.module_bits = 1 << ANR_MODULE_UVNR;
+    CHECK_PARAM_SIZE(CalibDb_UVNR_t, size);
     anr_->GetIQPara(&param);
     memcpy(data, &param.stUvnrPara, sizeof(CalibDb_UVNR_t));
   } break;
   case ENUM_ID_ANR_GETYNRATTR: {
     rk_aiq_nr_IQPara_t param;
-    param.module_bits = ANR_MODULE_YNR;
+    param.module_bits = 1 << ANR_MODULE_YNR;
+    CHECK_PARAM_SIZE(CalibDb_YNR_t, size);
     anr_->GetIQPara(&param);
     memcpy(data, &param.stYnrPara, sizeof(CalibDb_YNR_t));
   } break;
   case ENUM_ID_ANR_SETATTRIB:
+    CHECK_PARAM_SIZE(rk_aiq_nr_attrib_t, size);
     anr_->SetAttrib((rk_aiq_nr_attrib_t *)data);
     break;
   case ENUM_ID_ANR_GETATTRIB:
+    CHECK_PARAM_SIZE(rk_aiq_nr_attrib_t, size);
     anr_->GetAttrib((rk_aiq_nr_attrib_t *)data);
     break;
   case ENUM_ID_ANR_SETLUMASFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->SetLumaSFStrength(*(float *)data);
     break;
   case ENUM_ID_ANR_SETLUMATFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->SetLumaTFStrength(*(float *)data);
     break;
   case ENUM_ID_ANR_GETLUMASFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->GetLumaSFStrength((float *)data);
     break;
   case ENUM_ID_ANR_GETLUMATFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->GetLumaTFStrength((float *)data);
     break;
   case ENUM_ID_ANR_SETCHROMASFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->SetChromaSFStrength(*(float *)data);
     break;
   case ENUM_ID_ANR_SETCHROMATFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->SetChromaTFStrength(*(float *)data);
     break;
   case ENUM_ID_ANR_GETCHROMASFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->GetChromaSFStrength((float *)data);
     break;
   case ENUM_ID_ANR_GETCHROMATFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->GetChromaTFStrength((float *)data);
     break;
   case ENUM_ID_ANR_SETRAWNRSFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->SetRawnrSFStrength(*(float *)data);
     break;
   case ENUM_ID_ANR_GETRAWNRSFSTRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     anr_->GetRawnrSFStrength((float *)data);
     break;
   default:
@@ -395,21 +262,33 @@ int RKAiqToolManager::SharpIoCtrl(int id, void *data, int size) {
   LOG_INFO("SharpIoCtrl id: 0x%x\n", id);
   switch (id) {
   case ENUM_ID_SHARP_SET_ATTR:
+    CHECK_PARAM_SIZE(rk_aiq_sharp_attrib_t, size);
     asharp_->SetAttrib((rk_aiq_sharp_attrib_t *)data);
     break;
   case ENUM_ID_SHARP_GET_ATTR:
+    CHECK_PARAM_SIZE(rk_aiq_sharp_attrib_t, size);
     asharp_->GetAttrib((rk_aiq_sharp_attrib_t *)data);
     break;
-  case ENUM_ID_SHARP_SET_IQPARA:
-    asharp_->SetIQPara((rk_aiq_sharp_IQpara_t *)data);
-    break;
-  case ENUM_ID_SHARP_GET_IQPARA:
-    asharp_->GetIQPara((rk_aiq_sharp_IQpara_t *)data);
-    break;
+  case ENUM_ID_SHARP_SET_IQPARA: {
+    rk_aiq_sharp_IQpara_t param;
+    param.module_bits = 1 << ASHARP_MODULE_SHARP;
+    param.stSharpPara = *(CalibDb_Sharp_t *)data;
+    CHECK_PARAM_SIZE(CalibDb_Sharp_t, size);
+    asharp_->SetIQPara(&param);
+  } break;
+  case ENUM_ID_SHARP_GET_IQPARA: {
+    rk_aiq_sharp_IQpara_t param;
+    param.module_bits = 1 << ASHARP_MODULE_SHARP;
+    CHECK_PARAM_SIZE(CalibDb_Sharp_t, size);
+    asharp_->GetIQPara(&param);
+    memcpy(data, &param.stSharpPara, sizeof(CalibDb_Sharp_t));
+  } break;
   case ENUM_ID_SHARP_SET_STRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     asharp_->SetStrength(*(float *)data);
     break;
   case ENUM_ID_SHARP_GET_STRENGTH:
+    CHECK_PARAM_SIZE(float, size);
     asharp_->GetStrength((float *)data);
     break;
   default:

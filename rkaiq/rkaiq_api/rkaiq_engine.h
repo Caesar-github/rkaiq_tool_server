@@ -43,7 +43,8 @@ typedef enum rk_aiq_state_e {
 
 class RKAiqEngine {
 public:
-  RKAiqEngine();
+  RKAiqEngine() = delete;
+  RKAiqEngine(std::string iqfiles_path);
   virtual ~RKAiqEngine();
   static void RKAiqEngineLoop(void *arg);
   rk_aiq_sys_ctx_t *GetContext() { return ctx_; }
@@ -55,6 +56,7 @@ public:
   int WaitStreamEvent(int fd, unsigned int event_type, int time_out_ms);
   int SubcribleStreamEvent(int fd, bool subs);
   int InitEngine();
+  int InitEngine(int mode);
   int StartEngine();
   int StopEngine();
   int DeInitEngine();
@@ -62,13 +64,15 @@ public:
   friend class RKAiqToolManager;
 
 private:
+  std::string iqfiles_path_;
   rk_aiq_sys_ctx_t *ctx_;
   rk_aiq_working_mode_t mode_;
   std::thread *rkaiq_engine_thread_;
   static int thread_quit_;
   struct rkaiq_media_info media_info_;
   std::string sensor_entity_name_;
-  std::string iq_file_dir_;
+  int width_;
+  int height_;
 };
 
 #endif // _TOOL_RKAIQ_API_ENGINE_H_

@@ -25,6 +25,11 @@ if(BUILD_SANITIZER_STATIC)
 	link_libraries(libasan.a dl m rt)
 endif()
 
+option(BUILD_DEBUG "compile with debug" OFF)
+if(BUILD_SANITIZER_STATIC)
+        add_definitions(-g -ggdb -gdwarf -funwind-tables -rdynamic -O0 )
+endif()
+
 option(BUILD_RKAIQ_API "depend on rkaiq api library" ON)
 if(BUILD_RKAIQ_API)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_api RKAIQ_SOURCE)

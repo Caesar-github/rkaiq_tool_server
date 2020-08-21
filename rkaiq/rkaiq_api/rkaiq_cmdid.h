@@ -1,6 +1,14 @@
 #ifndef _TOOL_RKAIQ_API_CMD_ID_H_
 #define _TOOL_RKAIQ_API_CMD_ID_H_
 
+#define CHECK_PARAM_SIZE(parmaStruct, dataSize)                                \
+  LOG_INFO("real struct size : 0x%x, data size 0x%x\n", sizeof(parmaStruct),   \
+           dataSize);                                                          \
+  if (sizeof(parmaStruct) != dataSize) {                                       \
+    LOG_INFO("The parameter does not match and will not take effect\n");       \
+    return -1;                                                                 \
+  }
+
 enum {
   ENUM_ID_GET_STATUS = 0x100,
 };

@@ -3,6 +3,8 @@
 
 #include "rk_aiq_user_api_anr.h"
 
+#include "logger/log.h"
+
 class RKAiqToolANR {
 public:
   RKAiqToolANR(rk_aiq_sys_ctx_t *ctx);

@@ -12,6 +12,9 @@ bool is_turning_mode = false;
 int app_run_mode = APP_RUN_STATUS_TUNRING;
 int g_width = 1920;
 int g_height = 1080;
+int g_mode = 0;
+std::string iqfile;
+std::shared_ptr<TCPServer> tcp;
 std::shared_ptr<RKAiqToolManager> rkaiq_manager;
 
 static int get_env(const char *name, int *value, int default_value) {
@@ -34,7 +37,10 @@ static int get_env(const char *name, int *value, int default_value) {
 void sigterm_handler(int sig) {
   fprintf(stderr, "sigterm_handler signal %d\n", sig);
   quit = 1;
+  tcp->SaveEixt();
 }
+
+static void parse_args(int argc, char **argv);
 
 int main(int argc, char **argv) {
   signal(SIGQUIT, sigterm_handler);
@@ -45,6 +51,10 @@ int main(int argc, char **argv) {
   signal(SIGPIPE, sigterm_handler);
   get_env("rkaiq_tool_server_log_level", &log_level, 4);
 
+  parse_args(argc, argv);
+  LOG_ERROR("iqfile cmd_parser.get  %s\n", iqfile.c_str());
+  LOG_ERROR("g_mode cmd_parser.get  %d\n", g_mode);
+
   std::string exe_name = argv[0];
   system(STOP_RKLUNCH_CMD);
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -53,28 +63,54 @@ int main(int argc, char **argv) {
 
   if (app_run_mode == APP_RUN_STATUS_TUNRING) {
     LOG_INFO("app_run_mode %d  [0: turning 1: capture]\n", app_run_mode);
-#ifdef ENABLE_RSTP_SERVER
-    rkaiq_manager = std::make_shared<RKAiqToolManager>();
+    rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     init_rtsp(g_width, g_height);
-#endif
   }
 
-  TCPServer tcp;
-  tcp.RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);
-  tcp.Process(SERVER_PORT);
+  tcp = std::make_shared<TCPServer>();
+  tcp->RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);
+  tcp->Process(SERVER_PORT);
   while (!quit) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
   fprintf(stderr, "go quit %d\n", quit);
-  tcp.SaveEixt();
+  tcp->SaveEixt();
   if (app_run_mode == APP_RUN_STATUS_TUNRING) {
-#ifdef ENABLE_RSTP_SERVER
-    rkaiq_manager->SaveExit();
     deinit_rtsp();
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;
-#endif
   }
   return 0;
+}
+
+static const char short_options[] = "i:m:";
+static const struct option long_options[] = {
+    {"iqfile", required_argument, NULL, 'i'},
+    {"mode", required_argument, NULL, 'm'},
+    {"help", no_argument, NULL, 'h'},
+    {0, 0, 0, 0}};
+static void parse_args(int argc, char **argv) {
+  for (;;) {
+    int idx;
+    int c;
+    c = getopt_long(argc, argv, short_options, long_options, &idx);
+    if (-1 == c)
+      break;
+    switch (c) {
+    case 0: /* getopt_long() flag */
+      break;
+    case 'i':
+      iqfile = optarg;
+      break;
+    case 'm':
+      g_mode = atoi(optarg);
+      break;
+    default:
+      break;
+    }
+  }
+  if (iqfile.empty()) {
+    iqfile = "/oem/etc/iqfiles";
+  }
 }
