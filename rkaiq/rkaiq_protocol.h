@@ -124,6 +124,7 @@ typedef struct Capture_Reso_s {
 #define TAG_OL_DEVICE_TO_PC "AIQ-ANS"
 
 #define STOP_RKLUNCH_CMD "sh /oem/RkLunch-stop.sh"
+#define VICAP_COMPACT_TEST "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
 
 #define START_DBSERVER_CMD "dbserver &"
 #define START_ISPSERVER_CMD "ispserver -no-sync-db &"

@@ -175,14 +175,14 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   float fps;
   int endianness = 0;
 
-  cap_info.dev_fd = device_open(cap_info.dev_name);
+  //cap_info.dev_fd = device_open(cap_info.dev_name);
   cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
 
   LOG_INFO("sensor subdev path: %s\n", cap_info.sd_path.device_name);
 
   memset(&ctrl, 0, sizeof(ctrl));
   ctrl.id = V4L2_CID_HBLANK;
-  if (device_getblank(cap_info.dev_fd, &ctrl) < 0) {
+  if (device_getblank(cap_info.subdev_fd, &ctrl) < 0) {
     // todo
     sensorParam->status = RES_FAILED;
     goto end;
@@ -192,7 +192,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
 
   memset(&ctrl, 0, sizeof(ctrl));
   ctrl.id = V4L2_CID_VBLANK;
-  if (device_getblank(cap_info.dev_fd, &ctrl) < 0) {
+  if (device_getblank(cap_info.subdev_fd, &ctrl) < 0) {
     // todo
     sensorParam->status = RES_FAILED;
     goto end;
@@ -215,8 +215,8 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   cap_info.sd_path.width = fmt.format.width;
   cap_info.sd_path.height = fmt.format.height;
 
-  LOG_INFO("get sensor code: %d  bits: %d\n", cap_info.sd_path.sen_fmt,
-           cap_info.sd_path.bits);
+  LOG_INFO("get sensor code: %d  bits: %d, cap_info.format:  %d\n", cap_info.sd_path.sen_fmt,
+           cap_info.sd_path.bits, cap_info.format);
 
   /* set isp subdev fmt to bayer raw*/
   if (cap_info.link == link_to_isp) {
@@ -232,7 +232,11 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
       sensorParam->status = RES_FAILED;
       goto end;
     }
+  } else if (cap_info.link == link_to_vicap) {
+    ret = system(VICAP_COMPACT_TEST);
+    LOG_INFO("VICAP_COMPACT_TEST: %d  change to no compact\n", ret);
   }
+
 
   memset(&finterval, 0, sizeof(finterval));
   finterval.pad = 0;
@@ -255,7 +259,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
   sensorParam->vts = vts;
   sensorParam->bits = cap_info.sd_path.bits;
   sensorParam->endianness = endianness;
-  LOG_INFO("sensorParam->endianness: %f\n", endianness);
+  LOG_INFO("sensorParam->endianness: %d\n", endianness);
 
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++) {
@@ -303,7 +307,7 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   LOG_INFO(" set bits        : %d\n", CapParam->bits);
   LOG_INFO(" set framenumber : %d\n", CapParam->framenumber);
   LOG_INFO(" set multiframe  : %d\n", CapParam->multiframe);
-  cap_info.dev_fd = device_open(cap_info.dev_name);
+  cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
 
   capture_frames = CapParam->framenumber;
   capture_frames_index = 0;
@@ -319,11 +323,11 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   gain.id = V4L2_CID_ANALOGUE_GAIN;
   gain.value = CapParam->gain;
 
-  if (device_setctrl(cap_info.dev_fd, &exp) < 0) {
+  if (device_setctrl(cap_info.subdev_fd, &exp) < 0) {
     LOG_ERROR(" set exposure result failed to device\n");
     ret_status = RES_FAILED;
   }
-  if (device_setctrl(cap_info.dev_fd, &gain) < 0) {
+  if (device_setctrl(cap_info.subdev_fd, &gain) < 0) {
     LOG_ERROR(" set gain result failed to device\n");
     ret_status = RES_FAILED;
   }
@@ -344,9 +348,9 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
   }
   LOG_INFO("cmd->checkSum %d\n", cmd->checkSum);
 
-  if (cap_info.dev_fd > 0) {
-    device_close(cap_info.dev_fd);
-    cap_info.dev_fd = -1;
+  if (cap_info.subdev_fd > 0) {
+    device_close(cap_info.subdev_fd);
+    cap_info.subdev_fd = -1;
   }
 }
 

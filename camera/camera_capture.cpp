@@ -250,6 +250,7 @@ int init_device(struct capture_info *cap_info) {
   struct v4l2_crop crop;
   struct v4l2_format fmt;
   unsigned int min;
+  int ret;
 
   cap_info->dev_fd = device_open(cap_info->dev_name);
 
@@ -269,7 +270,8 @@ int init_device(struct capture_info *cap_info) {
   cropcap.type = cap_info->capture_buf_type;
   crop.type = cap_info->capture_buf_type;
   crop.c = cropcap.defrect; /* reset to default */
-  device_cropcap(cap_info->dev_fd, &cropcap, &crop);
+  if (cap_info->link == link_to_isp)
+    device_cropcap(cap_info->dev_fd, &cropcap, &crop);
 
   CLEAR(fmt);
   if (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)
@@ -283,7 +285,11 @@ int init_device(struct capture_info *cap_info) {
     fmt.fmt.pix.height = cap_info->height;
     fmt.fmt.pix.pixelformat = cap_info->format;
     fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
-    device_setformat(cap_info->dev_fd, &fmt);
+    ret = device_setformat(cap_info->dev_fd, &fmt);
+    if (ret)
+      LOG_ERROR("%s set format failed\n", cap_info->dev_name);
+    else
+      LOG_INFO("%s set format success\n", cap_info->dev_name);
   } else {
     device_getformat(cap_info->dev_fd, &fmt);
   }
