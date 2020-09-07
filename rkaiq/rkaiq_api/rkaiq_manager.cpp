@@ -26,13 +26,21 @@ RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path)
             vers.iq_parser_ver);
   if (strcmp(MATCH_RKAIQ_VERSION_1, vers.aiq_ver) &&
       strcmp(MATCH_RKAIQ_VERSION_2, vers.aiq_ver) &&
-      strcmp(MATCH_RKAIQ_VERSION_3, vers.aiq_ver)) {
+      strcmp(MATCH_RKAIQ_VERSION_3, vers.aiq_ver) &&
+      strcmp(MATCH_RKAIQ_VERSION_4, vers.aiq_ver) &&
+      strcmp(MATCH_RKAIQ_VERSION_5, vers.aiq_ver) &&
+      strcmp(MATCH_RKAIQ_VERSION_6, vers.aiq_ver)) {
     LOG_ERROR("version: aiq_ver %s iq_parser_ver %s should be match \n"
               "   aiq_ver %s \n"
               "or aiq_ver %s \n"
+              "or aiq_ver %s \n"
+              "or aiq_ver %s \n"
+              "or aiq_ver %s \n"
               "or aiq_ver %s \n",
               vers.aiq_ver, vers.iq_parser_ver, MATCH_RKAIQ_VERSION_1,
-              MATCH_RKAIQ_VERSION_2, MATCH_RKAIQ_VERSION_3);
+              MATCH_RKAIQ_VERSION_2, MATCH_RKAIQ_VERSION_3,
+              MATCH_RKAIQ_VERSION_4, MATCH_RKAIQ_VERSION_5
+              MATCH_RKAIQ_VERSION_6);
     exit(-1);
   }
 }
