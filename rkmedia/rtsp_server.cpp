@@ -54,7 +54,7 @@ std::string get_video_cap_stream_param(std::string input_path,
   PARAM_STRING_APPEND(stream_param, KEY_V4L2_CAP_TYPE,
                       KEY_V4L2_C_TYPE(VIDEO_CAPTURE));
   PARAM_STRING_APPEND(stream_param, KEY_V4L2_MEM_TYPE,
-                      KEY_V4L2_M_TYPE(MEMORY_DMABUF));
+                      KEY_V4L2_M_TYPE(MEMORY_MMAP));
   PARAM_STRING_APPEND_TO(stream_param, KEY_FRAMES, 4);
   PARAM_STRING_APPEND(stream_param, KEY_OUTPUTDATATYPE, pixel_format);
   PARAM_STRING_APPEND_TO(stream_param, KEY_BUFFER_WIDTH, video_width);

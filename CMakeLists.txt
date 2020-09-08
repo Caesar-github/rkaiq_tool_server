@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(rkaiq_tool_server C CXX)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 include_directories(
 	${PROJECT_SOURCE_DIR}/
 	${PROJECT_SOURCE_DIR}/netserver/
@@ -47,8 +49,22 @@ link_libraries(rkaiq)
 add_definitions(-DENABLE_RKAIQ_UAPI)
 endif()
 
-option(BUILD_RKMEDIA "depend on rkmeda library" ON)
+option(BUILD_RKMEDIA "depend on rkmedia library" ON)
+option(BUILD_RKMEDIA_INDE "depend on rkmedia library independent" ON)
 if(BUILD_RKMEDIA)
+add_definitions(-DENABLE_RSTP_SERVER)
+if(BUILD_RKMEDIA_INDE)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia/)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia/include/)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia/librkmedia/include/easymedia/)
+add_subdirectory(rkmedia/librkmedia)
+set(RKMEDIA_SOURCE
+	${RKMEDIA_SOURCE}
+	rkmedia/sink_flow.cc
+	rkmedia/source_flow.cc
+	rkmedia/rtsp_server.cpp)
+link_libraries(rkmedia)
+else()
 find_package(PkgConfig QUIET)
 pkg_check_modules(PKG_EASYMEDIA QUIET "libeasymedia")
 set(EASYMEDIA_DEFINITIONS ${PKG_EASYMEDIA_CFLAGS_OTHER})
@@ -58,9 +74,9 @@ find_path(EASYMEDIA_INCLUDE_DIR
     PATH_SUFFIXES easymedia)
 include_directories(${PROJECT_SOURCE_DIR}/rkmedia/)
 link_libraries(easymedia)
-add_definitions(-DENABLE_RSTP_SERVER)
 include_directories(${EASYMEDIA_INCLUDE_DIR}/)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkmedia/ RKMEDIA_SOURCE)
+endif()
 endif()
 
 file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.cc *.h)
@@ -81,6 +97,9 @@ set(RKAIQ_TOOL_SERVER_SOURCE
 	rkaiq_tool_server.cpp)
 
 add_executable(rkaiq_tool_server ${RKAIQ_TOOL_SERVER_SOURCE})
+if(BUILD_RKMEDIA_INDE)
+add_dependencies(rkaiq_tool_server rkmedia)
+endif()
 target_link_libraries(rkaiq_tool_server pthread)
 install(TARGETS rkaiq_tool_server RUNTIME DESTINATION bin)
 
