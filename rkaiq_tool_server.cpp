@@ -13,9 +13,13 @@ int app_run_mode = APP_RUN_STATUS_TUNRING;
 int g_width = 1920;
 int g_height = 1080;
 int g_mode = 0;
+int g_dump = 0;
+int g_device_id = 0;
 std::string iqfile;
+std::string g_sensor_name;
 std::shared_ptr<TCPServer> tcp;
 std::shared_ptr<RKAiqToolManager> rkaiq_manager;
+std::shared_ptr<RKAiqMedia> rkaiq_media;
 
 static int get_env(const char *name, int *value, int default_value) {
   char *ptr = getenv(name);
@@ -54,6 +58,8 @@ int main(int argc, char **argv) {
   parse_args(argc, argv);
   LOG_ERROR("iqfile cmd_parser.get  %s\n", iqfile.c_str());
   LOG_ERROR("g_mode cmd_parser.get  %d\n", g_mode);
+  LOG_ERROR("g_dump cmd_parser.get  %d\n", g_dump);
+  LOG_ERROR("g_device_id cmd_parser.get  %d\n", g_device_id);
 
   std::string exe_name = argv[0];
   system(STOP_RKLUNCH_CMD);
@@ -61,9 +67,15 @@ int main(int argc, char **argv) {
   WaitProcessExit("mediaserver", 10);
   WaitProcessExit("ispserver", 10);
 
+  rkaiq_media = std::make_shared<RKAiqMedia>();
+  rkaiq_media->GetMediaInfo();
+  if (g_dump)
+    rkaiq_media->DumpMediaInfo();
+  g_sensor_name = rkaiq_media->GetSensorName(g_device_id);
+
   if (app_run_mode == APP_RUN_STATUS_TUNRING) {
     LOG_INFO("app_run_mode %d  [0: turning 1: capture]\n", app_run_mode);
-    rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile);
+    rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     init_rtsp(g_width, g_height);
   }
@@ -84,10 +96,12 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-static const char short_options[] = "i:m:";
+static const char short_options[] = "i:m:Dd:";
 static const struct option long_options[] = {
     {"iqfile", required_argument, NULL, 'i'},
     {"mode", required_argument, NULL, 'm'},
+    {"dump", no_argument, NULL, 'D'},
+    {"device_id", required_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
     {0, 0, 0, 0}};
 static void parse_args(int argc, char **argv) {
@@ -105,6 +119,12 @@ static void parse_args(int argc, char **argv) {
       break;
     case 'm':
       g_mode = atoi(optarg);
+      break;
+    case 'd':
+      g_device_id = atoi(optarg);
+      break;
+    case 'D':
+      g_dump = 1;
       break;
     default:
       break;

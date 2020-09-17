@@ -9,6 +9,7 @@
 #include "logger/log.h"
 #include "rkaiq_cmdid.h"
 
+#include "rkaiq_media.h"
 #include "rkaiq_online_protocol.h"
 #include "rkaiq_raw_protocol.h"
 

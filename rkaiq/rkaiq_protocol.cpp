@@ -9,6 +9,7 @@ extern int app_run_mode;
 extern int g_width;
 extern int g_height;
 extern std::string iqfile;
+extern std::string g_sensor_name;
 
 static int ProcessExists(const char *process_name) {
   FILE *fp;
@@ -68,7 +69,8 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     rkaiq_manager = nullptr;
   } else {
     LOG_INFO("Switch to APP_RUN_STATUS_TUNRING\n");
-    rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile);
+    LOG_ERROR("sensor_name %s\n", g_sensor_name.c_str());
+    rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
     init_rtsp(g_width, g_height);
   }
   app_run_mode = mode;

@@ -7,9 +7,10 @@
 
 extern int g_mode;
 
-RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path)
-    : iqfiles_path_(iqfiles_path), ctx_(nullptr) {
-  engine_.reset(new RKAiqEngine(iqfiles_path_));
+RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
+                                   std::string sensor_name)
+    : iqfiles_path_(iqfiles_path), sensor_name_(sensor_name), ctx_(nullptr) {
+  engine_.reset(new RKAiqEngine(iqfiles_path_, sensor_name_));
   engine_->InitEngine(g_mode);
   engine_->StartEngine();
   ctx_ = engine_->GetContext();
@@ -50,10 +51,9 @@ RKAiqToolManager::~RKAiqToolManager() {
   ae_.reset(nullptr);
   imgproc_.reset(nullptr);
   engine_.reset(nullptr);
-  RKAiqEngine::thread_quit_ = 0;
 }
 
-void RKAiqToolManager::SaveExit() { RKAiqEngine::thread_quit_ = 1; }
+void RKAiqToolManager::SaveExit() {}
 
 int RKAiqToolManager::IoCtrl(int id, void *data, int size) {
   LOG_INFO("IoCtrl id: 0x%x\n", id);
