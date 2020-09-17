@@ -4,10 +4,10 @@
 
 #include "utils.h"
 
+#include <getopt.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <getopt.h>
 
 #include <algorithm>
 #include <sstream>
@@ -21,10 +21,7 @@ enum {
   LOG_LEVEL_DBG,
 };
 
-enum {
-  LOG_METHOD_MINILOG,
-  LOG_METHOD_PRINT
-};
+enum { LOG_METHOD_MINILOG, LOG_METHOD_PRINT };
 
 static int rkmedia_log_method = LOG_METHOD_PRINT;
 static int rkmedia_log_level = LOG_LEVEL_INFO;
@@ -66,7 +63,7 @@ static void LogPrintf(const char *prefix, const char *fmt, va_list vl) {
       fprintf(stderr, "%s", line);
 #ifdef RKMEDIA_SUPPORT_MINILOG
     } else {
-      //minilog_debug("%s", (char *)prefix);
+      // minilog_debug("%s", (char *)prefix);
       vsnprintf(line, sizeof(line), fmt, vl);
       minilog_debug("%s%s", (char *)prefix, line);
     }
@@ -193,8 +190,9 @@ bool string_start_withs(std::string const &fullString,
 bool string_end_withs(std::string const &fullString,
                       std::string const &ending) {
   if (fullString.length() >= ending.length()) {
-    return (0 == fullString.compare(fullString.length() - ending.length(),
-                                    ending.length(), ending));
+    return (0 ==
+            fullString.compare(fullString.length() - ending.length(),
+                               ending.length(), ending));
   } else {
     return false;
   }

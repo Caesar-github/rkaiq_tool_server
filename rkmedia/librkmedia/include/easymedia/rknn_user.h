@@ -16,9 +16,9 @@
 
 #define RKNN_PICTURE_PATH_LEN (512)
 
-using RknnCallBack = std::add_pointer<void(void* handler,
-    int type, void *ptr, int size)>::type;
-using RknnHandler = std::add_pointer<void*>::type;
+using RknnCallBack =
+    std::add_pointer<void(void *handler, int type, void *ptr, int size)>::type;
+using RknnHandler = std::add_pointer<void *>::type;
 
 typedef struct Rect {
   int left;
@@ -33,7 +33,8 @@ typedef enum {
   FACE_REG_REGISTER,
 } FaceRegType;
 
-/* recognize_type: -1, Unknow; register_type: -1, register repeaded, -99 register failed */
+/* recognize_type: -1, Unknow; register_type: -1, register repeaded, -99
+ * register failed */
 typedef struct {
   FaceRegType type;
   int user_id;

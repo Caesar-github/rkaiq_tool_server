@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(rkaiq_tool_server C CXX)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 include_directories(
 	${PROJECT_SOURCE_DIR}/

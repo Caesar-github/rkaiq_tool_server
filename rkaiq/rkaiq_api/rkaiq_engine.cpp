@@ -419,16 +419,9 @@ RKAiqEngine::RKAiqEngine(std::string iqfiles_path)
     LOG_DEBUG("Bad media topology error %d, %s\n", errno, strerror(errno));
     return;
   }
-  // rkaiq_engine_thread_ = new std::thread(RKAiqEngineLoop, this);
-  // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 
 RKAiqEngine::~RKAiqEngine() {
   StopEngine();
   DeInitEngine();
-  // if (rkaiq_engine_thread_) {
-  //   rkaiq_engine_thread_->join();
-  //   delete rkaiq_engine_thread_;
-  //   rkaiq_engine_thread_ = nullptr;
-  // }
 }

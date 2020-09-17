@@ -21,10 +21,10 @@ typedef struct {
 }
 #endif
 
-#include "utils.h"
 #include "control.h"
 #include "image.h"
 #include "media_reflector.h"
+#include "utils.h"
 
 namespace easymedia {
 
@@ -59,10 +59,14 @@ public:
   virtual long Tell() = 0;
 
   virtual int NewStream(std::string new_path _UNUSED) { return -1; };
-  virtual size_t WriteAndClose(const void *ptr  _UNUSED,
-                    size_t size  _UNUSED, size_t nmemb _UNUSED) { return -1; };
+  virtual size_t WriteAndClose(const void *ptr _UNUSED, size_t size _UNUSED,
+                               size_t nmemb _UNUSED) {
+    return -1;
+  };
   virtual int ReName(std::string old_path _UNUSED,
-                       std::string new_path _UNUSED) { return -1; };
+                     std::string new_path _UNUSED) {
+    return -1;
+  };
 
   virtual bool Readable() { return readable; }
   virtual bool Writeable() { return writeable; }
@@ -80,7 +84,8 @@ public:
   virtual bool Write(std::shared_ptr<MediaBuffer>) { return false; }
   // The IoCtrl must be called in the same thread of Read()/Write()
   virtual int IoCtrl(unsigned long int request _UNUSED, ...) { return -1; }
-  virtual int SubIoCtrl(unsigned long int request _UNUSED, void *arg, int size = 0) {
+  virtual int SubIoCtrl(unsigned long int request _UNUSED, void *arg,
+                        int size = 0) {
     SubRequest subreq = {request, size, arg};
     return IoCtrl(S_SUB_REQUEST, &subreq);
   }

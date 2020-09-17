@@ -18,7 +18,7 @@
 // the average encoding takes 12ms.
 //
 // TO DO: Dynamic calculate time cost.
-#define ENC_CONST_MAX_TIME 12000 //us
+#define ENC_CONST_MAX_TIME 12000 // us
 
 namespace easymedia {
 
@@ -50,7 +50,7 @@ private:
   std::list<std::shared_ptr<MediaBuffer>> extra_buffer_list;
 #ifdef RK_MOVE_DETECTION
   MoveDetectionFlow *md_flow;
-#endif //RK_MOVE_DETECTION
+#endif // RK_MOVE_DETECTION
   friend bool encode(Flow *f, MediaBufferVector &input_vector);
 };
 
@@ -80,8 +80,8 @@ bool encode(Flow *f, MediaBufferVector &input_vector) {
   std::shared_ptr<MediaBuffer> md_info;
   if (vf->md_flow) {
     int smartp_enable = 0;
-    enc->QueryChange(VideoEncoder::kMoveDetectionFlow,
-      &smartp_enable, sizeof(int));
+    enc->QueryChange(VideoEncoder::kMoveDetectionFlow, &smartp_enable,
+                     sizeof(int));
     if (!smartp_enable) {
       LOG("INFO: VEnc Flow: Wait for smartp configuration to take effect\n");
     } else {
@@ -96,21 +96,22 @@ bool encode(Flow *f, MediaBufferVector &input_vector) {
         LOG("WARN: VEnc Flow: smartp may error in high fps:%d!", fps);
 
       int maximum_timeout = 1000000 / fps - ENC_CONST_MAX_TIME;
-      md_info = vf->md_flow->LookForMdResult(
-        src->GetAtomicClock(), maximum_timeout);
+      md_info =
+          vf->md_flow->LookForMdResult(src->GetAtomicClock(), maximum_timeout);
       if (md_info) {
 #ifndef NDEBUG
         LOGD("VEnc Flow: get md info(cnt=%d): %p, %zuBytes\n",
-          md_info->GetValidSize() / sizeof(INFO_LIST),
-          md_info.get(), md_info->GetValidSize());
+             md_info->GetValidSize() / sizeof(INFO_LIST), md_info.get(),
+             md_info->GetValidSize());
 #endif
         if (md_info->GetSize() >= sizeof(INFO_LIST)) {
 #ifndef NDEBUG
           INFO_LIST *info = (INFO_LIST *)md_info->GetPtr();
           while (info->flag) {
-            LOGD("VEnc Flow: mdinfo: flag:%d, upleft:<%d, %d>, downright:<%d, %d>\n",
-              info->flag, info->up_left[0], info->up_left[1],
-              info->down_right[0], info->down_right[1]);
+            LOGD("VEnc Flow: mdinfo: flag:%d, upleft:<%d, %d>, downright:<%d, "
+                 "%d>\n",
+                 info->flag, info->up_left[0], info->up_left[1],
+                 info->down_right[0], info->down_right[1]);
             info += 1;
           }
 #endif
@@ -122,7 +123,7 @@ bool encode(Flow *f, MediaBufferVector &input_vector) {
       LOGD("VEnc Flow: LookForMdResult end!\n\n");
     }
   }
-#endif //RK_MOVE_DETECTION
+#endif // RK_MOVE_DETECTION
 
   if (0 != enc->Process(src, dst, extra_dst)) {
     LOG("encoder failed\n");
@@ -141,10 +142,11 @@ bool encode(Flow *f, MediaBufferVector &input_vector) {
   return ret;
 }
 
-VideoEncoderFlow::VideoEncoderFlow(const char *param) : extra_output(false),
-    extra_merge(false)
-#ifdef  RK_MOVE_DETECTION
-, md_flow(nullptr)
+VideoEncoderFlow::VideoEncoderFlow(const char *param)
+    : extra_output(false), extra_merge(false)
+#ifdef RK_MOVE_DETECTION
+      ,
+      md_flow(nullptr)
 #endif
 {
   std::list<std::string> separate_list;
@@ -191,7 +193,8 @@ VideoEncoderFlow::VideoEncoderFlow(const char *param) : extra_output(false),
   std::string::size_type idx;
   idx = enc_param_str.find(KEY_OUTPUTDATATYPE);
   if (idx == enc_param_str.npos)
-    PARAM_STRING_APPEND(enc_param_str, KEY_OUTPUTDATATYPE, params[KEY_OUTPUTDATATYPE]);
+    PARAM_STRING_APPEND(enc_param_str, KEY_OUTPUTDATATYPE,
+                        params[KEY_OUTPUTDATATYPE]);
   if (enc_params[KEY_INPUTDATATYPE].empty())
     enc_params[KEY_INPUTDATATYPE] = params[KEY_INPUTDATATYPE];
   if (enc_params[KEY_OUTPUTDATATYPE].empty())
@@ -226,7 +229,7 @@ VideoEncoderFlow::VideoEncoderFlow(const char *param) : extra_output(false),
     roi_regions_cnt = roi_regions.size();
     if (roi_regions_cnt) {
       EncROIRegion *regions =
-        (EncROIRegion *) malloc(roi_regions_cnt * sizeof(EncROIRegion));
+          (EncROIRegion *)malloc(roi_regions_cnt * sizeof(EncROIRegion));
       for (int i = 0; i < roi_regions_cnt; i++) {
         (regions + i)->x = roi_regions[i].x;
         (regions + i)->y = roi_regions[i].y;
@@ -237,10 +240,11 @@ VideoEncoderFlow::VideoEncoderFlow(const char *param) : extra_output(false),
         (regions + i)->qp_area_idx = roi_regions[i].qp_area_idx;
         (regions + i)->area_map_en = roi_regions[i].area_map_en;
         (regions + i)->abs_qp_en = roi_regions[i].abs_qp_en;
-        LOG("VEnc Flow: Roi Regions[%d]: (%d,%d,%d,%d,%d,%d,%d,%d,%d)\n",
-          i, roi_regions[i].x, roi_regions[i].y, roi_regions[i].w, roi_regions[i].h,
-          roi_regions[i].intra, roi_regions[i].quality, roi_regions[i].qp_area_idx,
-          roi_regions[i].area_map_en, roi_regions[i].abs_qp_en);
+        LOG("VEnc Flow: Roi Regions[%d]: (%d,%d,%d,%d,%d,%d,%d,%d,%d)\n", i,
+            roi_regions[i].x, roi_regions[i].y, roi_regions[i].w,
+            roi_regions[i].h, roi_regions[i].intra, roi_regions[i].quality,
+            roi_regions[i].qp_area_idx, roi_regions[i].area_map_en,
+            roi_regions[i].abs_qp_en);
       }
 
       auto pbuff = std::make_shared<ParameterBuffer>(0);
@@ -286,11 +290,11 @@ VideoEncoderFlow::VideoEncoderFlow(const char *param) : extra_output(false),
       SetOutput(extra_buf, 0);
     } else {
       if (output_dt == VIDEO_H264)
-        extra_buffer_list = split_h264_separate((const uint8_t *)extra_data,
-                                              extra_data_size, gettimeofday());
+        extra_buffer_list = split_h264_separate(
+            (const uint8_t *)extra_data, extra_data_size, gettimeofday());
       else
-        extra_buffer_list = split_h265_separate((const uint8_t *)extra_data,
-                                              extra_data_size, gettimeofday());
+        extra_buffer_list = split_h265_separate(
+            (const uint8_t *)extra_data, extra_data_size, gettimeofday());
       for (auto &extra_buffer : extra_buffer_list) {
         assert(extra_buffer->GetUserFlag() & MediaBuffer::kExtraIntra);
         SetOutput(extra_buffer, 0);
@@ -320,7 +324,7 @@ int VideoEncoderFlow::Control(unsigned long int request, ...) {
     md_flow = *((MoveDetectionFlow **)value->GetPtr());
     LOGD("VEnc Flow: md_flow:%p\n", md_flow);
   }
-#endif //RK_MOVE_DETECTION
+#endif // RK_MOVE_DETECTION
 
   enc->RequestChange(request, value);
   return 0;
@@ -341,9 +345,9 @@ void VideoEncoderFlow::Dump(std::string &dump_info) {
   if (mc.type == Type::Image) {
     dump_info.append("  CodecType: JPEG\r\n");
     sprintf(str_line, "  Input: %d(%d)x%d(%d) fmt:%s\r\n",
-      mc.img_cfg.image_info.width, mc.img_cfg.image_info.vir_width,
-      mc.img_cfg.image_info.height, mc.img_cfg.image_info.vir_height,
-      PixFmtToString(mc.img_cfg.image_info.pix_fmt));
+            mc.img_cfg.image_info.width, mc.img_cfg.image_info.vir_width,
+            mc.img_cfg.image_info.height, mc.img_cfg.image_info.vir_height,
+            PixFmtToString(mc.img_cfg.image_info.pix_fmt));
     dump_info.append(str_line);
     memset(str_line, 0, sizeof(str_line));
     sprintf(str_line, "  Qfactor:%d\n", mc.img_cfg.qfactor);
@@ -361,22 +365,25 @@ void VideoEncoderFlow::Dump(std::string &dump_info) {
       return;
     }
     sprintf(str_line, "  Input: %d(%d)x%d(%d) fmt:%s\r\n",
-      imgcfg.image_info.width, imgcfg.image_info.vir_width,
-      imgcfg.image_info.height, imgcfg.image_info.vir_height,
-      PixFmtToString(imgcfg.image_info.pix_fmt));
+            imgcfg.image_info.width, imgcfg.image_info.vir_width,
+            imgcfg.image_info.height, imgcfg.image_info.vir_height,
+            PixFmtToString(imgcfg.image_info.pix_fmt));
     dump_info.append(str_line);
     memset(str_line, 0, sizeof(str_line));
-    sprintf(str_line, "  QpArray: init:%d min:%d, max:%d, step:%d, min_i:%d, max_i:%d\r\n",
-      vcfg.qp_init, vcfg.qp_min, vcfg.qp_max, vcfg.qp_step, vcfg.qp_min_i, vcfg.qp_max_i);
+    sprintf(
+        str_line,
+        "  QpArray: init:%d min:%d, max:%d, step:%d, min_i:%d, max_i:%d\r\n",
+        vcfg.qp_init, vcfg.qp_min, vcfg.qp_max, vcfg.qp_step, vcfg.qp_min_i,
+        vcfg.qp_max_i);
     dump_info.append(str_line);
     memset(str_line, 0, sizeof(str_line));
-    sprintf(str_line, "  BitRate: target:%d, min:%d, max:%d\r\n",
-      vcfg.bit_rate, vcfg.bit_rate_min, vcfg.bit_rate_max);
+    sprintf(str_line, "  BitRate: target:%d, min:%d, max:%d\r\n", vcfg.bit_rate,
+            vcfg.bit_rate_min, vcfg.bit_rate_max);
     dump_info.append(str_line);
     memset(str_line, 0, sizeof(str_line));
     sprintf(str_line, "  FrameRate: in:%d/%d, out:%d/%d\r\n",
-      vcfg.frame_in_rate, vcfg.frame_in_rate_den,
-      vcfg.frame_rate, vcfg.frame_rate_den);
+            vcfg.frame_in_rate, vcfg.frame_in_rate_den, vcfg.frame_rate,
+            vcfg.frame_rate_den);
     dump_info.append(str_line);
     memset(str_line, 0, sizeof(str_line));
     sprintf(str_line, "  GopSize: %d\r\n", vcfg.gop_size);
@@ -388,12 +395,14 @@ void VideoEncoderFlow::Dump(std::string &dump_info) {
     sprintf(str_line, "  RcMode: %s\r\n", vcfg.rc_mode);
     dump_info.append(str_line);
     memset(str_line, 0, sizeof(str_line));
-    sprintf(str_line, "  FullRange: %s\r\n", vcfg.full_range ? "Enable" : "Disable");
+    sprintf(str_line, "  FullRange: %s\r\n",
+            vcfg.full_range ? "Enable" : "Disable");
     dump_info.append(str_line);
 
     if (imgcfg.codec_type == CODEC_TYPE_H264) {
       memset(str_line, 0, sizeof(str_line));
-      sprintf(str_line, "  Trans8x8: %s\r\n", vcfg.trans_8x8 ? "Enable" : "Disable");
+      sprintf(str_line, "  Trans8x8: %s\r\n",
+              vcfg.trans_8x8 ? "Enable" : "Disable");
       dump_info.append(str_line);
       memset(str_line, 0, sizeof(str_line));
       sprintf(str_line, "  H264Level: %d\r\n", vcfg.level);

@@ -12,10 +12,10 @@
 #include <memory>
 
 #include "image.h"
-#include "media_type.h"
-#include "sound.h"
-#include "rknn_user.h"
 #include "lock.h"
+#include "media_type.h"
+#include "rknn_user.h"
+#include "sound.h"
 
 typedef int (*DeleteFun)(void *arg);
 
@@ -42,7 +42,8 @@ public:
   MediaBuffer(void *buffer_ptr, size_t buffer_size, int buffer_fd = -1,
               void *user_data = nullptr, DeleteFun df = nullptr)
       : ptr(buffer_ptr), size(buffer_size), fd(buffer_fd), valid_size(0),
-        type(Type::None), user_flag(0), ustimestamp(0), eof(false), tsvc_level(-1) {
+        type(Type::None), user_flag(0), ustimestamp(0), eof(false),
+        tsvc_level(-1) {
     SetUserData(user_data, df);
   }
   virtual ~MediaBuffer() = default;
@@ -225,11 +226,10 @@ private:
 
 class MediaGroupBuffer {
 public:
-  MediaGroupBuffer()
-      : pool(nullptr), ptr(nullptr), size(0), fd(-1) {}
+  MediaGroupBuffer() : pool(nullptr), ptr(nullptr), size(0), fd(-1) {}
   // Set userdata and delete function if you want free resource when destrut.
   MediaGroupBuffer(void *buffer_ptr, size_t buffer_size, int buffer_fd = -1,
-              void *user_data = nullptr, DeleteFun df = nullptr)
+                   void *user_data = nullptr, DeleteFun df = nullptr)
       : pool(nullptr), ptr(buffer_ptr), size(buffer_size), fd(buffer_fd) {
     SetUserData(user_data, df);
   }
@@ -246,25 +246,23 @@ public:
     }
   }
 
-  void SetBufferPool(void *bp) {
-    pool = bp;
-  }
+  void SetBufferPool(void *bp) { pool = bp; }
 
   int GetFD() const { return fd; }
   void *GetPtr() const { return ptr; }
   size_t GetSize() const { return size; }
 
-  static MediaGroupBuffer* Alloc(size_t size,
-    MediaBuffer::MemType type = MediaBuffer::MemType::MEM_COMMON);
+  static MediaGroupBuffer *
+  Alloc(size_t size,
+        MediaBuffer::MemType type = MediaBuffer::MemType::MEM_COMMON);
 
 public:
   void *pool;
 
 private:
-
   void *ptr; // buffer virtual address
   size_t size;
-  int fd;            // buffer fd
+  int fd; // buffer fd
 
   std::shared_ptr<void> userdata;
 };

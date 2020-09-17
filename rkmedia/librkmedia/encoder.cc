@@ -23,17 +23,15 @@ void VideoEncoder::RequestChange(uint32_t change,
   change_mtx.lock();
   if (change_list.size() > VIDEO_ENC_CHANGE_MAX) {
     LOG("WARN: Video Encoder: change list reached max cnt:%d. Drop front!\n",
-      VIDEO_ENC_CHANGE_MAX);
+        VIDEO_ENC_CHANGE_MAX);
     change_list.pop_front();
   }
   change_list.emplace_back(change, std::move(value));
   change_mtx.unlock();
 }
 
-void VideoEncoder::QueryChange(uint32_t change,
-  void *value, int32_t size) {
-  LOG("WARN: Video Encoder: %s should be reloaded first!\n",
-    __func__);
+void VideoEncoder::QueryChange(uint32_t change, void *value, int32_t size) {
+  LOG("WARN: Video Encoder: %s should be reloaded first!\n", __func__);
   UNUSED(change);
   UNUSED(value);
   UNUSED(size);

@@ -8,8 +8,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/time.h>
-#include <vector>
 #include <thread>
+#include <vector>
 
 #include "lock.h"
 #include "message_type.h"
@@ -23,7 +23,7 @@ class EventParam {
 public:
   EventParam() = delete;
   EventParam(int id, int param = 0)
-    : id_(id), param_(param), params_(nullptr) {}
+      : id_(id), param_(param), params_(nullptr) {}
   ~EventParam() {
     if (params_) {
       free(params_);
@@ -31,7 +31,7 @@ public:
     }
   }
   int SetParams(void *params, int size) {
-    if(params_)
+    if (params_)
       free(params_);
     params_ = params;
     params_size_ = size;
@@ -39,8 +39,9 @@ public:
   }
   int GetId() { return id_; }
   int GetParam() { return param_; }
-  void * GetParams() { return params_; }
+  void *GetParams() { return params_; }
   int GetParamsSize() { return params_size_; }
+
 private:
   int id_;
   int param_;
@@ -54,9 +55,9 @@ class EventMessage {
 public:
   EventMessage();
   EventMessage(void *sender, EventParamPtr param, int type = 0)
-    : sender_(sender), param_(param), type_(type) {}
-  ~EventMessage(){}
-  void * GetSender() { return sender_; }
+      : sender_(sender), param_(param), type_(type) {}
+  ~EventMessage() {}
+  void *GetSender() { return sender_; }
   EventParamPtr GetEventParam() { return param_; }
   int GetType() { return type_; }
 
@@ -66,7 +67,7 @@ private:
   int type_;
 };
 
-typedef int (* EventHook)(std::shared_ptr<Flow>flow, bool &loop);
+typedef int (*EventHook)(std::shared_ptr<Flow> flow, bool &loop);
 typedef std::shared_ptr<EventMessage> MessagePtr;
 typedef std::vector<MessagePtr> MessagePtrQueue;
 
@@ -75,7 +76,7 @@ public:
   EventHandler() {}
   virtual ~EventHandler() {}
 
-  void RegisterEventHook(std::shared_ptr<Flow>flow, EventHook proc);
+  void RegisterEventHook(std::shared_ptr<Flow> flow, EventHook proc);
   void UnRegisterEventHook();
   void EventHookWait();
   void SignalEventHook();
@@ -86,7 +87,6 @@ public:
   void NotifyToEventHandler(MessagePtr msg);
 
 public:
-
 private:
   EventHook process_;
   bool event_thread_loop_;
@@ -99,4 +99,3 @@ private:
 } // namespace easymedia
 
 #endif // #ifndef EASYMEDIA_FLOW_H_
-

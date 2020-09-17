@@ -16,7 +16,8 @@ _API void LOGD(const char *format, ...);
 _API void LOG(const char *format, ...);
 
 #define LOG_NO_MEMORY() LOG("No memory %s: %d\n", __FUNCTION__, __LINE__)
-#define LOG_FILE_FUNC_LINE() LOG("%s : %s: %d\n", __FILE__, __FUNCTION__, __LINE__)
+#define LOG_FILE_FUNC_LINE()                                                   \
+  LOG("%s : %s: %d\n", __FILE__, __FUNCTION__, __LINE__)
 #define LOG_TODO() LOG("TODO, %s : %s: %d\n", __FILE__, __FUNCTION__, __LINE__)
 
 #define UPALIGNTO(value, align) ((value + align - 1) & (~(align - 1)))
@@ -54,10 +55,10 @@ public:
 
 namespace easymedia {
 
-#define GET_STRING_TO_INT(var, map, key, defalut)    \
-  if (!map[key].empty())                                \
-    var = std::stoi(map[key]);                          \
-  else                                                  \
+#define GET_STRING_TO_INT(var, map, key, defalut)                              \
+  if (!map[key].empty())                                                       \
+    var = std::stoi(map[key]);                                                 \
+  else                                                                         \
     var = defalut;
 
 #define CHECK_EMPTY_SETERRNO_RETURN(v_type, v, map, k, seterrno, ret)          \

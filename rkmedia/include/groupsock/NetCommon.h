@@ -23,14 +23,15 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #if defined(__WIN32__) || defined(_WIN32) || defined(_WIN32_WCE)
 /* Windows */
-#if defined(WINNT) || defined(_WINNT) || defined(__BORLANDC__) || defined(__MINGW32__) || defined(_WIN32_WCE) || defined (_MSC_VER)
+#if defined(WINNT) || defined(_WINNT) || defined(__BORLANDC__) ||              \
+    defined(__MINGW32__) || defined(_WIN32_WCE) || defined(_MSC_VER)
 #define _MSWSOCK_
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
-#include <windows.h>
 #include <errno.h>
 #include <string.h>
+#include <windows.h>
 
 #define closeSocket closesocket
 #ifdef EWOULDBLOCK
@@ -66,24 +67,27 @@ typedef unsigned short u_int16_t;
 
 typedef unsigned char u_int8_t;
 
-// For "uintptr_t" and "intptr_t", we assume that if they're not already defined, then this must be
+// For "uintptr_t" and "intptr_t", we assume that if they're not already
+// defined, then this must be
 // an old, 32-bit version of Windows:
-#if !defined(_MSC_STDINT_H_) && !defined(_UINTPTR_T_DEFINED) && !defined(_UINTPTR_T_DECLARED) && !defined(_UINTPTR_T)
+#if !defined(_MSC_STDINT_H_) && !defined(_UINTPTR_T_DEFINED) &&                \
+    !defined(_UINTPTR_T_DECLARED) && !defined(_UINTPTR_T)
 typedef unsigned uintptr_t;
 #endif
-#if !defined(_MSC_STDINT_H_) && !defined(_INTPTR_T_DEFINED) && !defined(_INTPTR_T_DECLARED) && !defined(_INTPTR_T)
+#if !defined(_MSC_STDINT_H_) && !defined(_INTPTR_T_DEFINED) &&                 \
+    !defined(_INTPTR_T_DECLARED) && !defined(_INTPTR_T)
 typedef int intptr_t;
 #endif
 
 #elif defined(VXWORKS)
 /* VxWorks */
+#include <hostLib.h>
+#include <ioLib.h>
+#include <resolvLib.h>
+#include <sockLib.h>
+#include <sys/times.h>
 #include <time.h>
 #include <timers.h>
-#include <sys/times.h>
-#include <sockLib.h>
-#include <hostLib.h>
-#include <resolvLib.h>
-#include <ioLib.h>
 
 typedef unsigned int u_int32_t;
 typedef unsigned short u_int16_t;
@@ -91,19 +95,19 @@ typedef unsigned char u_int8_t;
 
 #else
 /* Unix */
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 //#include <sys/time.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <strings.h>
 #include <ctype.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <unistd.h>
 #if defined(_QNX4)
 #include <sys/select.h>
 #include <unix.h>

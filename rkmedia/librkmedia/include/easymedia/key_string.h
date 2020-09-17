@@ -207,7 +207,7 @@
 #define KEY_CACHE_SIZE "cache_size"
 #define KEY_CLOCK_DELTA "clock_delta"
 
-//rockx
+// rockx
 #define KEY_ROCKX_MODEL "rockx_model"
 #define KEY_DB_PATH "db_path"
 

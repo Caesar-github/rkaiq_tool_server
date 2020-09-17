@@ -5,8 +5,8 @@
 #ifndef EASYMEDIA_CONTROL_H_
 #define EASYMEDIA_CONTROL_H_
 
-#include <stdint.h>
 #include "image.h"
+#include <stdint.h>
 
 #include "rknn_user.h"
 
@@ -23,26 +23,18 @@ typedef struct {
   void *arg;
 } SubRequest;
 
-typedef struct {
-  bool enable;
-} NNinputArg;
+typedef struct { bool enable; } NNinputArg;
 
-typedef struct {
-  bool enable;
-} FaceDetectArg;
+typedef struct { bool enable; } FaceDetectArg;
 
-typedef struct {
-  bool enable;
-} FaceCaptureArg;
+typedef struct { bool enable; } FaceCaptureArg;
 
-typedef struct {
-  bool enable;
-} DrawFilterArg;
+typedef struct { bool enable; } DrawFilterArg;
 
 typedef struct {
   bool enable;
   int interval;
-  int duration; /* second */
+  int duration;     /* second */
   float percentage; /* 0-100 */
   ImageRect rect;
 } BodyDetectArg;

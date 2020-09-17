@@ -46,7 +46,7 @@ V4L2CaptureStream::V4L2CaptureStream(const char *param)
   std::list<std::pair<const std::string, std::string &>> req_list;
 
   std::string mem_type, str_loop_num;
-  std::string str_width, str_height, str_color_space ,str_quantization;
+  std::string str_width, str_height, str_color_space, str_quantization;
   req_list.push_back(
       std::pair<const std::string, std::string &>(KEY_V4L2_MEM_TYPE, mem_type));
   req_list.push_back(

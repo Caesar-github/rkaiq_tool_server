@@ -5,8 +5,8 @@
 #include "mjpeg_server_media_subsession.hh"
 #include <liveMedia/JPEGVideoRTPSink.hh>
 
-#include "utils.h"
 #include "media_type.h"
+#include "utils.h"
 
 namespace easymedia {
 MJPEGServerMediaSubsession *
@@ -61,8 +61,8 @@ MJPEGServerMediaSubsession::createNewStreamSource(unsigned clientSessionId,
     return NULL;
   }
   // Create a framer for the Video Elementary Stream:
-  FramedSource *source =
-      MJPEGVideoSource::createNew(envir(), fMediaInput.videoSource(CODEC_TYPE_JPEG));
+  FramedSource *source = MJPEGVideoSource::createNew(
+      envir(), fMediaInput.videoSource(CODEC_TYPE_JPEG));
   LOG("MJPEG framedsource : %p\n", source);
   return source;
 }

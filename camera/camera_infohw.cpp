@@ -393,7 +393,7 @@ int initCamHwInfos(struct capture_info *media_info) {
       if (ret)
         return ret;
     } else if (strcmp(device->info.model, "rkcif") == 0 ||
-        strcmp(device->info.model, "rkcif_mipi_lvds") == 0) {
+               strcmp(device->info.model, "rkcif_mipi_lvds") == 0) {
       ret = get_vicap_subdevs(device, sys_path, media_info);
       if (ret)
         return ret;

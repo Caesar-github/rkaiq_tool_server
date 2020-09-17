@@ -29,7 +29,7 @@
       static const char *ExpectedInputDataType();                              \
       static const char *OutPutDataType();                                     \
                                                                                \
-  )
+      )
 
 #define DEFINE_MEDIA_CHILD_FACTORY_EXTRA(REAL_PRODUCT)                         \
   bool REAL_PRODUCT##Factory::AcceptRules(                                     \

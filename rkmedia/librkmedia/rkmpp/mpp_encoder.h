@@ -54,6 +54,7 @@ public:
   int RoiUpdateRegions(EncROIRegion *regions, int region_cnt);
 
   virtual void QueryChange(uint32_t change, void *value, int32_t size);
+
 protected:
   MppCodingType coding_type;
   uint32_t output_mb_flags;
@@ -61,7 +62,7 @@ protected:
   // call before Init()
   void SetMppCodeingType(MppCodingType type);
   virtual bool
-  CheckConfigChange(std::pair<uint32_t, std::shared_ptr<ParameterBuffer>>) {
+      CheckConfigChange(std::pair<uint32_t, std::shared_ptr<ParameterBuffer>>) {
     return true;
   }
   // Control before encoding.

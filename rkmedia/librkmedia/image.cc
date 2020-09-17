@@ -48,7 +48,8 @@ void GetPixFmtNumDen(const PixelFormat &fmt, int &num, int &den) {
   }
 }
 
-int CalPixFmtSize(const PixelFormat &fmt, const int width, const int height, int align) {
+int CalPixFmtSize(const PixelFormat &fmt, const int width, const int height,
+                  int align) {
   int num = 0;
   int den = 0;
   int extra_hdr_size = 0;
@@ -63,7 +64,8 @@ int CalPixFmtSize(const PixelFormat &fmt, const int width, const int height, int
   }
   // mpp always require buffer align by align value
   if (align > 0)
-    pix_fmt_size = UPALIGNTO(width, align) * UPALIGNTO(height, align) * num / den;
+    pix_fmt_size =
+        UPALIGNTO(width, align) * UPALIGNTO(height, align) * num / den;
   else
     pix_fmt_size = width * height * num / den;
 
@@ -82,8 +84,7 @@ static const struct PixFmtStringEntry {
     {PIX_FMT_BGR565, IMAGE_BGR565},     {PIX_FMT_RGB888, IMAGE_RGB888},
     {PIX_FMT_BGR888, IMAGE_BGR888},     {PIX_FMT_ARGB8888, IMAGE_ARGB8888},
     {PIX_FMT_ABGR8888, IMAGE_ABGR8888}, {PIX_FMT_FBC0, IMAGE_FBC0},
-    {PIX_FMT_FBC0, IMAGE_FBC2}
-};
+    {PIX_FMT_FBC0, IMAGE_FBC2}};
 
 PixelFormat StringToPixFmt(const char *type) {
   if (!type)
@@ -173,8 +174,8 @@ std::string ImageRectToString(const ImageRect &src_dst) {
   assert(src_dst.x >= 0 && src_dst.y >= 0);
   assert(src_dst.x < 10000 && src_dst.y < 10000);
   assert(src_dst.w < 10000 && src_dst.h < 10000);
-  snprintf(r, sizeof(r), "(%d,%d,%d,%d)", src_dst.x,
-           src_dst.y, src_dst.w, src_dst.h);
+  snprintf(r, sizeof(r), "(%d,%d,%d,%d)", src_dst.x, src_dst.y, src_dst.w,
+           src_dst.h);
   return r;
 }
 
