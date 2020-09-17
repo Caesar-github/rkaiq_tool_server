@@ -1,6 +1,6 @@
 #include "rkaiq_online_protocol.h"
 
-static void DoAnswer(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id,
+static void DoAnswer(int sockfd, CommandData_t *cmd, int cmd_id,
                      int ret_status) {
   char send_data[MAXPACKETSIZE];
   LOG_INFO("enter\n");
@@ -16,12 +16,12 @@ static void DoAnswer(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id,
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
 
-  memcpy(send_data, cmd, sizeof(Common_OL_Cmd_s));
-  send(sockfd, send_data, sizeof(Common_OL_Cmd_s), 0);
+  memcpy(send_data, cmd, sizeof(CommandData_t));
+  send(sockfd, send_data, sizeof(CommandData_t), 0);
   LOG_INFO("exit\n");
 }
 
-static void DoAnswer2(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id,
+static void DoAnswer2(int sockfd, CommandData_t *cmd, int cmd_id,
                       uint16_t check_sum, uint32_t result) {
   char send_data[MAXPACKETSIZE];
   LOG_INFO("enter\n");
@@ -38,15 +38,15 @@ static void DoAnswer2(int sockfd, Common_OL_Cmd_t *cmd, int cmd_id,
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
 
-  memcpy(send_data, cmd, sizeof(Common_OL_Cmd_s));
-  send(sockfd, send_data, sizeof(Common_OL_Cmd_s), 0);
+  memcpy(send_data, cmd, sizeof(CommandData_t));
+  send(sockfd, send_data, sizeof(CommandData_t), 0);
   LOG_INFO("exit\n");
 }
 
 static int DoCheckSum(int sockfd, uint16_t check_sum) {
   char recv_data[MAXPACKETSIZE];
   int recv_size = 0;
-  int param_size = sizeof(Common_OL_Cmd_s);
+  int param_size = sizeof(CommandData_t);
   int remain_size = param_size;
   int try_count = 3;
   LOG_INFO("enter\n");
@@ -72,9 +72,9 @@ static int DoCheckSum(int sockfd, uint16_t check_sum) {
     }
     remain_size = remain_size - recv_size;
   }
-  LOG_INFO("recv_size: 0x%x expect 0x%x\n", recv_size, sizeof(Common_OL_Cmd_s));
+  LOG_INFO("recv_size: 0x%x expect 0x%x\n", recv_size, sizeof(CommandData_t));
 
-  Common_OL_Cmd_t *cmd = (Common_OL_Cmd_t *)recv_data;
+  CommandData_t *cmd = (CommandData_t *)recv_data;
   uint16_t recv_check_sum = 0;
   recv_check_sum += cmd->dat[0] & 0xff;
   recv_check_sum += (cmd->dat[1] & 0xff) << 8;
@@ -89,7 +89,7 @@ static int DoCheckSum(int sockfd, uint16_t check_sum) {
   return 0;
 }
 
-static void OnLineSet(int sockfd, Common_OL_Cmd_t *cmd, uint16_t &check_sum,
+static void OnLineSet(int sockfd, CommandData_t *cmd, uint16_t &check_sum,
                       uint32_t &result) {
   int recv_size = 0;
   int param_size = *(int *)cmd->dat;
@@ -118,7 +118,7 @@ static void OnLineSet(int sockfd, Common_OL_Cmd_t *cmd, uint16_t &check_sum,
   LOG_INFO("exit\n");
 }
 
-static int OnLineGet(int sockfd, Common_OL_Cmd_t *cmd) {
+static int OnLineGet(int sockfd, CommandData_t *cmd) {
   int ret = 0;
   int send_size = 0;
   int param_size = *(int *)cmd->dat;
@@ -151,8 +151,8 @@ static int OnLineGet(int sockfd, Common_OL_Cmd_t *cmd) {
 }
 
 void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char *buffer, int size) {
-  Common_OL_Cmd_t *common_cmd = (Common_OL_Cmd_t *)buffer;
-  Common_OL_Cmd_t send_cmd;
+  CommandData_t *common_cmd = (CommandData_t *)buffer;
+  CommandData_t send_cmd;
   int ret_val, ret;
 
   LOG_INFO("HandlerOnLineMessage:\n");
@@ -169,10 +169,10 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char *buffer, int size) {
            common_cmd->cmdType);
 
   switch (common_cmd->cmdType) {
-  case PACKET_TYPE_STATUS:
+  case RKISP_CMD_STATUS:
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
     break;
-  case PACKET_TYPE_SET: {
+  case RKISP_CMD_UAPI_SET: {
     uint16_t check_sum;
     uint32_t result;
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
@@ -180,7 +180,7 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char *buffer, int size) {
     DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum,
               result ? RES_FAILED : RES_SUCCESS);
   } break;
-  case PACKET_TYPE_GET:
+  case RKISP_CMD_UAPI_GET:
     ret = OnLineGet(sockfd, common_cmd);
     if (ret == 0)
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);

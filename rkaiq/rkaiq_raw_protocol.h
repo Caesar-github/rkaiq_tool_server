@@ -11,21 +11,6 @@
 #include "rkaiq_common.h"
 
 typedef enum {
-  CHECK_DEVICE_STATUS = 0x01,
-  RAW_CAPTURE,
-  VIDEO_APP_STATUS_REQ,
-  VIDEO_APP_STATUS_SET,
-} cmdID;
-
-typedef enum {
-  RAW_CAPTURE_GET_DEVICE_STATUS = 0x00,
-  RAW_CAPTURE_GET_PCLK_HTS_VTS,
-  RAW_CAPTURE_SET_PARAMS,
-  RAW_CAPTURE_DO_CAPTURE,
-  RAW_CAPTURE_COMPARE_CHECKSUM
-} cmdCapRawID;
-
-typedef enum {
   CAPTURE_NORMAL = 0,
   CAPTUER_AVERAGE,
 } captureMode;
@@ -38,17 +23,6 @@ typedef enum {
 } appRunStatus;
 
 typedef enum { RAW_CAP = 0x00, AVALIABLE } runStaus;
-
-#pragma pack(1)
-typedef struct Common_Cmd_s {
-  uint8_t RKID[8];
-  uint16_t cmdType;
-  uint16_t cmdID;
-  uint16_t datLen;
-  uint8_t dat[48]; // defined by command
-  uint16_t checkSum;
-} Common_Cmd_t;
-#pragma pack()
 
 #pragma pack(1)
 typedef struct Sensor_Params_s {
@@ -82,8 +56,8 @@ typedef struct Capture_Reso_s {
 #define VIDEO_RAW0 "/dev/video0"
 #define SAVE_RAW0_PATH "/data/output.raw"
 
-#define TAG_PC_TO_DEVICE "RKISP-AK"
-#define TAG_DEVICE_TO_PC "RKISP-AS"
+#define TAG_PC_TO_DEVICE RKID_ISP_OFF
+#define TAG_DEVICE_TO_PC RKID_ISP_OFF
 
 #define VICAP_COMPACT_TEST                                                     \
   "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"

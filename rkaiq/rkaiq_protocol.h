@@ -22,6 +22,7 @@ public:
   virtual ~RKAiqProtocol() = default;
   static int DoChangeAppMode(appRunStatus mode);
   static void HandlerTCPMessage(int sockfd, char *buffer, int size);
+  static void HandlerCheckDevice(int sockfd, char *buffer, int size);
 };
 
 #endif

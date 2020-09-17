@@ -45,10 +45,10 @@ static int SetLHcg(int mode) {
   return 0;
 }
 
-static void InitCommandPingAns(Common_Cmd_t *cmd, int ret_status) {
+static void InitCommandPingAns(CommandData_t *cmd, int ret_status) {
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = CHECK_DEVICE_STATUS;
+  cmd->cmdID = ENUM_ID_CAPTURE_STATUS;
   cmd->datLen = 1;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = ret_status;
@@ -57,10 +57,10 @@ static void InitCommandPingAns(Common_Cmd_t *cmd, int ret_status) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void InitCommandRawCapAns(Common_Cmd_t *cmd, int ret_status) {
+static void InitCommandRawCapAns(CommandData_t *cmd, int ret_status) {
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = RAW_CAPTURE;
+  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x00; // ProcessID
@@ -70,7 +70,7 @@ static void InitCommandRawCapAns(Common_Cmd_t *cmd, int ret_status) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void RawCaptureinit(Common_Cmd_t *cmd) {
+static void RawCaptureinit(CommandData_t *cmd) {
   char *buf = (char *)(cmd->dat);
   Capture_Reso_t *Reso = (Capture_Reso_t *)(cmd->dat + 1);
   int ret = initCamHwInfos(&cap_info);
@@ -108,13 +108,13 @@ static void RawCaptureDeinit() {
   }
 }
 
-static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
+static void GetSensorPara(CommandData_t *cmd, int ret_status) {
   struct v4l2_queryctrl ctrl;
   struct v4l2_subdev_frame_interval finterval;
   struct v4l2_subdev_format fmt;
   struct v4l2_format format;
 
-  memset(cmd, 0, sizeof(Common_Cmd_s));
+  memset(cmd, 0, sizeof(CommandData_t));
 
   Sensor_Params_t *sensorParam = (Sensor_Params_t *)(&cmd->dat[1]);
   int hblank, vblank;
@@ -195,7 +195,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
 
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = RAW_CAPTURE;
+  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 14;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x01;
@@ -226,7 +226,7 @@ static void GetSensorPara(Common_Cmd_t *cmd, int ret_status) {
 end:
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
-  cmd->cmdID = RAW_CAPTURE;
+  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 14;
   cmd->dat[0] = 0x01;
   cmd->checkSum = 0;
@@ -238,9 +238,9 @@ end:
   }
 }
 
-static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
+static void SetCapConf(CommandData_t *recv_cmd, CommandData_t *cmd,
                        int ret_status) {
-  memset(cmd, 0, sizeof(Common_Cmd_s));
+  memset(cmd, 0, sizeof(CommandData_t));
   Capture_Params_t *CapParam = (Capture_Params_t *)(recv_cmd->dat + 1);
 
   for (int i = 0; i < recv_cmd->datLen; i++) {
@@ -280,7 +280,7 @@ static void SetCapConf(Common_Cmd_t *recv_cmd, Common_Cmd_t *cmd,
 
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = RAW_CAPTURE;
+  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x02;
@@ -489,7 +489,7 @@ static int StopCapture() {
   return 0;
 }
 
-static void RawCaputure(Common_Cmd_t *cmd, int socket) {
+static void RawCaputure(CommandData_t *cmd, int socket) {
   LOG_INFO(" enter\n");
   LOG_INFO("capture_frames %d capture_frames_index %d\n", capture_frames,
            capture_frames_index);
@@ -509,12 +509,12 @@ static void RawCaputure(Common_Cmd_t *cmd, int socket) {
   LOG_INFO(" exit\n");
 }
 
-static void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
+static void SendRawDataResult(CommandData_t *cmd, CommandData_t *recv_cmd) {
   unsigned short *checksum;
   checksum = (unsigned short *)&recv_cmd->dat[1];
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = RAW_CAPTURE;
+  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x04;
@@ -530,91 +530,55 @@ static void SendRawDataResult(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
     cmd->checkSum += cmd->dat[i];
 }
 
-static void SetAppStatus(Common_Cmd_t *cmd, Common_Cmd_t *recv_cmd) {
-  int ret_status = RES_SUCCESS;
-  unsigned short *AppStatus;
-  AppStatus = (unsigned short *)&recv_cmd->dat[0];
-  LOG_INFO("recv_cmd->dat[0] = %p>>\n", AppStatus);
-  if (*AppStatus == VIDEO_APP_OFF) {
-    LOG_INFO("kill user app start\n");
-  } else if (*AppStatus == VIDEO_APP_ON) {
-    LOG_INFO("run user app start\n");
-  }
-  strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
-  cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = VIDEO_APP_STATUS_SET;
-  cmd->datLen = 1;
-  memset(cmd->dat, 0, sizeof(cmd->dat));
-  cmd->dat[0] = ret_status;
-  cmd->checkSum = 0;
-  for (int i = 0; i < cmd->datLen; i++) {
-    cmd->checkSum += cmd->dat[i];
-    LOG_INFO("Set_App_Status cmd->dat[%d] = %d\n", i, cmd->dat[i]);
-  }
-}
-
-static void ReqAppStatus(Common_Cmd_t *cmd) {
-  memset(cmd->dat, 0, sizeof(cmd->dat));
-  int dev_fd = device_open(cap_info.dev_name);
-  if (dev_fd < 0) {
-    cmd->dat[0] = VIDEO_APP_ON;
-    LOG_INFO("app status is ON\n");
-  } else {
-    cmd->dat[0] = VIDEO_APP_OFF;
-    LOG_INFO("app status is OFF\n");
-    device_close(dev_fd);
-  }
-  strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
-  cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = VIDEO_APP_STATUS_REQ;
-  cmd->datLen = 1;
-  cmd->checkSum = 0;
-  for (int i = 0; i < cmd->datLen; i++)
-    cmd->checkSum += cmd->dat[i];
-}
-
 void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char *buffer,
                                             int size) {
-  Common_Cmd_t *common_cmd = (Common_Cmd_t *)buffer;
-  Common_Cmd_t send_cmd;
+  CommandData_t *common_cmd = (CommandData_t *)buffer;
+  CommandData_t send_cmd;
   char send_data[MAXPACKETSIZE];
   int ret_val, ret;
 
   LOG_INFO("HandlerRawCapMessage:\n");
 
-  for (int i = 0; i < common_cmd->datLen; i++) {
-    LOG_INFO("DATA[%d]: 0x%x\n", i, common_cmd->dat[i]);
-  }
+  // for (int i = 0; i < common_cmd->datLen; i++) {
+  //   LOG_INFO("DATA[%d]: 0x%x\n", i, common_cmd->dat[i]);
+  // }
 
-  if (strcmp((char *)common_cmd->RKID, TAG_PC_TO_DEVICE) == 0) {
-    LOG_INFO("RKID: %s\n", common_cmd->RKID);
+  // if (strcmp((char *)common_cmd->RKID, TAG_PC_TO_DEVICE) == 0) {
+  //   LOG_INFO("RKID: %s\n", common_cmd->RKID);
+  // } else {
+  //   LOG_INFO("RKID: Unknow\n");
+  //   return;
+  // }
+
+  if (common_cmd->cmdType == RKISP_CMD_CAPTURE) {
+    LOG_INFO("cmdType: RKISP_CMD_CAPTURE\n");
   } else {
-    LOG_INFO("RKID: Unknow\n");
+    LOG_INFO("cmdType: Unknow\n");
     return;
   }
 
   LOG_INFO("cmdID: %d\n", common_cmd->cmdID);
 
   switch (common_cmd->cmdID) {
-  case CHECK_DEVICE_STATUS:
-    LOG_INFO("CmdID CHECK_DEVICE_STATUS in\n");
+  case ENUM_ID_CAPTURE_STATUS:
+    LOG_INFO("CmdID ENUM_ID_CAPTURE_STATUS in\n");
     if (common_cmd->dat[0] == KNOCK_KNOCK) {
       InitCommandPingAns(&send_cmd, READY);
       LOG_INFO("Device is READY\n");
     } else {
-      LOG_ERROR("Unknow CHECK_DEVICE_STATUS message\n");
+      LOG_ERROR("Unknow ENUM_ID_CAPTURE_STATUS message\n");
     }
-    memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-    LOG_INFO("cmdID CHECK_DEVICE_STATUS out\n\n");
+    memcpy(send_data, &send_cmd, sizeof(CommandData_t));
+    send(sockfd, send_data, sizeof(CommandData_t), 0);
+    LOG_INFO("cmdID ENUM_ID_CAPTURE_STATUS out\n\n");
     break;
-  case RAW_CAPTURE: {
+  case ENUM_ID_CAPTURE_RAW_CAPTURE: {
     LOG_INFO("CmdID RAW_CAPTURE in\n");
     char *datBuf = (char *)(common_cmd->dat);
 
     switch (datBuf[0]) {
-    case RAW_CAPTURE_GET_DEVICE_STATUS:
-      LOG_INFO("ProcID RAW_CAPTURE_GET_DEVICE_STATUS in\n");
+    case PROC_ID_CAPTURE_RAW_STATUS:
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_STATUS in\n");
       if (common_cmd->dat[1] == KNOCK_KNOCK) {
         if (capture_status == RAW_CAP) {
           LOG_INFO("capture_status BUSY\n");
@@ -624,42 +588,42 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char *buffer,
           InitCommandRawCapAns(&send_cmd, READY);
         }
       } else {
-        LOG_ERROR("Unknow RAW_CAPTURE_GET_DEVICE_STATUS message\n");
+        LOG_ERROR("Unknow PROC_ID_CAPTURE_RAW_STATUS message\n");
       }
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      LOG_INFO("ProcID RAW_CAPTURE_GET_DEVICE_STATUS out\n");
+      memcpy(send_data, &send_cmd, sizeof(CommandData_t));
+      send(sockfd, send_data, sizeof(CommandData_t), 0);
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_STATUS out\n");
       break;
-    case RAW_CAPTURE_GET_PCLK_HTS_VTS:
-      LOG_INFO("ProcID RAW_CAPTURE_GET_PCLK_HTS_VTS in\n");
+    case PROC_ID_CAPTURE_RAW_GET_PARAM:
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_GET_PARAM in\n");
       RawCaptureinit(common_cmd);
       GetSensorPara(&send_cmd, RES_SUCCESS);
       LOG_INFO("send_cmd.checkSum %d\n", send_cmd.checkSum);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      LOG_INFO("ProcID RAW_CAPTURE_GET_PCLK_HTS_VTS out\n");
+      memcpy(send_data, &send_cmd, sizeof(CommandData_t));
+      ret_val = send(sockfd, send_data, sizeof(CommandData_t), 0);
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_GET_PARAM out\n");
       break;
-    case RAW_CAPTURE_SET_PARAMS:
-      LOG_INFO("ProcID RAW_CAPTURE_SET_PARAMS in\n");
+    case PROC_ID_CAPTURE_RAW_SET_PARAM:
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_SET_PARAM in\n");
       SetCapConf(common_cmd, &send_cmd, READY);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      LOG_INFO("ProcID RAW_CAPTURE_SET_PARAMS out\n");
+      memcpy(send_data, &send_cmd, sizeof(CommandData_t));
+      send(sockfd, send_data, sizeof(CommandData_t), 0);
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_SET_PARAM out\n");
       break;
-    case RAW_CAPTURE_DO_CAPTURE: {
-      LOG_INFO("ProcID RAW_CAPTURE_DO_CAPTURE in\n");
+    case PROC_ID_CAPTURE_RAW_START: {
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_START in\n");
       capture_status = RAW_CAP;
       RawCaputure(&send_cmd, sockfd);
       capture_status = AVALIABLE;
-      LOG_INFO("ProcID RAW_CAPTURE_DO_CAPTURE out\n");
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_START out\n");
       break;
     }
-    case RAW_CAPTURE_COMPARE_CHECKSUM:
-      LOG_INFO("ProcID RAW_CAPTURE_COMPARE_CHECKSUM in\n");
+    case PROC_ID_CAPTURE_RAW_CHECKSUM:
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_CHECKSUM in\n");
       SendRawDataResult(&send_cmd, common_cmd);
-      memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-      ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-      LOG_INFO("ProcID RAW_CAPTURE_COMPARE_CHECKSUM out\n");
+      memcpy(send_data, &send_cmd, sizeof(CommandData_t));
+      ret_val = send(sockfd, send_data, sizeof(CommandData_t), 0);
+      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_CHECKSUM out\n");
       break;
     default:
       break;
@@ -667,33 +631,6 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char *buffer,
     LOG_INFO("CmdID RAW_CAPTURE out\n\n");
     break;
   }
-  case VIDEO_APP_STATUS_REQ:
-    LOG_INFO("CmdID VIDEO_APP_STATUS_REQ in\n");
-    if (common_cmd->dat[0] == KNOCK_KNOCK) {
-      ReqAppStatus(&send_cmd);
-      LOG_INFO("VIDEO_APP_STATUS_REQ is DONE\n");
-    } else {
-      LOG_ERROR("Unknow VIDEO_APP_STATUS_REQ message\n");
-    }
-    memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    ret_val = send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-    LOG_INFO("CmdID RAW_CAPTURE out\n\n");
-    break;
-  case VIDEO_APP_STATUS_SET:
-    LOG_INFO("VIDEO_APP_STATUS_SET start\n");
-    if (common_cmd->dat[0] == VIDEO_APP_OFF ||
-        common_cmd->dat[0] == VIDEO_APP_ON) {
-      LOG_INFO("VIDEO_APP_STATUS is on(0x80) or off(0x81) : 0x%x\n",
-               common_cmd->dat[0]);
-      SetAppStatus(&send_cmd, common_cmd);
-      LOG_INFO("VIDEO_APP_STATUS_SET is DONE\n");
-    } else {
-      LOG_ERROR("Unknow VIDEO_APP_STATUS_SET message\n");
-    }
-    memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    send(sockfd, send_data, sizeof(Common_Cmd_s), 0);
-    LOG_INFO("VIDEO_APP_STATUS_SET end\n\n");
-    break;
   default:
     break;
   }
