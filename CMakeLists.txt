@@ -60,6 +60,7 @@ include_directories(${PROJECT_SOURCE_DIR}/rkmedia/librkmedia/include/easymedia/)
 add_subdirectory(rkmedia/librkmedia)
 set(RKMEDIA_SOURCE
 	${RKMEDIA_SOURCE}
+	rkmedia/link_flow.cc
 	rkmedia/sink_flow.cc
 	rkmedia/source_flow.cc
 	rkmedia/rtsp_server.cpp)

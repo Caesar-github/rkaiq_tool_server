@@ -13,6 +13,15 @@
 #define TAG_OL_PC_TO_DEVICE RKID_ISP_ON
 #define TAG_OL_DEVICE_TO_PC RKID_ISP_ON
 
+#pragma pack(1)
+typedef struct Capture_Yuv_Params_s {
+  uint32_t gain;
+  uint32_t time;
+  uint8_t fmt;
+  uint8_t framenumber;
+} Capture_Yuv_Params_t;
+#pragma pack()
+
 class RKAiqOLProtocol {
 public:
   RKAiqOLProtocol() = default;

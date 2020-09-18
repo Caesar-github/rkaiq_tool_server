@@ -13,6 +13,7 @@
 static std::shared_ptr<easymedia::Flow> video_cap_flow = nullptr;
 static std::shared_ptr<easymedia::Flow> video_enc_flow = nullptr;
 static std::shared_ptr<easymedia::Flow> video_rtsp_flow = nullptr;
+std::shared_ptr<easymedia::Flow> video_dump_flow = nullptr;
 
 std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name,
                                              const std::string &flow_param,
@@ -216,7 +217,33 @@ create_rtmp_server_flow(std::string stream_addr, std::string output_type,
   return rtmp_flow;
 }
 
+std::string get_dump_flow_param(std::string input_type) {
+  std::string flow_param;
+  flow_param = "";
+  PARAM_STRING_APPEND(flow_param, KEY_INPUTDATATYPE, input_type);
+  return flow_param;
+}
+
+std::shared_ptr<easymedia::Flow>
+create_dump_server_flow(std::string input_type) {
+  std::shared_ptr<easymedia::Flow> dump_flow;
+  std::string flow_name;
+  std::string flow_param;
+
+  flow_name = "link_flow";
+  flow_param = get_dump_flow_param(input_type);
+  dump_flow = create_flow(flow_name, flow_param, "");
+  if (!dump_flow) {
+    fprintf(stderr, "Create flow %s failed\n", flow_name.c_str());
+    exit(EXIT_FAILURE);
+  }
+
+  return dump_flow;
+}
+
 void deinit_rtsp() {
+  if (video_cap_flow && video_dump_flow)
+    video_cap_flow->RemoveDownFlow(video_dump_flow);
   if (video_cap_flow && video_enc_flow)
     video_cap_flow->RemoveDownFlow(video_enc_flow);
   if (video_rtsp_flow && video_enc_flow)
@@ -239,15 +266,23 @@ int init_rtsp(int width, int height) {
   const char *video_dev = "rkispp_scale0";
   printf("init_rtsp video_dev %s\n", video_dev);
 
+  easymedia::REFLECTOR(Flow)::DumpFactories();
+  easymedia::REFLECTOR(Stream)::DumpFactories();
+
   video_cap_flow =
       create_video_capture_flow(video_dev, yuv_format, width, height);
   video_enc_flow =
       create_video_enc_flow(yuv_format, enc_type, width, height, fps);
   video_rtsp_flow = create_rtsp_server_flow("main_stream", VIDEO_H264);
 
+  video_dump_flow = create_dump_server_flow(yuv_format);
+
   video_enc_flow->AddDownFlow(video_rtsp_flow, 0, 0);
   video_cap_flow->AddDownFlow(video_enc_flow, 0, 0);
-  if (!video_cap_flow || !video_enc_flow || !video_rtsp_flow)
+  video_cap_flow->AddDownFlow(video_dump_flow, 0, 0);
+
+  if (!video_cap_flow || !video_enc_flow || !video_rtsp_flow ||
+      !video_dump_flow)
     return -1;
   return 0;
 }
