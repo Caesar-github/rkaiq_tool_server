@@ -389,6 +389,7 @@ int RKAiqMedia::LinkToIsp(bool enable) {
   media_pad *sink_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
 
   LOG_ERROR("############## LinkToIsp\n");
+  system(VICAP_COMPACT_TEST_ON);
 
   while (index < 10) {
     snprintf(sys_path, 64, "/dev/media%d", index++);
@@ -424,7 +425,7 @@ int RKAiqMedia::LinkToIsp(bool enable) {
       if (enable) {
         struct v4l2_mbus_framefmt format;
         ret = v4l2_subdev_get_format(src_pad->entity, &format, src_pad->index,
-                                    V4L2_SUBDEV_FORMAT_ACTIVE);
+                                     V4L2_SUBDEV_FORMAT_ACTIVE);
         if (ret != 0)
           LOG_ERROR("v4l2_subdev_get_format failed!\n");
         char set_fmt[128];
@@ -473,7 +474,8 @@ int RKAiqMedia::LinkToIsp(bool enable) {
         ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
         if (ret)
           LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
-        ret = media_setup_link(device, src_pad, sink_pad_bridge, MEDIA_LNK_FL_ENABLED);
+        ret = media_setup_link(device, src_pad, sink_pad_bridge,
+                               MEDIA_LNK_FL_ENABLED);
         if (ret)
           LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
         LOG_ERROR("media_setup_link isp SUCCESS\n");
@@ -487,8 +489,10 @@ int RKAiqMedia::LinkToIsp(bool enable) {
           LOG_ERROR("media_setup_link src_raw2_s sink_pad FAILED: %d\n", ret);
         ret = media_setup_link(device, src_pad, sink_pad_bridge, 0);
         if (ret)
-          LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n", ret);
-        ret = media_setup_link(device, src_pad, sink_pad_mp, MEDIA_LNK_FL_ENABLED);
+          LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n",
+                    ret);
+        ret = media_setup_link(device, src_pad, sink_pad_mp,
+                               MEDIA_LNK_FL_ENABLED);
         if (ret)
           LOG_ERROR("media_setup_link src_pad src_pad FAILED: %d\n", ret);
         LOG_ERROR("media_setup_link unlink isp SUCCESS\n");

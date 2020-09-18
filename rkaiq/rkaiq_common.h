@@ -93,4 +93,7 @@ typedef enum {
   RKISP_FORMAT_NV16,
 } RkispFmt_e;
 
+#define VICAP_COMPACT_TEST_OFF                                                 \
+  "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
+
 #endif

@@ -34,9 +34,9 @@ static int SetLHcg(int mode) {
   char result[1024] = {0};
   int pos = g_sensor_name.find(" ");
   snprintf(cmd, sizeof(cmd),
-  "echo %d > /sys/class/i2c-dev/i2c-%d/device/%s/cam_s_cg",
-  mode, atoi(g_sensor_name.substr(pos + 1, pos + 2).c_str()), 
-  g_sensor_name.substr(pos + 1, g_sensor_name.size() - 1).c_str());
+           "echo %d > /sys/class/i2c-dev/i2c-%d/device/%s/cam_s_cg", mode,
+           atoi(g_sensor_name.substr(pos + 1, pos + 2).c_str()),
+           g_sensor_name.substr(pos + 1, g_sensor_name.size() - 1).c_str());
   RunCmd(cmd, result);
   return 0;
 }
@@ -176,7 +176,7 @@ static void GetSensorPara(CommandData_t *cmd, int ret_status) {
       goto end;
     }
   } else if (cap_info.link == link_to_vicap) {
-    ret = system(VICAP_COMPACT_TEST);
+    ret = system(VICAP_COMPACT_TEST_OFF);
     LOG_INFO("VICAP_COMPACT_TEST: %d  change to no compact\n", ret);
   }
 

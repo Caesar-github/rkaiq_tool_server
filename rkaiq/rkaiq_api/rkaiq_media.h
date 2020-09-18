@@ -19,6 +19,9 @@
 #define MAX_MEDIA_NUM 10
 #define MAX_CAM_NUM 4
 
+#define VICAP_COMPACT_TEST_ON                                                  \
+  "echo 1 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
+
 typedef struct {
   int model_idx;
   int linked_sensor;

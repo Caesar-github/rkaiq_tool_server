@@ -59,9 +59,6 @@ typedef struct Capture_Reso_s {
 #define TAG_PC_TO_DEVICE RKID_ISP_OFF
 #define TAG_DEVICE_TO_PC RKID_ISP_OFF
 
-#define VICAP_COMPACT_TEST                                                     \
-  "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
-
 int StopProcess(const char *process, const char *str);
 int WaitProcessExit(const char *process, int sec);
 
