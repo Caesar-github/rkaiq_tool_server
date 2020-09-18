@@ -14,7 +14,7 @@ static void DoAnswer(int sockfd, CommandData_t *cmd, int cmd_id,
   LOG_INFO("enter\n");
 
   strncpy((char *)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
-  cmd->cmdType = RKISP_CMD_CAPTURE;
+  cmd->cmdType = CMD_TYPE_CAPTURE;
   cmd->cmdID = cmd_id;
   strncpy((char *)cmd->version, RKAIQ_TOOL_VERSION, sizeof(cmd->version));
   cmd->datLen = 4;
@@ -34,7 +34,7 @@ static void DoAnswer2(int sockfd, CommandData_t *cmd, int cmd_id,
   char send_data[MAXPACKETSIZE];
   LOG_INFO("enter\n");
   strncpy((char *)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
-  cmd->cmdType = RKISP_CMD_CAPTURE;
+  cmd->cmdType = CMD_TYPE_CAPTURE;
   cmd->cmdID = cmd_id;
   strncpy((char *)cmd->version, RKAIQ_TOOL_VERSION, sizeof(cmd->version));
   cmd->datLen = 4;
@@ -194,8 +194,8 @@ static void SendYuvDataResult(int sockfd, CommandData_t *cmd,
   char send_data[MAXPACKETSIZE];
   checksum = (unsigned short *)&recv_cmd->dat[1];
   strncpy((char *)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
-  cmd->cmdType = RKISP_CMD_CAPTURE;
-  cmd->cmdID = ENUM_ID_CAPTURE_YUV_CAPTURE;
+  cmd->cmdType = CMD_TYPE_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_YUV_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x04;
@@ -237,11 +237,11 @@ static void ReplyStatus(int sockfd, CommandData_t *cmd, int ret_status) {
   LOG_INFO("enter\n");
   char send_data[MAXPACKETSIZE];
   strncpy((char *)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
-  cmd->cmdType = RKISP_CMD_CAPTURE;
-  cmd->cmdID = ENUM_ID_CAPTURE_YUV_CAPTURE;
+  cmd->cmdType = CMD_TYPE_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_YUV_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
-  cmd->dat[0] = PROC_ID_CAPTURE_RAW_STATUS; // ProcessID
+  cmd->dat[0] = DATA_ID_CAPTURE_RAW_STATUS; // ProcessID
   cmd->dat[1] = ret_status;
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
@@ -258,15 +258,15 @@ static void ReplySensorPara(int sockfd, CommandData_t *cmd) {
   char send_data[MAXPACKETSIZE];
   memset(cmd, 0, sizeof(CommandData_t));
   strncpy((char *)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
-  cmd->cmdType = RKISP_CMD_CAPTURE;
-  cmd->cmdID = ENUM_ID_CAPTURE_YUV_CAPTURE;
+  cmd->cmdType = CMD_TYPE_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_YUV_CAPTURE;
   cmd->datLen = 3;
-  uint16_t *data = (uint16_t *)(cmd->dat + 1);
-  cmd->dat[0] = PROC_ID_CAPTURE_RAW_GET_PARAM;
   LOG_ERROR("g_width  %d g_height %d\n", g_width, g_height);
-  data[0] = g_width;
-  data[1] = g_height;
-  cmd->dat[5] = 0; // format
+  Sensor_Yuv_Params_t *param = (Sensor_Yuv_Params_t *)(cmd->dat);
+  param->data_id = DATA_ID_CAPTURE_RAW_GET_PARAM;
+  param->width = g_width;
+  param->height = g_height;
+  param->format = RKISP_FORMAT_NV12;
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
     cmd->checkSum += cmd->dat[i];
@@ -295,10 +295,10 @@ static void SetSensorPara(int sockfd, CommandData_t *recv_cmd,
   memset(cmd, 0, sizeof(CommandData_t));
   strncpy((char *)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
-  cmd->cmdID = ENUM_ID_CAPTURE_YUV_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_YUV_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
-  cmd->dat[0] = PROC_ID_CAPTURE_RAW_SET_PARAM;
+  cmd->dat[0] = DATA_ID_CAPTURE_RAW_SET_PARAM;
   cmd->dat[1] = RES_SUCCESS;
   cmd->checkSum = 0;
   for (int i = 0; i < cmd->datLen; i++)
@@ -328,10 +328,10 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char *buffer, int size) {
            common_cmd->cmdType);
 
   switch (common_cmd->cmdType) {
-  case RKISP_CMD_STATUS:
+  case CMD_TYPE_STATUS:
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
     break;
-  case RKISP_CMD_UAPI_SET: {
+  case CMD_TYPE_UAPI_SET: {
     uint16_t check_sum;
     uint32_t result;
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
@@ -339,45 +339,45 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char *buffer, int size) {
     DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum,
               result ? RES_FAILED : RES_SUCCESS);
   } break;
-  case RKISP_CMD_CAPTURE: {
-    LOG_INFO("RKISP_CMD_CAPTURE in\n");
+  case CMD_TYPE_CAPTURE: {
+    LOG_INFO("CMD_TYPE_CAPTURE in\n");
     DoCaptureYuv(sockfd);
     char *datBuf = (char *)(common_cmd->dat);
     switch (datBuf[0]) {
-    case PROC_ID_CAPTURE_YUV_STATUS:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_STATUS in\n");
+    case DATA_ID_CAPTURE_YUV_STATUS:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_STATUS in\n");
       ReplyStatus(sockfd, &send_cmd, READY);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_STATUS out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_STATUS out\n");
       break;
-    case PROC_ID_CAPTURE_YUV_GET_PARAM:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_GET_PARAM in\n");
+    case DATA_ID_CAPTURE_YUV_GET_PARAM:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_GET_PARAM in\n");
       ReplySensorPara(sockfd, &send_cmd);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_GET_PARAM out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_GET_PARAM out\n");
       break;
-    case PROC_ID_CAPTURE_YUV_SET_PARAM:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_SET_PARAM in\n");
+    case DATA_ID_CAPTURE_YUV_SET_PARAM:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_SET_PARAM in\n");
       SetSensorPara(sockfd, common_cmd, &send_cmd);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_SET_PARAM out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_SET_PARAM out\n");
       break;
-    case PROC_ID_CAPTURE_YUV_START: {
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_START in\n");
+    case DATA_ID_CAPTURE_YUV_START: {
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_START in\n");
       capture_status = BUSY;
       DoCaptureYuv(sockfd);
       capture_status = READY;
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_START out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_START out\n");
       break;
     }
-    case PROC_ID_CAPTURE_YUV_CHECKSUM:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_CHECKSUM in\n");
+    case DATA_ID_CAPTURE_YUV_CHECKSUM:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_CHECKSUM in\n");
       SendYuvDataResult(sockfd, &send_cmd, common_cmd);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_CHECKSUM out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_CHECKSUM out\n");
       break;
     default:
       break;
     }
-    LOG_INFO("RKISP_CMD_CAPTURE out\n\n");
+    LOG_INFO("CMD_TYPE_CAPTURE out\n\n");
   } break;
-  case RKISP_CMD_UAPI_GET:
+  case CMD_TYPE_UAPI_GET:
     ret = OnLineGet(sockfd, common_cmd);
     if (ret == 0)
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);

@@ -48,7 +48,7 @@ static int SetLHcg(int mode) {
 static void InitCommandPingAns(CommandData_t *cmd, int ret_status) {
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = ENUM_ID_CAPTURE_STATUS;
+  cmd->cmdID = CMD_ID_CAPTURE_STATUS;
   cmd->datLen = 1;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = ret_status;
@@ -60,7 +60,7 @@ static void InitCommandPingAns(CommandData_t *cmd, int ret_status) {
 static void InitCommandRawCapAns(CommandData_t *cmd, int ret_status) {
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x00; // ProcessID
@@ -195,7 +195,7 @@ static void GetSensorPara(CommandData_t *cmd, int ret_status) {
 
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 14;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x01;
@@ -226,7 +226,7 @@ static void GetSensorPara(CommandData_t *cmd, int ret_status) {
 end:
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = PC_TO_DEVICE;
-  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 14;
   cmd->dat[0] = 0x01;
   cmd->checkSum = 0;
@@ -280,7 +280,7 @@ static void SetCapConf(CommandData_t *recv_cmd, CommandData_t *cmd,
 
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x02;
@@ -514,7 +514,7 @@ static void SendRawDataResult(CommandData_t *cmd, CommandData_t *recv_cmd) {
   checksum = (unsigned short *)&recv_cmd->dat[1];
   strncpy((char *)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = ENUM_ID_CAPTURE_RAW_CAPTURE;
+  cmd->cmdID = CMD_ID_CAPTURE_RAW_CAPTURE;
   cmd->datLen = 2;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = 0x04;
@@ -550,8 +550,8 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char *buffer,
   //   return;
   // }
 
-  if (common_cmd->cmdType == RKISP_CMD_CAPTURE) {
-    LOG_INFO("cmdType: RKISP_CMD_CAPTURE\n");
+  if (common_cmd->cmdType == CMD_TYPE_CAPTURE) {
+    LOG_INFO("cmdType: CMD_TYPE_CAPTURE\n");
   } else {
     LOG_INFO("cmdType: Unknow\n");
     return;
@@ -560,25 +560,25 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char *buffer,
   LOG_INFO("cmdID: %d\n", common_cmd->cmdID);
 
   switch (common_cmd->cmdID) {
-  case ENUM_ID_CAPTURE_STATUS:
-    LOG_INFO("CmdID ENUM_ID_CAPTURE_STATUS in\n");
+  case CMD_ID_CAPTURE_STATUS:
+    LOG_INFO("CmdID CMD_ID_CAPTURE_STATUS in\n");
     if (common_cmd->dat[0] == KNOCK_KNOCK) {
       InitCommandPingAns(&send_cmd, READY);
       LOG_INFO("Device is READY\n");
     } else {
-      LOG_ERROR("Unknow ENUM_ID_CAPTURE_STATUS message\n");
+      LOG_ERROR("Unknow CMD_ID_CAPTURE_STATUS message\n");
     }
     memcpy(send_data, &send_cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("cmdID ENUM_ID_CAPTURE_STATUS out\n\n");
+    LOG_INFO("cmdID CMD_ID_CAPTURE_STATUS out\n\n");
     break;
-  case ENUM_ID_CAPTURE_RAW_CAPTURE: {
+  case CMD_ID_CAPTURE_RAW_CAPTURE: {
     LOG_INFO("CmdID RAW_CAPTURE in\n");
     char *datBuf = (char *)(common_cmd->dat);
 
     switch (datBuf[0]) {
-    case PROC_ID_CAPTURE_RAW_STATUS:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_STATUS in\n");
+    case DATA_ID_CAPTURE_RAW_STATUS:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_STATUS in\n");
       if (common_cmd->dat[1] == KNOCK_KNOCK) {
         if (capture_status == RAW_CAP) {
           LOG_INFO("capture_status BUSY\n");
@@ -588,42 +588,42 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char *buffer,
           InitCommandRawCapAns(&send_cmd, READY);
         }
       } else {
-        LOG_ERROR("Unknow PROC_ID_CAPTURE_RAW_STATUS message\n");
+        LOG_ERROR("Unknow DATA_ID_CAPTURE_RAW_STATUS message\n");
       }
       memcpy(send_data, &send_cmd, sizeof(CommandData_t));
       send(sockfd, send_data, sizeof(CommandData_t), 0);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_STATUS out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_STATUS out\n");
       break;
-    case PROC_ID_CAPTURE_RAW_GET_PARAM:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_GET_PARAM in\n");
+    case DATA_ID_CAPTURE_RAW_GET_PARAM:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_GET_PARAM in\n");
       RawCaptureinit(common_cmd);
       GetSensorPara(&send_cmd, RES_SUCCESS);
       LOG_INFO("send_cmd.checkSum %d\n", send_cmd.checkSum);
       memcpy(send_data, &send_cmd, sizeof(CommandData_t));
       ret_val = send(sockfd, send_data, sizeof(CommandData_t), 0);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_GET_PARAM out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_GET_PARAM out\n");
       break;
-    case PROC_ID_CAPTURE_RAW_SET_PARAM:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_SET_PARAM in\n");
+    case DATA_ID_CAPTURE_RAW_SET_PARAM:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_SET_PARAM in\n");
       SetCapConf(common_cmd, &send_cmd, READY);
       memcpy(send_data, &send_cmd, sizeof(CommandData_t));
       send(sockfd, send_data, sizeof(CommandData_t), 0);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_SET_PARAM out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_SET_PARAM out\n");
       break;
-    case PROC_ID_CAPTURE_RAW_START: {
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_START in\n");
+    case DATA_ID_CAPTURE_RAW_START: {
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_START in\n");
       capture_status = RAW_CAP;
       RawCaputure(&send_cmd, sockfd);
       capture_status = AVALIABLE;
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_START out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_START out\n");
       break;
     }
-    case PROC_ID_CAPTURE_RAW_CHECKSUM:
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_CHECKSUM in\n");
+    case DATA_ID_CAPTURE_RAW_CHECKSUM:
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_CHECKSUM in\n");
       SendRawDataResult(&send_cmd, common_cmd);
       memcpy(send_data, &send_cmd, sizeof(CommandData_t));
       ret_val = send(sockfd, send_data, sizeof(CommandData_t), 0);
-      LOG_INFO("ProcID PROC_ID_CAPTURE_RAW_CHECKSUM out\n");
+      LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_CHECKSUM out\n");
       break;
     default:
       break;

@@ -80,7 +80,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
 static void InitCommandPingAns(CommandData_t *cmd, int ret_status) {
   strncpy((char *)cmd->RKID, RKID_CHECK, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
-  cmd->cmdID = ENUM_ID_CAPTURE_STATUS;
+  cmd->cmdID = CMD_ID_CAPTURE_STATUS;
   cmd->datLen = 1;
   memset(cmd->dat, 0, sizeof(cmd->dat));
   cmd->dat[0] = ret_status;
@@ -131,19 +131,19 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char *buffer, int size) {
   LOG_INFO("cmdID: %d\n", common_cmd->cmdID);
 
   switch (common_cmd->cmdID) {
-  case ENUM_ID_CAPTURE_STATUS:
-    LOG_INFO("CmdID ENUM_ID_CAPTURE_STATUS in\n");
+  case CMD_ID_CAPTURE_STATUS:
+    LOG_INFO("CmdID CMD_ID_CAPTURE_STATUS in\n");
     if (common_cmd->dat[0] == KNOCK_KNOCK) {
       InitCommandPingAns(&send_cmd, READY);
       LOG_INFO("Device is READY\n");
     } else {
-      LOG_ERROR("Unknow ENUM_ID_CAPTURE_STATUS message\n");
+      LOG_ERROR("Unknow CMD_ID_CAPTURE_STATUS message\n");
     }
     memcpy(send_data, &send_cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("cmdID ENUM_ID_CAPTURE_STATUS out\n\n");
+    LOG_INFO("cmdID CMD_ID_CAPTURE_STATUS out\n\n");
     break;
-  case ENUM_ID_GET_STATUS:
+  case CMD_ID_GET_STATUS:
     DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
     break;
   default:

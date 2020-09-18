@@ -22,6 +22,15 @@ typedef struct Capture_Yuv_Params_s {
 } Capture_Yuv_Params_t;
 #pragma pack()
 
+#pragma pack(1)
+typedef struct Sensor_Yuv_Params_s {
+  uint8_t data_id;
+  uint32_t width;
+  uint32_t height;
+  uint8_t format;
+} Sensor_Yuv_Params_t;
+#pragma pack()
+
 class RKAiqOLProtocol {
 public:
   RKAiqOLProtocol() = default;
