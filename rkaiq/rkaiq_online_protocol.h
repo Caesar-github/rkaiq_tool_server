@@ -25,8 +25,8 @@ typedef struct Capture_Yuv_Params_s {
 #pragma pack(1)
 typedef struct Sensor_Yuv_Params_s {
   uint8_t data_id;
-  uint32_t width;
-  uint32_t height;
+  uint16_t width;
+  uint16_t height;
   uint8_t format;
 } Sensor_Yuv_Params_t;
 #pragma pack()

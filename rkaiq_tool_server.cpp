@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
   if (g_dump)
     rkaiq_media->DumpMediaInfo();
   g_sensor_name = rkaiq_media->GetSensorName(g_device_id);
+  rkaiq_media->LinkToIsp(true);
 
   if (app_run_mode == APP_RUN_STATUS_TUNRING) {
     LOG_INFO("app_run_mode %d  [0: turning 1: capture]\n", app_run_mode);

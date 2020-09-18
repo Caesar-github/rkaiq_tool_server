@@ -5,89 +5,6 @@
 #endif
 #define LOG_TAG "rkaiq_engine.cpp"
 
-int RKAiqMedia::LinkToIsp(bool enable) {
-  int ret;
-  int index = 0;
-  char sys_path[64];
-  media_device *device = NULL;
-  media_entity *entity = NULL;
-  media_pad *src_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
-  while (index < 10) {
-    snprintf(sys_path, 64, "/dev/media%d", index++);
-    if (access(sys_path, F_OK))
-      continue;
-    device = media_device_new(sys_path);
-    if (device == NULL) {
-      LOG_ERROR("Failed to create media %s\n", sys_path);
-      continue;
-    }
-    ret = media_device_enumerate(device);
-    if (ret < 0) {
-      LOG_ERROR("Failed to enumerate %s (%d)\n", sys_path, ret);
-      media_device_unref(device);
-      continue;
-    }
-    const struct media_device_info *info = media_get_info(device);
-    LOG_INFO("%s: model %s\n", sys_path, info->model);
-    if (strcmp(info->model, "rkisp0") != 0 &&
-        strcmp(info->model, "rkisp1") != 0 &&
-        strcmp(info->model, "rkisp") != 0) {
-      media_device_unref(device);
-      continue;
-    }
-    LOG_INFO("%s: setup link to isp\n", sys_path);
-    entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
-    if (entity) {
-      const struct media_entity_desc *info = media_entity_get_info(entity);
-      src_pad = (media_pad *)media_entity_get_pad(entity, 2);
-      if (!src_pad) {
-        LOG_ERROR("get rkisp-isp-subdev source pad failed!\n");
-      }
-
-      struct v4l2_mbus_framefmt format;
-      ret = v4l2_subdev_get_format(src_pad->entity, &format, src_pad->index,
-                                   V4L2_SUBDEV_FORMAT_ACTIVE);
-      if (ret != 0)
-        LOG_ERROR("v4l2_subdev_get_format failed!\n");
-      char set_fmt[128];
-      sprintf(set_fmt, "\"%s\":%d [fmt:%s/%dx%d field:none]", info->name,
-              src_pad->index, "YUYV8_2X8", format.width, format.height);
-      ret = v4l2_subdev_parse_setup_formats(device, set_fmt);
-      if (ret)
-        LOG_ERROR("Unable to setup formats: %s (%d)\n", strerror(-ret), -ret);
-    }
-
-    entity = media_get_entity_by_name(device, "rkisp-bridge-ispp");
-    if (entity) {
-      sink_pad_bridge = (media_pad *)media_entity_get_pad(entity, 0);
-      if (!sink_pad_bridge) {
-        LOG_ERROR("get rkisp-bridge-ispp sink pad failed!\n");
-      }
-    }
-    entity = media_get_entity_by_name(device, "rkisp_mainpath");
-    if (entity) {
-      sink_pad_mp = (media_pad *)media_entity_get_pad(entity, 0);
-      if (!sink_pad_mp) {
-        LOG_ERROR("get rkisp_mainpath sink pad failed!\n");
-      }
-    }
-    if (src_pad && sink_pad_bridge && sink_pad_mp) {
-      ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
-      if (ret)
-        LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
-      ret = media_setup_link(device, src_pad, sink_pad_bridge,
-                             MEDIA_LNK_FL_ENABLED);
-      if (ret)
-        LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
-    }
-
-    // ret = v4l2_subdev_parse_setup_formats(device, "crop:(0,0)/2688x1520");
-
-    media_device_unref(device);
-  }
-  return ret;
-}
-
 std::string RKAiqMedia::GetSensorName(struct media_device *device) {
   std::string sensor_name;
   media_entity *entity = NULL;
@@ -204,7 +121,7 @@ void RKAiqMedia::GetIsppSubDevs(int id, struct media_device *device,
   }
 
   LOG_ERROR("model(%s): ispp_info(%d): ispp-subdev entity name: %s\n",
-            device->info.model, index, ispp_info->pp_dev_path);
+            device->info.model, index, ispp_info->pp_dev_path.c_str());
 }
 
 void RKAiqMedia::GetIspSubDevs(int id, struct media_device *device,
@@ -354,8 +271,8 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device *device,
     }
   }
 
-  LOG_ERROR("model(%s): isp_info(%d): ispp-subdev entity name: %s\n",
-            device->info.model, index, isp_info->isp_dev_path);
+  LOG_ERROR("model(%s): isp_info(%d): isp-subdev entity name: %s\n",
+            device->info.model, index, isp_info->isp_dev_path.c_str());
 }
 
 void RKAiqMedia::GetCifSubDevs(int id, struct media_device *device,
@@ -460,6 +377,130 @@ void RKAiqMedia::GetCifSubDevs(int id, struct media_device *device,
       cif_info->mipi_dphy_rx_path = entity_name;
     }
   }
+}
+
+int RKAiqMedia::LinkToIsp(bool enable) {
+  int ret;
+  int index = 0;
+  char sys_path[64];
+  media_device *device = NULL;
+  media_entity *entity = NULL;
+  media_pad *src_pad = NULL, *src_raw2_s = NULL;
+  media_pad *sink_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
+
+  LOG_ERROR("############## LinkToIsp\n");
+
+  while (index < 10) {
+    snprintf(sys_path, 64, "/dev/media%d", index++);
+    if (access(sys_path, F_OK))
+      continue;
+    device = media_device_new(sys_path);
+    if (device == NULL) {
+      LOG_ERROR("Failed to create media %s\n", sys_path);
+      continue;
+    }
+    ret = media_device_enumerate(device);
+    if (ret < 0) {
+      LOG_ERROR("Failed to enumerate %s (%d)\n", sys_path, ret);
+      media_device_unref(device);
+      continue;
+    }
+    const struct media_device_info *info = media_get_info(device);
+    LOG_INFO("%s: model %s\n", sys_path, info->model);
+    if (strcmp(info->model, "rkisp0") != 0 &&
+        strcmp(info->model, "rkisp1") != 0 &&
+        strcmp(info->model, "rkisp") != 0) {
+      media_device_unref(device);
+      continue;
+    }
+    LOG_INFO("%s: setup link to isp enable %d\n", sys_path, enable);
+    entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
+    if (entity) {
+      const struct media_entity_desc *info = media_entity_get_info(entity);
+      src_pad = (media_pad *)media_entity_get_pad(entity, 2);
+      if (!src_pad) {
+        LOG_ERROR("get rkisp-isp-subdev source pad failed!\n");
+      }
+      if (enable) {
+        struct v4l2_mbus_framefmt format;
+        ret = v4l2_subdev_get_format(src_pad->entity, &format, src_pad->index,
+                                    V4L2_SUBDEV_FORMAT_ACTIVE);
+        if (ret != 0)
+          LOG_ERROR("v4l2_subdev_get_format failed!\n");
+        char set_fmt[128];
+        sprintf(set_fmt, "\"%s\":%d [fmt:%s/%dx%d field:none]", info->name,
+                src_pad->index, "YUYV8_2X8", format.width, format.height);
+        ret = v4l2_subdev_parse_setup_formats(device, set_fmt);
+        if (ret)
+          LOG_ERROR("Unable to setup formats: %s (%d)\n", strerror(-ret), -ret);
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "rkisp-bridge-ispp");
+    if (entity) {
+      sink_pad_bridge = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!sink_pad_bridge) {
+        LOG_ERROR("get rkisp-bridge-ispp sink pad failed!\n");
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "rkisp_mainpath");
+    if (entity) {
+      sink_pad_mp = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!sink_pad_mp) {
+        LOG_ERROR("get rkisp_mainpath sink pad failed!\n");
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
+    if (entity) {
+      sink_pad = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!sink_pad) {
+        LOG_DEBUG("get rkisp-isp-subdev source pad failed!\n");
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "rkisp_rawrd2_s");
+    if (entity) {
+      src_raw2_s = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!src_raw2_s) {
+        LOG_DEBUG("get rkisp_rawrd2_s sink pad failed!\n");
+      }
+    }
+
+    if (enable) {
+      if (src_pad && sink_pad_bridge && sink_pad_mp) {
+        ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
+        if (ret)
+          LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+        ret = media_setup_link(device, src_pad, sink_pad_bridge, MEDIA_LNK_FL_ENABLED);
+        if (ret)
+          LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
+        LOG_ERROR("media_setup_link isp SUCCESS\n");
+      } else {
+        LOG_ERROR("media_setup_link isp FAILED\n");
+      }
+    } else {
+      if (src_pad && sink_pad_bridge && sink_pad_mp && src_raw2_s) {
+        ret = media_setup_link(device, src_raw2_s, sink_pad, 0);
+        if (ret)
+          LOG_ERROR("media_setup_link src_raw2_s sink_pad FAILED: %d\n", ret);
+        ret = media_setup_link(device, src_pad, sink_pad_bridge, 0);
+        if (ret)
+          LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n", ret);
+        ret = media_setup_link(device, src_pad, sink_pad_mp, MEDIA_LNK_FL_ENABLED);
+        if (ret)
+          LOG_ERROR("media_setup_link src_pad src_pad FAILED: %d\n", ret);
+        LOG_ERROR("media_setup_link unlink isp SUCCESS\n");
+      } else {
+        LOG_ERROR("media_setup_link unlink isp FAILED\n");
+      }
+    }
+
+    // ret = v4l2_subdev_parse_setup_formats(device, "crop:(0,0)/2688x1520");
+    media_device_unref(device);
+  }
+  return ret;
 }
 
 int RKAiqMedia::GetMediaInfo() {

@@ -15,6 +15,8 @@ static struct capture_info cap_info;
 static uint32_t *averge_frame0;
 static uint16_t *averge_frame1;
 
+extern std::string g_sensor_name;
+
 static void RunCmd(const char *cmd, char *result) {
   FILE *fp;
   fp = popen(cmd, "r");
@@ -30,18 +32,12 @@ static void RunCmd(const char *cmd, char *result) {
 static int SetLHcg(int mode) {
   char cmd[1024] = {0};
   char result[1024] = {0};
-  RunCmd("media-ctl -p -d /dev/media1 | grep sensor -B 1 -i | "
-         "head -1 | cut -d ' ' -f 5",
-         result);
-  snprintf(cmd, sizeof(cmd), "eval find "
-                             "/sys/devices/platform/ -name %s",
-           result);
+  int pos = g_sensor_name.find(" ");
+  snprintf(cmd, sizeof(cmd),
+  "echo %d > /sys/class/i2c-dev/i2c-%d/device/%s/cam_s_cg",
+  mode, atoi(g_sensor_name.substr(pos + 1, pos + 2).c_str()), 
+  g_sensor_name.substr(pos + 1, g_sensor_name.size() - 1).c_str());
   RunCmd(cmd, result);
-  int length = strlen(result) - 1;
-  result[length] = '\0';
-  snprintf(cmd, sizeof(cmd), "echo %d > %s/cam_s_cg", mode, result);
-  RunCmd(cmd, result);
-  LOG_INFO(" set lhcg cmd %s\n", cmd);
   return 0;
 }
 
