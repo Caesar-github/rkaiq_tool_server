@@ -5,6 +5,9 @@
 #endif
 #define LOG_TAG "rkaiq_engine.cpp"
 
+extern int g_width;
+extern int g_height;
+
 std::string RKAiqMedia::GetSensorName(struct media_device *device) {
   std::string sensor_name;
   media_entity *entity = NULL;
@@ -155,6 +158,20 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device *device,
     entity_name = media_entity_get_devname(entity);
     if (entity_name) {
       isp_info->isp_dev_path = entity_name;
+    }
+
+    struct v4l2_mbus_framefmt format;
+    media_pad *src_pad = (media_pad *)media_entity_get_pad(entity, 2);
+    int ret = v4l2_subdev_get_format(entity, &format, src_pad->index,
+                                     V4L2_SUBDEV_FORMAT_ACTIVE);
+    if (ret != 0) {
+      LOG_ERROR("v4l2_subdev_get_format failed!\n");
+    } else {
+      if (g_width > format.width || g_height > format.height) {
+        g_width = format.width;
+        g_height = format.height;
+        LOG_ERROR("fixup width %d height %d\n", g_width, g_height);
+      }
     }
   }
 

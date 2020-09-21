@@ -12,6 +12,8 @@ public:
   int GetAttrib(rk_aiq_sharp_attrib_t *attr);
   int SetIQPara(rk_aiq_sharp_IQpara_t *para);
   int GetIQPara(rk_aiq_sharp_IQpara_t *para);
+  int SetIQEFPara(rk_aiq_sharp_IQpara_t *para);
+  int GetIQEFPara(rk_aiq_sharp_IQpara_t *para);
   int SetStrength(float fPercent);
   int GetStrength(float *pPercent);
 

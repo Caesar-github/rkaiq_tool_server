@@ -1,7 +1,10 @@
 #ifndef _TOOL_RKAIQ_API_MANAGER_H_
 #define _TOOL_RKAIQ_API_MANAGER_H_
 
+#include "rkaiq_adpcc.h"
 #include "rkaiq_ae.h"
+#include "rkaiq_agamma.h"
+#include "rkaiq_ahdr.h"
 #include "rkaiq_anr.h"
 #include "rkaiq_cmdid.h"
 #include "rkaiq_engine.h"
@@ -33,6 +36,9 @@ public:
   int AnrIoCtrl(int id, void *data, int size);
   int SharpIoCtrl(int id, void *data, int size);
   int SysCtlIoCtrl(int id, void *data, int size);
+  int AHDRIoCtrl(int id, void *data, int size);
+  int AGamamIoCtrl(int id, void *data, int size);
+  int ADPCCIoCtrl(int id, void *data, int size);
   int IoCtrl(int id, void *data, int size);
   void SaveExit();
 
@@ -48,6 +54,9 @@ private:
   std::unique_ptr<RKAiqToolANR> anr_;
   std::unique_ptr<RKAiqToolSharp> asharp_;
   std::unique_ptr<RKAiqToolSysCtl> sysctl_;
+  std::unique_ptr<RKAiqToolAHDR> ahdr_;
+  std::unique_ptr<RKAiqToolADPCC> dpcc_;
+  std::unique_ptr<RKAiqToolAGamma> gamma_;
 };
 
 #endif // _TOOL_RKAIQ_API_MANAGER_H_

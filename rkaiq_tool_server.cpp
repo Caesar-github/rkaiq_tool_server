@@ -59,6 +59,8 @@ int main(int argc, char **argv) {
   LOG_ERROR("iqfile cmd_parser.get  %s\n", iqfile.c_str());
   LOG_ERROR("g_mode cmd_parser.get  %d\n", g_mode);
   LOG_ERROR("g_dump cmd_parser.get  %d\n", g_dump);
+  LOG_ERROR("g_width     cmd_parser.get  %d\n", g_width);
+  LOG_ERROR("g_height    cmd_parser.get  %d\n", g_height);
   LOG_ERROR("g_device_id cmd_parser.get  %d\n", g_device_id);
 
   std::string exe_name = argv[0];
@@ -97,11 +99,13 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-static const char short_options[] = "i:m:Dd:";
+static const char short_options[] = "i:m:Dd:w:h:";
 static const struct option long_options[] = {
     {"iqfile", required_argument, NULL, 'i'},
     {"mode", required_argument, NULL, 'm'},
     {"dump", no_argument, NULL, 'D'},
+    {"width", no_argument, NULL, 'w'},
+    {"height", no_argument, NULL, 'h'},
     {"device_id", required_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
     {0, 0, 0, 0}};
@@ -120,6 +124,12 @@ static void parse_args(int argc, char **argv) {
       break;
     case 'm':
       g_mode = atoi(optarg);
+      break;
+    case 'w':
+      g_width = atoi(optarg);
+      break;
+    case 'h':
+      g_height = atoi(optarg);
       break;
     case 'd':
       g_device_id = atoi(optarg);

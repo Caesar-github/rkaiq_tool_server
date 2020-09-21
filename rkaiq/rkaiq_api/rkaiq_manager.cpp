@@ -20,6 +20,9 @@ RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
   anr_.reset(new RKAiqToolANR(ctx_));
   asharp_.reset(new RKAiqToolSharp(ctx_));
   sysctl_.reset(new RKAiqToolSysCtl(ctx_));
+  ahdr_.reset(new RKAiqToolAHDR(ctx_));
+  dpcc_.reset(new RKAiqToolADPCC(ctx_));
+  gamma_.reset(new RKAiqToolAGamma(ctx_));
 
   rk_aiq_ver_info_t vers;
   sysctl_->GetVersionInfo(&vers);
@@ -69,6 +72,12 @@ int RKAiqToolManager::IoCtrl(int id, void *data, int size) {
     SharpIoCtrl(id, data, size);
   } else if (id > ENUM_ID_SYSCTL_START && id < ENUM_ID_SYSCTL_END) {
     SysCtlIoCtrl(id, data, size);
+  } else if (id > ENUM_ID_AHDR_START && id < ENUM_ID_AHDR_END) {
+    AHDRIoCtrl(id, data, size);
+  } else if (id > ENUM_ID_AGAMMA_START && id < ENUM_ID_AGAMMA_END) {
+    AGamamIoCtrl(id, data, size);
+  } else if (id > ENUM_ID_ADPCC_START && id < ENUM_ID_ADPCC_END) {
+    ADPCCIoCtrl(id, data, size);
   }
   LOG_INFO("IoCtrl id: 0x%x exit\n", id);
   return 0;
@@ -293,6 +302,21 @@ int RKAiqToolManager::SharpIoCtrl(int id, void *data, int size) {
     asharp_->GetIQPara(&param);
     memcpy(data, &param.stSharpPara, sizeof(CalibDb_Sharp_t));
   } break;
+  case ENUM_ID_SHARP_SET_EF_IQPARA: {
+    rk_aiq_sharp_IQpara_t param;
+    param.module_bits = 1 << ASHARP_MODULE_EDGEFILTER;
+    param.stEdgeFltPara = *(CalibDb_EdgeFilter_t *)data;
+    CHECK_PARAM_SIZE(CalibDb_EdgeFilter_t, size);
+    asharp_->SetIQPara(&param);
+  } break;
+  case ENUM_ID_SHARP_GET_EF_IQPARA: {
+    rk_aiq_sharp_IQpara_t param;
+    param.module_bits = 1 << ASHARP_MODULE_EDGEFILTER;
+    CHECK_PARAM_SIZE(CalibDb_EdgeFilter_t, size);
+    asharp_->GetIQPara(&param);
+    memcpy(data, &param.stEdgeFltPara, sizeof(CalibDb_EdgeFilter_t));
+
+  } break;
   case ENUM_ID_SHARP_SET_STRENGTH:
     CHECK_PARAM_SIZE(float, size);
     asharp_->SetStrength(*(float *)data);
@@ -320,6 +344,60 @@ int RKAiqToolManager::SysCtlIoCtrl(int id, void *data, int size) {
   case ENUM_ID_SYSCTL_QUERYCPSLTCAP:
     sysctl_->QueryCpsLtCap((rk_aiq_cpsl_cap_t *)data);
     break;
+  default:
+    LOG_INFO("cmdID: Unknow\n");
+    break;
+  }
+  return 0;
+}
+
+int RKAiqToolManager::AHDRIoCtrl(int id, void *data, int size) {
+  LOG_INFO("AHDRIoCtrl id: 0x%x\n", id);
+  switch (id) {
+  case ENUM_ID_AHDR_SETATTRIB: {
+    CHECK_PARAM_SIZE(ahdr_attrib_t, size);
+    ahdr_->SetAttrib(*(ahdr_attrib_t *)data);
+  } break;
+  case ENUM_ID_AHDR_GETATTRIB: {
+    CHECK_PARAM_SIZE(ahdr_attrib_t, size);
+    ahdr_->GetAttrib((ahdr_attrib_t *)data);
+  } break;
+  default:
+    LOG_INFO("cmdID: Unknow\n");
+    break;
+  }
+  return 0;
+}
+
+int RKAiqToolManager::AGamamIoCtrl(int id, void *data, int size) {
+  LOG_INFO("AGamamIoCtrl id: 0x%x\n", id);
+  switch (id) {
+  case ENUM_ID_AGAMMA_SETATTRIB: {
+    CHECK_PARAM_SIZE(rk_aiq_gamma_attrib_t, size);
+    gamma_->SetAttrib(*(rk_aiq_gamma_attrib_t *)data);
+  } break;
+  case ENUM_ID_AGAMMA_GETATTRIB: {
+    CHECK_PARAM_SIZE(rk_aiq_gamma_attrib_t, size);
+    gamma_->GetAttrib((rk_aiq_gamma_attrib_t *)data);
+  } break;
+  default:
+    LOG_INFO("cmdID: Unknow\n");
+    break;
+  }
+  return 0;
+}
+
+int RKAiqToolManager::ADPCCIoCtrl(int id, void *data, int size) {
+  LOG_INFO("ADPCCIoCtrl id: 0x%x\n", id);
+  switch (id) {
+  case ENUM_ID_ADPCC_SETATTRIB: {
+    CHECK_PARAM_SIZE(rk_aiq_dpcc_attrib_t, size);
+    dpcc_->SetAttrib((rk_aiq_dpcc_attrib_t *)data);
+  } break;
+  case ENUM_ID_ADPCC_GETATTRIB: {
+    CHECK_PARAM_SIZE(rk_aiq_dpcc_attrib_t, size);
+    dpcc_->GetAttrib((rk_aiq_dpcc_attrib_t *)data);
+  } break;
   default:
     LOG_INFO("cmdID: Unknow\n");
     break;
