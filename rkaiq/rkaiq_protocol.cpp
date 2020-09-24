@@ -65,7 +65,9 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
   }
   if (mode == APP_RUN_STATUS_CAPTURE) {
     LOG_INFO("Switch to APP_RUN_STATUS_CAPTURE\n");
+#ifndef ANDROID
     deinit_rtsp();
+#endif
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -75,7 +77,9 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     rkaiq_media->LinkToIsp(true);
     rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+#ifndef ANDROID
     init_rtsp(g_width, g_height);
+#endif
   }
   app_run_mode = mode;
   return 0;
@@ -168,7 +172,9 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char *buffer, int size) {
     RKAiqRawProtocol::HandlerRawCapMessage(sockfd, buffer, size);
   } else if (strcmp((char *)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
     DoChangeAppMode(APP_RUN_STATUS_TUNRING);
+#ifndef ANDROID
     RKAiqOLProtocol::HandlerOnLineMessage(sockfd, buffer, size);
+#endif
   } else if (strcmp((char *)common_cmd->RKID, RKID_CHECK) == 0) {
     HandlerCheckDevice(sockfd, buffer, size);
   }

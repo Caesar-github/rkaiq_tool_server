@@ -7,6 +7,10 @@
 
 #include <chrono>
 
+#ifdef ANDROID
+#include <log/log.h>
+#endif
+
 extern int log_level;
 
 #define LOG_LEVEL_ERROR 0
@@ -17,6 +21,35 @@ extern int log_level;
 #ifndef LOG_TAG
 #define LOG_TAG ""
 #endif // LOG_TAG
+#ifdef ANDROID
+#define LOG_INFO(format, ...)                                                  \
+  do {                                                                         \
+    if (log_level < LOG_LEVEL_INFO)                                            \
+      break;                                                                   \
+    ALOGI(format,  ##__VA_ARGS__);                                             \
+  } while (0)
+
+#define LOG_WARN(format, ...)                                                  \
+  do {                                                                         \
+    if (log_level < LOG_LEVEL_WARN)                                            \
+      break;                                                                   \
+    ALOGW(format,  ##__VA_ARGS__);                                             \
+  } while (0)
+
+#define LOG_ERROR(format, ...)                                                 \
+  do {                                                                         \
+    if (log_level < LOG_LEVEL_ERROR)                                           \
+      break;                                                                   \
+    ALOGE(format,  ##__VA_ARGS__);                                             \
+  } while (0)
+
+#define LOG_DEBUG(format, ...)                                                 \
+  do {                                                                         \
+    if (log_level < LOG_LEVEL_DEBUG)                                           \
+      break;                                                                   \
+    ALOGD(format,  ##__VA_ARGS__);                                             \
+  } while (0)
+#else
 
 #define LOG_INFO(format, ...)                                                  \
   do {                                                                         \
@@ -45,6 +78,8 @@ extern int log_level;
       break;                                                                   \
     fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, ##__VA_ARGS__); \
   } while (0)
+
+#endif
 
 inline int64_t gettimeofday() {
   std::chrono::microseconds us =

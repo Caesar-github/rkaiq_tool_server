@@ -80,7 +80,9 @@ int main(int argc, char **argv) {
     LOG_INFO("app_run_mode %d  [0: turning 1: capture]\n", app_run_mode);
     rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+#ifndef ANDROID
     init_rtsp(g_width, g_height);
+#endif
   }
 
   tcp = std::make_shared<TCPServer>();
@@ -92,7 +94,9 @@ int main(int argc, char **argv) {
   fprintf(stderr, "go quit %d\n", quit);
   tcp->SaveEixt();
   if (app_run_mode == APP_RUN_STATUS_TUNRING) {
+#ifndef ANDROID
     deinit_rtsp();
+#endif
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;
   }
@@ -142,6 +146,10 @@ static void parse_args(int argc, char **argv) {
     }
   }
   if (iqfile.empty()) {
+#ifdef ANDROID
+    iqfile = "/vendor/etc/camera/rkisp1";
+#else
     iqfile = "/oem/etc/iqfiles";
+#endif
   }
 }

@@ -24,7 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifndef ANDROID
 #include <v4l2subdev.h>
+#endif
 
 #include <linux/videodev2.h>
 
