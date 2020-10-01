@@ -15,6 +15,7 @@ int g_height = 1080;
 int g_mode = 0;
 int g_dump = 0;
 int g_device_id = 0;
+int g_rtsp_en = 1;
 std::string iqfile;
 std::string g_sensor_name;
 std::shared_ptr<TCPServer> tcp;
@@ -62,6 +63,7 @@ int main(int argc, char **argv) {
   LOG_ERROR("g_width     cmd_parser.get  %d\n", g_width);
   LOG_ERROR("g_height    cmd_parser.get  %d\n", g_height);
   LOG_ERROR("g_device_id cmd_parser.get  %d\n", g_device_id);
+  LOG_ERROR("g_rtsp_en   cmd_parser.get  %d\n", g_rtsp_en);
 
   std::string exe_name = argv[0];
   system(STOP_RKLUNCH_CMD);
@@ -81,7 +83,8 @@ int main(int argc, char **argv) {
     rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifndef ANDROID
-    init_rtsp(g_width, g_height);
+    if (g_rtsp_en)
+      init_rtsp(g_width, g_height);
 #endif
   }
 
@@ -95,7 +98,8 @@ int main(int argc, char **argv) {
   tcp->SaveEixt();
   if (app_run_mode == APP_RUN_STATUS_TUNRING) {
 #ifndef ANDROID
-    deinit_rtsp();
+    if (g_rtsp_en)
+      deinit_rtsp();
 #endif
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;
@@ -103,7 +107,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-static const char short_options[] = "i:m:Dd:w:h:";
+static const char short_options[] = "i:m:Dd:w:h:r:";
 static const struct option long_options[] = {
     {"iqfile", required_argument, NULL, 'i'},
     {"mode", required_argument, NULL, 'm'},
@@ -111,6 +115,7 @@ static const struct option long_options[] = {
     {"width", no_argument, NULL, 'w'},
     {"height", no_argument, NULL, 'h'},
     {"device_id", required_argument, NULL, 'd'},
+    {"rtsp_en", required_argument, NULL, 'r'},
     {"help", no_argument, NULL, 'h'},
     {0, 0, 0, 0}};
 static void parse_args(int argc, char **argv) {
@@ -137,6 +142,9 @@ static void parse_args(int argc, char **argv) {
       break;
     case 'd':
       g_device_id = atoi(optarg);
+      break;
+    case 'r':
+      g_rtsp_en = atoi(optarg);
       break;
     case 'D':
       g_dump = 1;
