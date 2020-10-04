@@ -12,6 +12,7 @@ public:
   int SetCpsLtCfg(rk_aiq_cpsl_cfg_t *cfg);
   int GetCpsLtInfo(rk_aiq_cpsl_info_t *info);
   int QueryCpsLtCap(rk_aiq_cpsl_cap_t *cap);
+  int SetWorkingModeDyn(rk_aiq_working_mode_t mode);
 
   int GetVersionInfo(rk_aiq_ver_info_t *vers);
 

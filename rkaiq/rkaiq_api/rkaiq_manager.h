@@ -7,6 +7,7 @@
 #include "rkaiq_ahdr.h"
 #include "rkaiq_anr.h"
 #include "rkaiq_cmdid.h"
+#include "rkaiq_dehaze.h"
 #include "rkaiq_engine.h"
 #include "rkaiq_imgproc.h"
 #include "rkaiq_sharp.h"
@@ -23,6 +24,7 @@
 #define MATCH_RKAIQ_VERSION_5 "v1.0.9"
 #define MATCH_RKAIQ_VERSION_6 "v1.2.0"
 #define MATCH_RKAIQ_VERSION_7 "v1.2.1"
+#define MATCH_RKAIQ_VERSION_8 "v1.2.2"
 
 #define MATCH_IQ_PARSER_VERSION "unknow"
 
@@ -39,6 +41,7 @@ public:
   int AHDRIoCtrl(int id, void *data, int size);
   int AGamamIoCtrl(int id, void *data, int size);
   int ADPCCIoCtrl(int id, void *data, int size);
+  int DEHAZEIoCtrl(int id, void *data, int size);
   int IoCtrl(int id, void *data, int size);
   void SaveExit();
 
@@ -57,6 +60,7 @@ private:
   std::unique_ptr<RKAiqToolAHDR> ahdr_;
   std::unique_ptr<RKAiqToolADPCC> dpcc_;
   std::unique_ptr<RKAiqToolAGamma> gamma_;
+  std::unique_ptr<RKAiqToolDehaze> dehaze_;
 };
 
 #endif // _TOOL_RKAIQ_API_MANAGER_H_

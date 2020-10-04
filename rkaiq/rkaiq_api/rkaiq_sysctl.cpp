@@ -16,6 +16,10 @@ int RKAiqToolSysCtl::QueryCpsLtCap(rk_aiq_cpsl_cap_t *cap) {
   return rk_aiq_uapi_sysctl_queryCpsLtCap(ctx_, cap);
 }
 
+int RKAiqToolSysCtl::SetWorkingModeDyn(rk_aiq_working_mode_t mode) {
+  return rk_aiq_uapi_sysctl_swWorkingModeDyn(ctx_, mode);
+}
+
 int RKAiqToolSysCtl::GetVersionInfo(rk_aiq_ver_info_t *vers) {
   rk_aiq_uapi_get_version_info(vers);
   return 0;

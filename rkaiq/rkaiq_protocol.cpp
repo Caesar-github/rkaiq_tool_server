@@ -68,7 +68,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     LOG_INFO("Switch to APP_RUN_STATUS_CAPTURE\n");
 #ifndef ANDROID
     if (g_rtsp_en)
-    deinit_rtsp();
+      deinit_rtsp();
 #endif
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;

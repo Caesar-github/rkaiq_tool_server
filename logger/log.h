@@ -26,28 +26,28 @@ extern int log_level;
   do {                                                                         \
     if (log_level < LOG_LEVEL_INFO)                                            \
       break;                                                                   \
-    ALOGI(format,  ##__VA_ARGS__);                                             \
+    ALOGI(format, ##__VA_ARGS__);                                              \
   } while (0)
 
 #define LOG_WARN(format, ...)                                                  \
   do {                                                                         \
     if (log_level < LOG_LEVEL_WARN)                                            \
       break;                                                                   \
-    ALOGW(format,  ##__VA_ARGS__);                                             \
+    ALOGW(format, ##__VA_ARGS__);                                              \
   } while (0)
 
 #define LOG_ERROR(format, ...)                                                 \
   do {                                                                         \
     if (log_level < LOG_LEVEL_ERROR)                                           \
       break;                                                                   \
-    ALOGE(format,  ##__VA_ARGS__);                                             \
+    ALOGE(format, ##__VA_ARGS__);                                              \
   } while (0)
 
 #define LOG_DEBUG(format, ...)                                                 \
   do {                                                                         \
     if (log_level < LOG_LEVEL_DEBUG)                                           \
       break;                                                                   \
-    ALOGD(format,  ##__VA_ARGS__);                                             \
+    ALOGD(format, ##__VA_ARGS__);                                              \
   } while (0)
 #else
 

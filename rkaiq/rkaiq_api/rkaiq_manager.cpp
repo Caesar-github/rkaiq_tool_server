@@ -23,6 +23,7 @@ RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
   ahdr_.reset(new RKAiqToolAHDR(ctx_));
   dpcc_.reset(new RKAiqToolADPCC(ctx_));
   gamma_.reset(new RKAiqToolAGamma(ctx_));
+  dehaze_.reset(new RKAiqToolDehaze(ctx_));
 
   rk_aiq_ver_info_t vers;
   sysctl_->GetVersionInfo(&vers);
@@ -34,7 +35,8 @@ RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
       strcmp(MATCH_RKAIQ_VERSION_4, vers.aiq_ver) &&
       strcmp(MATCH_RKAIQ_VERSION_5, vers.aiq_ver) &&
       strcmp(MATCH_RKAIQ_VERSION_6, vers.aiq_ver) &&
-      strcmp(MATCH_RKAIQ_VERSION_7, vers.aiq_ver)) {
+      strcmp(MATCH_RKAIQ_VERSION_7, vers.aiq_ver) &&
+      strcmp(MATCH_RKAIQ_VERSION_8, vers.aiq_ver)) {
     LOG_ERROR("version: aiq_ver %s iq_parser_ver %s should be match \n"
               "   aiq_ver %s \n"
               "or aiq_ver %s \n"
@@ -46,7 +48,8 @@ RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
               vers.aiq_ver, vers.iq_parser_ver, MATCH_RKAIQ_VERSION_1,
               MATCH_RKAIQ_VERSION_2, MATCH_RKAIQ_VERSION_3,
               MATCH_RKAIQ_VERSION_4, MATCH_RKAIQ_VERSION_5,
-              MATCH_RKAIQ_VERSION_6, MATCH_RKAIQ_VERSION_7);
+              MATCH_RKAIQ_VERSION_6, MATCH_RKAIQ_VERSION_7,
+              MATCH_RKAIQ_VERSION_8);
     exit(-1);
   }
 }
@@ -78,6 +81,8 @@ int RKAiqToolManager::IoCtrl(int id, void *data, int size) {
     AGamamIoCtrl(id, data, size);
   } else if (id > ENUM_ID_ADPCC_START && id < ENUM_ID_ADPCC_END) {
     ADPCCIoCtrl(id, data, size);
+  } else if (id > ENUM_ID_DEHAZE_START && id < ENUM_ID_DEHAZE_END) {
+    DEHAZEIoCtrl(id, data, size);
   }
   LOG_INFO("IoCtrl id: 0x%x exit\n", id);
   return 0;
@@ -344,6 +349,9 @@ int RKAiqToolManager::SysCtlIoCtrl(int id, void *data, int size) {
   case ENUM_ID_SYSCTL_QUERYCPSLTCAP:
     sysctl_->QueryCpsLtCap((rk_aiq_cpsl_cap_t *)data);
     break;
+  case ENUM_ID_SYSCTL_SETWORKINGMODE:
+    sysctl_->SetWorkingModeDyn(*(rk_aiq_working_mode_t *)data);
+    break;
   default:
     LOG_INFO("cmdID: Unknow\n");
     break;
@@ -397,6 +405,24 @@ int RKAiqToolManager::ADPCCIoCtrl(int id, void *data, int size) {
   case ENUM_ID_ADPCC_GETATTRIB: {
     CHECK_PARAM_SIZE(rk_aiq_dpcc_attrib_t, size);
     dpcc_->GetAttrib((rk_aiq_dpcc_attrib_t *)data);
+  } break;
+  default:
+    LOG_INFO("cmdID: Unknow\n");
+    break;
+  }
+  return 0;
+}
+
+int RKAiqToolManager::DEHAZEIoCtrl(int id, void *data, int size) {
+  LOG_INFO("DEHAZEIoCtrl id: 0x%x\n", id);
+  switch (id) {
+  case ENUM_ID_DEHAZE_SETATTRIB: {
+    CHECK_PARAM_SIZE(adehaze_sw_t, size);
+    dehaze_->SetAttrib(*(adehaze_sw_t *)data);
+  } break;
+  case ENUM_ID_DEHAZE_GETATTRIB: {
+    CHECK_PARAM_SIZE(adehaze_sw_t, size);
+    dehaze_->GetAttrib((adehaze_sw_t *)data);
   } break;
   default:
     LOG_INFO("cmdID: Unknow\n");
