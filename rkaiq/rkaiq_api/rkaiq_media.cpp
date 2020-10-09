@@ -407,6 +407,7 @@ int RKAiqMedia::LinkToIsp(bool enable) {
 
   LOG_ERROR("############## LinkToIsp\n");
   system(VICAP_COMPACT_TEST_ON);
+  system(VICAP2_COMPACT_TEST_ON);
 
   while (index < 10) {
     snprintf(sys_path, 64, "/dev/media%d", index++);

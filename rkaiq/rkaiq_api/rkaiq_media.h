@@ -21,6 +21,8 @@
 
 #define VICAP_COMPACT_TEST_ON                                                  \
   "echo 1 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
+#define VICAP2_COMPACT_TEST_ON                                                 \
+  "echo 1 > /sys/devices/platform/rkcif_lite_mipi_lvds/compact_test"
 
 typedef struct {
   int model_idx;

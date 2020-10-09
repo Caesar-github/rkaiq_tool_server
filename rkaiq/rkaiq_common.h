@@ -96,4 +96,7 @@ typedef enum {
 #define VICAP_COMPACT_TEST_OFF                                                 \
   "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
 
+#define VICAP2_COMPACT_TEST_OFF                                                \
+  "echo 0 > /sys/devices/platform/rkcif_lite_mipi_lvds/compact_test"
+
 #endif

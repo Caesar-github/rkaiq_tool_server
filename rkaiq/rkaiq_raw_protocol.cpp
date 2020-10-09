@@ -177,6 +177,7 @@ static void GetSensorPara(CommandData_t *cmd, int ret_status) {
     }
   } else if (cap_info.link == link_to_vicap) {
     ret = system(VICAP_COMPACT_TEST_OFF);
+    ret = system(VICAP2_COMPACT_TEST_OFF);
     LOG_INFO("VICAP_COMPACT_TEST: %d  change to no compact\n", ret);
   }
 

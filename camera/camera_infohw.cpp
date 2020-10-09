@@ -122,7 +122,7 @@ int get_isp_subdevs(struct media_device *device, const char *devpath,
               (char *)media_entity_get_devname(entity),
               sizeof(media_info->sd_path.device_name));
       media_info->link = link_to_isp;
-      LOG_INFO("get vicap subdev: sensor link to %d \n", media_info->link);
+      LOG_INFO("get isp subdev: sensor link to %d \n", media_info->link);
       strncpy(media_info->sd_path.sensor_name, entity_info->name,
               sizeof(media_info->sd_path.sensor_name));
       LOG_INFO("sensor subdev path: %s\n", media_info->sd_path.device_name);
@@ -143,6 +143,16 @@ int get_vicap_subdevs(struct media_device *device, const char *devpath,
     return -1;
 
   entity = media_get_entity_by_name(device, "stream_cif_mipi_id0");
+  if (entity) {
+    entity_name = media_entity_get_devname(entity);
+    if (entity_name) {
+      strncpy(media_info->cif_path.cif_video_path, (char *)entity_name,
+              sizeof(media_info->cif_path.cif_video_path));
+      LOG_INFO("get vicap subdev: %s \n", media_info->cif_path.cif_video_path);
+    }
+  }
+
+  entity = media_get_entity_by_name(device, "rkcif_lite_mipi_lvds");
   if (entity) {
     entity_name = media_entity_get_devname(entity);
     if (entity_name) {
@@ -393,6 +403,7 @@ int initCamHwInfos(struct capture_info *media_info) {
       if (ret)
         return ret;
     } else if (strcmp(device->info.model, "rkcif") == 0 ||
+               strcmp(device->info.model, "rkcif_lite_mipi_lvds") == 0 ||
                strcmp(device->info.model, "rkcif_mipi_lvds") == 0) {
       ret = get_vicap_subdevs(device, sys_path, media_info);
       if (ret)
