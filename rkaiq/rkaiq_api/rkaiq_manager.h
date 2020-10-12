@@ -17,17 +17,6 @@
 
 #include "logger/log.h"
 
-#define MATCH_RKAIQ_VERSION_1 "v1.0.5"
-#define MATCH_RKAIQ_VERSION_2 "v1.0.6"
-#define MATCH_RKAIQ_VERSION_3 "v1.0.7"
-#define MATCH_RKAIQ_VERSION_4 "v1.0.8"
-#define MATCH_RKAIQ_VERSION_5 "v1.0.9"
-#define MATCH_RKAIQ_VERSION_6 "v1.2.0"
-#define MATCH_RKAIQ_VERSION_7 "v1.2.1"
-#define MATCH_RKAIQ_VERSION_8 "v1.2.2"
-
-#define MATCH_IQ_PARSER_VERSION "unknow"
-
 class RKAiqToolManager {
 public:
   RKAiqToolManager() = delete;

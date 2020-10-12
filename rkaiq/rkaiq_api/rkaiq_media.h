@@ -28,6 +28,7 @@ typedef struct {
   int model_idx;
   int linked_sensor;
   std::string sensor_name;
+  std::string sensor_subdev_path;
   std::string media_dev_path;
   std::string isp_dev_path;
   std::string csi_dev_path;
@@ -65,6 +66,7 @@ typedef struct {
   int model_idx;
   int linked_sensor;
   std::string sensor_name;
+  std::string sensor_subdev_path;
   std::string media_dev_path;
   std::string mipi_id0;
   std::string mipi_id1;
@@ -87,6 +89,7 @@ public:
   RKAiqMedia();
   virtual ~RKAiqMedia() = default;
   int IsLinkSensor(struct media_device *device);
+  std::string GetLinkSensorSubDev(struct media_device *device);
   std::string GetSensorName(struct media_device *device);
   void GetIsppSubDevs(int id, struct media_device *device, const char *devpath);
   void GetIspSubDevs(int id, struct media_device *device, const char *devpath);
@@ -103,6 +106,8 @@ public:
       return media_info[id].cif.sensor_name;
     return "";
   }
+
+  media_info_t GetMediaInfoT(int id) { return media_info[id]; }
 
 private:
   media_info_t media_info[MAX_CAM_NUM];

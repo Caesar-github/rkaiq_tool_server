@@ -83,8 +83,10 @@ int main(int argc, char **argv) {
     rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifndef ANDROID
-    if (g_rtsp_en)
-      init_rtsp(g_width, g_height);
+    if (g_rtsp_en) {
+      media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+      init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+    }
 #endif
   }
 

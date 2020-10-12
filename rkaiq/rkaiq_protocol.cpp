@@ -9,6 +9,7 @@ extern int app_run_mode;
 extern int g_width;
 extern int g_height;
 extern int g_rtsp_en;
+extern int g_device_id;
 extern std::string iqfile;
 extern std::string g_sensor_name;
 extern std::shared_ptr<RKAiqMedia> rkaiq_media;
@@ -80,8 +81,10 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifndef ANDROID
-    if (g_rtsp_en)
-      init_rtsp(g_width, g_height);
+    if (g_rtsp_en) {
+      media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+      init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+    }
 #endif
   }
   app_run_mode = mode;

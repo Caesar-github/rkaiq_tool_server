@@ -43,6 +43,23 @@ int RKAiqMedia::IsLinkSensor(struct media_device *device) {
   return link_sensor;
 }
 
+std::string RKAiqMedia::GetLinkSensorSubDev(struct media_device *device) {
+  std::string subdev = "";
+  media_entity *entity = NULL;
+  const struct media_entity_desc *entity_info;
+  uint32_t nents = media_get_entities_count(device);
+  for (uint32_t j = 0; j < nents; ++j) {
+    entity = media_get_entity(device, j);
+    entity_info = media_entity_get_info(entity);
+    if ((NULL != entity_info) &&
+        (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR)) {
+      subdev = media_entity_get_devname(entity);
+      break;
+    }
+  }
+  return subdev;
+}
+
 void RKAiqMedia::GetIsppSubDevs(int id, struct media_device *device,
                                 const char *devpath) {
   media_entity *entity = NULL;
@@ -55,11 +72,12 @@ void RKAiqMedia::GetIsppSubDevs(int id, struct media_device *device,
     if (ispp_info->media_dev_path.empty())
       break;
     if (ispp_info->media_dev_path.compare(devpath) == 0) {
-      LOG_ERROR("isp info of path %s exists!", devpath);
+      LOG_ERROR("ispp info of path %s exists!", devpath);
       return;
     }
   }
 
+  LOG_ERROR("ispp media index %d, media info array id  %d\n", id, index);
   if (index >= MAX_CAM_NUM)
     return;
 
@@ -132,24 +150,31 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device *device,
   media_entity *entity = NULL;
   const char *entity_name = NULL;
   int index = 0;
+  cif_info_t *cif_info = NULL;
   isp_info_t *isp_info = NULL;
 
   for (index = 0; index < MAX_CAM_NUM; index++) {
+    cif_info = &media_info[index].cif;
     isp_info = &media_info[index].isp;
-    if (isp_info->media_dev_path.empty())
+    if (isp_info->media_dev_path.empty()) {
+      if (IsLinkSensor(device) && !cif_info->media_dev_path.empty())
+        continue;
       break;
-    if (isp_info->media_dev_path.compare(devpath) == 0) {
+    } else if (isp_info->media_dev_path.compare(devpath) == 0) {
       LOG_ERROR("isp info of path %s exists!", devpath);
       return;
     }
   }
 
+  LOG_ERROR("isp media index %d, media info array id  %d\n", id, index);
   if (index >= MAX_CAM_NUM)
     return;
 
   isp_info->linked_sensor = IsLinkSensor(device);
-  if (isp_info->linked_sensor)
+  if (isp_info->linked_sensor) {
     isp_info->sensor_name = GetSensorName(device);
+    isp_info->sensor_subdev_path = GetLinkSensorSubDev(device);
+  }
   isp_info->model_idx = id;
   isp_info->media_dev_path = devpath;
 
@@ -314,13 +339,16 @@ void RKAiqMedia::GetCifSubDevs(int id, struct media_device *device,
     }
   }
 
+  LOG_ERROR("cif media index %d, media info array id  %d\n", id, index);
   if (index >= MAX_CAM_NUM)
     return;
 
   cif_info->model_idx = id;
   cif_info->linked_sensor = link_sensor;
-  if (cif_info->linked_sensor)
+  if (cif_info->linked_sensor) {
     cif_info->sensor_name = GetSensorName(device);
+    cif_info->sensor_subdev_path = GetLinkSensorSubDev(device);
+  }
   cif_info->media_dev_path = devpath;
 
   entity = media_get_entity_by_name(device, "stream_cif_mipi_id0");
@@ -402,7 +430,8 @@ int RKAiqMedia::LinkToIsp(bool enable) {
   char sys_path[64];
   media_device *device = NULL;
   media_entity *entity = NULL;
-  media_pad *src_pad = NULL, *src_raw2_s = NULL;
+  media_pad *src_pad = NULL, *src_raw2_s = NULL, *src_raw1_l = NULL,
+            *src_raw0_m = NULL;
   media_pad *sink_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
 
   LOG_ERROR("############## LinkToIsp\n");
@@ -479,6 +508,22 @@ int RKAiqMedia::LinkToIsp(bool enable) {
       }
     }
 
+    entity = media_get_entity_by_name(device, "rkisp_rawrd0_m");
+    if (entity) {
+      src_raw0_m = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!src_raw0_m) {
+        LOG_DEBUG("get rkisp_rawrd0_m sink pad failed!\n");
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "rkisp_rawrd1_l");
+    if (entity) {
+      src_raw1_l = (media_pad *)media_entity_get_pad(entity, 0);
+      if (!src_raw1_l) {
+        LOG_DEBUG("get rkisp_rawrd1_l sink pad failed!\n");
+      }
+    }
+
     entity = media_get_entity_by_name(device, "rkisp_rawrd2_s");
     if (entity) {
       src_raw2_s = (media_pad *)media_entity_get_pad(entity, 0);
@@ -501,7 +546,14 @@ int RKAiqMedia::LinkToIsp(bool enable) {
         LOG_ERROR("media_setup_link isp FAILED\n");
       }
     } else {
-      if (src_pad && sink_pad_bridge && sink_pad_mp && src_raw2_s) {
+      if (src_pad && sink_pad_bridge && sink_pad_mp && src_raw2_s &&
+          src_raw1_l && src_raw0_m) {
+        ret = media_setup_link(device, src_raw0_m, sink_pad, 0);
+        if (ret)
+          LOG_ERROR("media_setup_link src_raw0_m sink_pad FAILED: %d\n", ret);
+        ret = media_setup_link(device, src_raw1_l, sink_pad, 0);
+        if (ret)
+          LOG_ERROR("media_setup_link src_raw1_l sink_pad FAILED: %d\n", ret);
         ret = media_setup_link(device, src_raw2_s, sink_pad, 0);
         if (ret)
           LOG_ERROR("media_setup_link src_raw2_s sink_pad FAILED: %d\n", ret);
@@ -529,10 +581,11 @@ int RKAiqMedia::GetMediaInfo() {
   struct media_device *device = NULL;
   int ret;
   char sys_path[64];
-  unsigned int index = 0, i;
+  unsigned int index = 0, id, i;
   bool link_cif = false;
 
   while (index < MAX_MEDIA_NUM) {
+    id = index;
     snprintf(sys_path, 64, "/dev/media%d", index++);
     if (access(sys_path, F_OK))
       continue;
@@ -552,16 +605,16 @@ int RKAiqMedia::GetMediaInfo() {
     if (strcmp(device->info.model, "rkispp0") == 0 ||
         strcmp(device->info.model, "rkispp1") == 0 ||
         strcmp(device->info.model, "rkispp") == 0) {
-      GetIsppSubDevs(index, device, sys_path);
+      GetIsppSubDevs(id, device, sys_path);
       goto media_unref;
     } else if (strcmp(device->info.model, "rkisp0") == 0 ||
                strcmp(device->info.model, "rkisp1") == 0 ||
                strcmp(device->info.model, "rkisp") == 0) {
-      GetIspSubDevs(index, device, sys_path);
+      GetIspSubDevs(id, device, sys_path);
     } else if (strcmp(device->info.model, "rkcif") == 0 ||
                strcmp(device->info.model, "rkcif_mipi_lvds") == 0 ||
                strcmp(device->info.model, "rkcif_lite_mipi_lvds") == 0) {
-      GetCifSubDevs(index, device, sys_path);
+      GetCifSubDevs(id, device, sys_path);
     } else {
       goto media_unref;
     }

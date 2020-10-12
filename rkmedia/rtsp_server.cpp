@@ -259,11 +259,10 @@ void deinit_rtsp() {
   video_cap_flow = nullptr;
 }
 
-int init_rtsp(int width, int height) {
+int init_rtsp(const char *video_dev, int width, int height) {
   int fps = 30;
   std::string yuv_format = IMAGE_NV12;
   std::string enc_type = VIDEO_H264;
-  const char *video_dev = "rkispp_scale0";
   printf("init_rtsp video_dev %s\n", video_dev);
 
   easymedia::REFLECTOR(Flow)::DumpFactories();

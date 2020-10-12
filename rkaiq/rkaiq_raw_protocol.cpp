@@ -16,6 +16,8 @@ static uint32_t *averge_frame0;
 static uint16_t *averge_frame1;
 
 extern std::string g_sensor_name;
+extern std::shared_ptr<RKAiqMedia> rkaiq_media;
+extern int g_device_id;
 
 static void RunCmd(const char *cmd, char *result) {
   FILE *fp;
@@ -69,20 +71,28 @@ static void InitCommandRawCapAns(CommandData_t *cmd, int ret_status) {
 static void RawCaptureinit(CommandData_t *cmd) {
   char *buf = (char *)(cmd->dat);
   Capture_Reso_t *Reso = (Capture_Reso_t *)(cmd->dat + 1);
-  int ret = initCamHwInfos(&cap_info);
-  if (cap_info.link == link_to_isp) {
-    ret = setupLink(&cap_info, true);
 
-    if (ret < 0)
-      LOG_INFO(">>>>>>>>>setup link to isp output raw failed\n");
+  media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+  if (mi.cif.linked_sensor) {
+    cap_info.link = link_to_vicap;
+    strcpy(cap_info.sd_path.device_name, mi.cif.sensor_subdev_path.c_str());
+    strcpy(cap_info.cif_path.cif_video_path, mi.cif.mipi_id0.c_str());
+    cap_info.dev_name = cap_info.cif_path.cif_video_path;
+  } else {
+    cap_info.link = link_to_isp;
+    strcpy(cap_info.sd_path.device_name, mi.isp.sensor_subdev_path.c_str());
+    strcpy(cap_info.vd_path.isp_main_path, mi.isp.main_path.c_str());
+    cap_info.dev_name = cap_info.vd_path.isp_main_path;
   }
+  strcpy(cap_info.vd_path.media_dev_path, mi.isp.media_dev_path.c_str());
+  strcpy(cap_info.vd_path.isp_sd_path, mi.isp.isp_dev_path.c_str());
   cap_info.dev_fd = -1;
   cap_info.subdev_fd = -1;
-  if (cap_info.link == link_to_isp) {
-    cap_info.dev_name = cap_info.vd_path.isp_main_path;
-  } else {
-    cap_info.dev_name = cap_info.cif_path.cif_video_path;
-  }
+  LOG_INFO("cap_info.link: %d \n", cap_info.link);
+  LOG_INFO("cap_info.dev_name: %s \n", cap_info.dev_name);
+  LOG_INFO("cap_info.isp_media_path: %s \n", cap_info.vd_path.media_dev_path);
+  LOG_INFO("cap_info.vd_path.isp_sd_path: %s \n", cap_info.vd_path.isp_sd_path);
+  LOG_INFO("cap_info.sd_path.device_name: %s \n", cap_info.sd_path.device_name);
 
   cap_info.io = IO_METHOD_MMAP;
   cap_info.height = Reso->height;
@@ -250,6 +260,7 @@ static void SetCapConf(CommandData_t *recv_cmd, CommandData_t *cmd,
   LOG_INFO(" set bits        : %d\n", CapParam->bits);
   LOG_INFO(" set framenumber : %d\n", CapParam->framenumber);
   LOG_INFO(" set multiframe  : %d\n", CapParam->multiframe);
+  LOG_INFO(" sd_path subdev  : %s\n", cap_info.sd_path.device_name);
   cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
 
   capture_frames = CapParam->framenumber;
