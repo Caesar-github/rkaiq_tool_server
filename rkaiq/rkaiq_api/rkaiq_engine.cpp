@@ -42,7 +42,7 @@ int RKAiqEngine::StartEngine() {
 }
 
 int RKAiqEngine::StopEngine() {
-  rk_aiq_uapi_sysctl_stop(ctx_);
+  rk_aiq_uapi_sysctl_stop(ctx_, false);
   return 0;
 }
 

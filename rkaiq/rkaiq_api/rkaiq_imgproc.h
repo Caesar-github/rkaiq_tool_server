@@ -8,6 +8,9 @@ public:
   RKAiqToolImgProc(rk_aiq_sys_ctx_t *ctx);
   virtual ~RKAiqToolImgProc();
 
+  int SetGrayMode(rk_aiq_gray_mode_t mode);
+  int GetGrayMode();
+
 private:
   rk_aiq_sys_ctx_t *ctx_;
 };

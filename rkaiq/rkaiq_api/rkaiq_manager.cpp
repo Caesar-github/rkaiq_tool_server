@@ -138,6 +138,14 @@ int RKAiqToolManager::AeIoCtrl(int id, void *data, int size) {
 int RKAiqToolManager::ImgProcIoCtrl(int id, void *data, int size) {
   LOG_INFO("ImgProcIoCtrl id: 0x%x\n", id);
   switch (id) {
+  case ENUM_ID_IMGPROC_SETGRAYMODE:
+    CHECK_PARAM_SIZE(rk_aiq_gray_mode_t, size);
+    imgproc_->SetGrayMode(*(rk_aiq_gray_mode_t *)data);
+    break;
+  case ENUM_ID_IMGPROC_GETGRAYMODE:
+    CHECK_PARAM_SIZE(rk_aiq_gray_mode_t, size);
+    *(rk_aiq_gray_mode_t *)data = (rk_aiq_gray_mode_t)imgproc_->GetGrayMode();
+    break;
   default:
     LOG_INFO("cmdID: Unknow\n");
     break;
