@@ -45,6 +45,7 @@ LOCAL_SRC_FILES := rkaiq_tool_server.cpp \
                 rkaiq/rkaiq_api/rkaiq_anr.cpp \
                 rkaiq/rkaiq_api/rkaiq_ahdr.cpp \
                 rkaiq/rkaiq_api/rkaiq_agamma.cpp \
+                rkaiq/rkaiq_api/rkaiq_dehaze.cpp \
                 rkaiq/rkaiq_api/rkaiq_engine.cpp \
                 rkaiq/rkaiq_api/rkaiq_imgproc.cpp \
                 rkaiq/rkaiq_api/rkaiq_manager.cpp \
