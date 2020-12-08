@@ -26,6 +26,6 @@ std::shared_ptr<easymedia::Flow>
 create_rtsp_server_flow(std::string channel_name, std::string media_type);
 
 void deinit_rtsp();
-int init_rtsp(const char* video_dev, int width, int height);
+int init_rtsp(const char* video_dev, int width, int height, std::string enc_type = VIDEO_H264);
 
 #endif

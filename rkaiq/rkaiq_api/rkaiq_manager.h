@@ -31,6 +31,7 @@ class RKAiqToolManager {
         int AGamamIoCtrl(int id, void* data, int size);
         int ADPCCIoCtrl(int id, void* data, int size);
         int DEHAZEIoCtrl(int id, void* data, int size);
+        int RkMediaCtrl(int id, void* data, int size);
         int IoCtrl(int id, void* data, int size);
         void SaveExit();
 

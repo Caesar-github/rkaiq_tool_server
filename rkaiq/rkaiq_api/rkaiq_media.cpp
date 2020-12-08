@@ -7,6 +7,8 @@
 
 extern int g_width;
 extern int g_height;
+extern int g_maxResolutionWidth;
+extern int g_maxResolutionHeight;
 
 std::string RKAiqMedia::GetSensorName(struct media_device* device) {
     std::string sensor_name;
@@ -196,6 +198,8 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device,
         if(ret != 0) {
             LOG_ERROR("v4l2_subdev_get_format failed!\n");
         } else {
+            g_maxResolutionWidth = format.width;
+            g_maxResolutionHeight = format.height;
             if(g_width > format.width || g_height > format.height) {
                 g_width = format.width;
                 g_height = format.height;

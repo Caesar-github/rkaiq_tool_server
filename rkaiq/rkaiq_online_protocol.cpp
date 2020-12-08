@@ -347,10 +347,17 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size) {
             uint32_t result;
             DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
             OnLineSet(sockfd, common_cmd, check_sum, result);
-            DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum,
-                      result ? RES_FAILED : RES_SUCCESS);
+            DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum, result ? RES_FAILED : RES_SUCCESS);
         }
         break;
+        case CMD_TYPE_UAPI_GET:
+            ret = OnLineGet(sockfd, common_cmd);
+            if(ret == 0) {
+                DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
+            } else {
+                DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_FAILED);
+            }
+            break;
         case CMD_TYPE_CAPTURE: {
             LOG_INFO("CMD_TYPE_CAPTURE in\n");
             DoCaptureYuv(sockfd);
@@ -390,14 +397,6 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size) {
             LOG_INFO("CMD_TYPE_CAPTURE out\n\n");
         }
         break;
-        case CMD_TYPE_UAPI_GET:
-            ret = OnLineGet(sockfd, common_cmd);
-            if(ret == 0) {
-                DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
-            } else {
-                DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_FAILED);
-            }
-            break;
         default:
             LOG_INFO("cmdID: Unknow\n");
             break;

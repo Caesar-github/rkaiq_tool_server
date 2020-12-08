@@ -12,10 +12,23 @@ bool is_turning_mode = false;
 int app_run_mode = APP_RUN_STATUS_TUNRING;
 int g_width = 1920;
 int g_height = 1080;
+int g_maxResolutionWidth = 0;
+int g_maxResolutionHeight = 0;
 int g_mode = 0;
 int g_dump = 0;
 int g_device_id = 0;
 int g_rtsp_en = 1;
+
+std::string g_encoder = "";
+int g_bps = -1;
+int g_gop = -1;
+int g_qpMax = -1;
+int g_qpMin = -1;
+int g_qpInit = -1;
+int g_qpStep = -1;
+int g_qpMaxi = -1;
+int g_qpMini = -1;
+
 std::string iqfile;
 std::string g_sensor_name;
 std::shared_ptr<TCPServer> tcp;
@@ -111,6 +124,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+int g_cmdArgFlag = 0;
 static const char short_options[] = "i:m:Dd:w:h:r:";
 static const struct option long_options[] = {
     {"iqfile", required_argument, NULL, 'i'},
@@ -121,8 +135,18 @@ static const struct option long_options[] = {
     {"device_id", required_argument, NULL, 'd'},
     {"rtsp_en", required_argument, NULL, 'r'},
     {"help", no_argument, NULL, 'h'},
+    {"encoder", required_argument, &g_cmdArgFlag, 1},     //"video:h264" //"video:h265"
+    {"bps", required_argument, &g_cmdArgFlag, 2},
+    {"gop", required_argument, &g_cmdArgFlag, 3},
+    {"qpMax", required_argument, &g_cmdArgFlag, 4},
+    {"qpMin", required_argument, &g_cmdArgFlag, 5},
+    {"qpInit", required_argument, &g_cmdArgFlag, 6},
+    {"qpStep", required_argument, &g_cmdArgFlag, 7},
+    {"qpMaxi", required_argument, &g_cmdArgFlag, 8},
+    {"qpMini", required_argument, &g_cmdArgFlag, 9},
     {0, 0, 0, 0}
 };
+
 static void parse_args(int argc, char** argv) {
     for(;;) {
         int idx;
@@ -132,7 +156,45 @@ static void parse_args(int argc, char** argv) {
             break;
         }
         switch(c) {
-            case 0: /* getopt_long() flag */
+            case 0:
+                switch(g_cmdArgFlag) {
+                    case 1:
+                        LOG_ERROR("#### encoder:%s\n", optarg);
+                        g_encoder = optarg;
+                        break;
+                    case 2:
+                        LOG_ERROR("#### bps:%s\n", optarg);
+                        g_bps = atoi(optarg);
+                        break;
+                    case 3:
+                        LOG_ERROR("#### gop:%s\n", optarg);
+                        g_gop = atoi(optarg);
+                        break;
+                    case 4:
+                        LOG_ERROR("#### qpMax:%s\n", optarg);
+                        g_qpMax = atoi(optarg);
+                        break;
+                    case 5:
+                        LOG_ERROR("#### qpMin:%s\n", optarg);
+                        g_qpMin = atoi(optarg);
+                        break;
+                    case 6:
+                        LOG_ERROR("#### qpInit:%s\n", optarg);
+                        g_qpInit = atoi(optarg);
+                        break;
+                    case 7:
+                        LOG_ERROR("#### qpStep:%s\n", optarg);
+                        g_qpStep = atoi(optarg);
+                        break;
+                    case 8:
+                        LOG_ERROR("#### qpMaxi:%s\n", optarg);
+                        g_qpMaxi = atoi(optarg);
+                        break;
+                    case 9:
+                        LOG_ERROR("#### qpMini:%s\n", optarg);
+                        g_qpMini = atoi(optarg);
+                        break;
+                }
                 break;
             case 'i':
                 iqfile = optarg;

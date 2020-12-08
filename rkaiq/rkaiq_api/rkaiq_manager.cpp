@@ -1,11 +1,57 @@
 #include "rkaiq_manager.h"
+#include "media_config.h"
+#include "rtsp_server.h"
+#include "image.h"
+#include "rkaiq_media.h"
 
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
 #define LOG_TAG "rkaiq_manager.cpp"
 
+extern int g_device_id;
 extern int g_mode;
+extern int g_width;
+extern int g_height;
+extern int g_maxResolutionWidth;
+extern int g_maxResolutionHeight;
+extern int g_rtsp_en;
+extern std::shared_ptr<easymedia::Flow> g_video_rtsp_flow;
+extern std::shared_ptr<easymedia::Flow> g_video_enc_flow;
+extern std::shared_ptr<RKAiqMedia> rkaiq_media;
+extern std::shared_ptr<RKAiqToolManager> rkaiq_manager;
+extern std::string iqfile;
+extern std::string g_sensor_name;
+
+static char m_encoder_name[20] = "H264";
+static int m_resolution_width = 1920;
+static int m_resolution_height = 1080;
+static int m_bps_target = 16384;
+static char m_bps_mode[20] = "Dynamic_BPS"; //FIX_BPS
+static int m_gop = 30;
+static int m_qp_init = 28;
+static int m_qp_step = 2;
+static int m_qp_min = 8;
+static int m_qp_max = 48;
+static int m_qp_min_i = 8;
+static int m_qp_max_i = 48;
+
+#pragma pack(1)
+typedef struct RkMedia_User_Params_s {
+    char encoder_name[20];
+    int resolution_width;
+    int resolution_height;
+    int bps_target;
+    char bps_mode[20];
+    int gop;
+    int qp_init;
+    int qp_step;
+    int qp_min;
+    int qp_max;
+    int qp_min_i;
+    int qp_max_i;
+} RkMedia_User_Params_t;
+#pragma pack()
 
 RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
                                    std::string sensor_name)
@@ -60,6 +106,8 @@ int RKAiqToolManager::IoCtrl(int id, void* data, int size) {
         ADPCCIoCtrl(id, data, size);
     } else if(id > ENUM_ID_DEHAZE_START && id < ENUM_ID_DEHAZE_END) {
         DEHAZEIoCtrl(id, data, size);
+    } else if(id > ENUM_ID_RKMEDIA_START && id < ENUM_ID_RKMEDIA_END) {
+        RkMediaCtrl(id, data, size);
     }
     LOG_INFO("IoCtrl id: 0x%x exit\n", id);
     return 0;
@@ -429,6 +477,177 @@ int RKAiqToolManager::DEHAZEIoCtrl(int id, void* data, int size) {
             dehaze_->GetAttrib((adehaze_sw_t*)data);
         }
         break;
+        default:
+            LOG_INFO("cmdID: Unknow\n");
+            break;
+    }
+    return 0;
+}
+
+int RKAiqToolManager::RkMediaCtrl(int id, void* data, int size) {
+    LOG_INFO("RkMediaCtrl id: 0x%x\n", id);
+    RkMedia_User_Params_s* param = (RkMedia_User_Params_s*) data;
+    bool needResetRtspFlag = false;
+    std::string encoderName;
+    static std::string lastEncoderName = "H264";
+    int resolutionWidth;
+    int resolutionHeight;
+    static int lastResolutionWidth = 1920;
+    static int lastResolutionHeight = 1080;
+
+    char mode[20] = {};
+    int gop;
+    int bpsTarget;
+    media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+    std::string encoderConfigString;
+    ImageInfo imgInfo;
+    VideoEncoderCfg videoCfg;
+    switch(id) {
+        case ENUM_ID_RKMEDIA_SET_PARAMS:
+            LOG_INFO("#### ENUM_ID_RKMEDIA_SET_PARAMS\n");
+            encoderName = param->encoder_name;
+            LOG_INFO("#### encoderName: %s\n", encoderName.c_str());
+            if(lastEncoderName != encoderName) {
+                lastEncoderName = encoderName;
+                needResetRtspFlag = true;
+                LOG_INFO("#### set encoder: %s\n", lastEncoderName.c_str());
+                strcpy(m_encoder_name, lastEncoderName.c_str());
+            }
+
+            resolutionWidth = param->resolution_width;
+            resolutionHeight = param->resolution_height;
+
+            g_width = resolutionWidth;
+            g_height = resolutionHeight;
+
+            if(g_width > g_maxResolutionWidth || g_height > g_maxResolutionWidth) {
+                g_width = g_maxResolutionWidth;
+                g_height = g_maxResolutionHeight;
+                LOG_ERROR("#### fixup width %d height %d\n", g_width, g_height);
+            }
+
+            if(lastResolutionWidth != resolutionWidth || lastResolutionHeight != resolutionHeight) {
+                lastResolutionWidth = resolutionWidth;
+                lastResolutionHeight = resolutionHeight;
+                needResetRtspFlag = true;
+                LOG_INFO("#### set resolution, width:%d height:%d\n", g_width, g_height);
+                m_resolution_width = g_width;
+                m_resolution_height = g_height;
+            }
+
+            if(needResetRtspFlag == true) {
+
+                if(g_rtsp_en) {
+                    deinit_rtsp();
+                    rkaiq_media->LinkToIsp(false);
+                    rkaiq_manager.reset();
+                    rkaiq_manager = nullptr;
+                    rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    rkaiq_media->LinkToIsp(true);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+                    if(encoderName == "H265") {
+                        init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height, "video:h265");
+                    } else {
+                        init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height, "video:h264");
+                    }
+                }
+            }
+
+            gop = param->gop;
+            video_encoder_set_gop_size(g_video_enc_flow, gop);
+            LOG_INFO("#### set gop:%d\n", gop);
+            m_gop = gop;
+
+            if(strcmp(param->bps_mode, "FIX_BPS") == 0) {
+                strcpy(mode, "cbr");
+            } else if(strcmp(param->bps_mode, "Dynamic_BPS") == 0) {
+                strcpy(mode, "vbr");
+            }
+            video_encoder_set_rc_mode(g_video_enc_flow, mode);
+            if(strcmp(param->bps_mode, "FIX_BPS") == 0) {
+                strcpy(m_bps_mode, "FIX_BPS");
+            } else if(strcmp(param->bps_mode, "Dynamic_BPS") == 0) {
+                strcpy(m_bps_mode, "Dynamic_BPS");
+            }
+            LOG_INFO("#### set bps_mode:%s\n", m_bps_mode);
+
+            bpsTarget = param->bps_target;
+            LOG_INFO("#### param->bps_target:%d\n", bpsTarget);
+            if(strcmp(param->bps_mode, "FIX_BPS") == 0) {
+                video_encoder_set_bps(g_video_enc_flow, bpsTarget * 1024, bpsTarget * 1024, bpsTarget * 1024);
+                LOG_INFO("#### set fix bpsTarget:%d\n", bpsTarget * 1024);
+                m_bps_target = bpsTarget;
+            } else if(strcmp(param->bps_mode, "Dynamic_BPS") == 0) {
+                video_encoder_set_bps(g_video_enc_flow, bpsTarget * 1024, bpsTarget * 1024 * 0.5, bpsTarget * 1024 * 1.5);
+                LOG_INFO("#### set dynamic bpsTarget:%d\n", bpsTarget * 1024);
+                m_bps_target = bpsTarget;
+            }
+
+            VideoEncoderQp qps;
+            qps.qp_init = param->qp_init;
+            qps.qp_step = param->qp_step;
+            qps.qp_min = param->qp_min;
+            qps.qp_max = param->qp_max;
+            qps.qp_min_i = param->qp_min_i;
+            qps.qp_max_i = param->qp_max_i;
+            video_encoder_set_qp(g_video_enc_flow, qps);
+            LOG_INFO("#### set qp_init:%d\n", qps.qp_init);
+            LOG_INFO("#### set qp_step:%d\n", qps.qp_step);
+            LOG_INFO("#### set qp_min:%d\n", qps.qp_min);
+            LOG_INFO("#### set qp_max:%d\n", qps.qp_max);
+            LOG_INFO("#### set qp_min_i:%d\n", qps.qp_min_i);
+            LOG_INFO("#### set qp_max_i:%d\n", qps.qp_max_i);
+            m_qp_init = param->qp_init;
+            m_qp_step = param->qp_step;
+            m_qp_min = param->qp_min;
+            m_qp_max = param->qp_max;
+            m_qp_min_i = param->qp_min_i;
+            m_qp_max_i = param->qp_max_i;
+            break;
+        case ENUM_ID_RKMEDIA_GET_PARAMS:
+            LOG_INFO("#### ENUM_ID_RKMEDIA_GET_PARAMS\n");
+            memcpy(param->encoder_name, m_encoder_name, sizeof(m_encoder_name));
+            LOG_INFO("#### m_encoder_name:%s\n", m_encoder_name);
+            param->resolution_width = m_resolution_width;
+            LOG_INFO("#### m_resolution_width:%d\n", m_resolution_width);
+            param->resolution_height = m_resolution_height;
+            LOG_INFO("#### m_resolution_height:%d\n", m_resolution_height);
+
+            param->bps_target = m_bps_target;
+            LOG_INFO("#### m_bps_target:%d\n", m_bps_target);
+            // get_video_encoder_config_string(&imgInfo, &videoCfg);
+            // LOG_INFO("#### bps_max:%s\n", videoCfg.max_bps);
+            // param->bps_target = videoCfg.max_bps;
+
+
+            memcpy(param->bps_mode, m_bps_mode, sizeof(m_bps_mode));
+            LOG_INFO("#### m_bps_mode:%s\n", m_bps_mode);
+            // encoderConfigString = get_video_encoder_config_string(&imgInfo, &videoCfg);
+            // LOG_INFO("#### bps_mode:%s\n", videoCfg.rc_mode);
+
+            param->gop = m_gop;
+            LOG_INFO("#### m_gop:%d\n", m_gop);
+            // get_video_encoder_config_string(&imgInfo, &videoCfg);
+            // param->gop = videoCfg.gop;
+            // LOG_INFO("#### gop:%d\n", );
+
+            param->qp_init = m_qp_init;
+            LOG_INFO("#### m_qp_init:%d\n", m_qp_init);
+            param->qp_step = m_qp_step;
+            LOG_INFO("#### m_qp_step:%d\n", m_qp_step);
+            param->qp_min = m_qp_min;
+            LOG_INFO("#### m_qp_min:%d\n", m_qp_min);
+            param->qp_max = m_qp_max;
+            LOG_INFO("#### m_qp_max:%d\n", m_qp_max);
+            param->qp_min_i = m_qp_min_i;
+            LOG_INFO("#### m_qp_min_i:%d\n", m_qp_min_i);
+            param->qp_max_i = m_qp_max_i;
+            LOG_INFO("#### m_qp_max_i:%d\n", m_qp_max_i);
+
+            memcpy(data, param, sizeof(RkMedia_User_Params_s));
+            break;
         default:
             LOG_INFO("cmdID: Unknow\n");
             break;
