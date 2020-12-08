@@ -26,32 +26,38 @@ using namespace std;
 #define MAX_CLIENT 1000
 
 using RecvCallBack =
-    add_pointer<void(int sockfd, char *buffer, int size)>::type;
+    add_pointer<void(int sockfd, char* buffer, int size)>::type;
 
 class TCPServer {
-public:
-  TCPServer() { quit_ = 0; };
-  virtual ~TCPServer();
+    public:
+        TCPServer() {
+            quit_ = 0;
+        };
+        virtual ~TCPServer();
 
-  int Send(int cilent_socket, char *buff, int size);
-  int Process(int port);
+        int Send(int cilent_socket, char* buff, int size);
+        int Process(int port);
 
-  void RegisterRecvCallBack(RecvCallBack cb) { callback_ = cb; }
-  void UnRegisterRecvCallBack() { callback_ = nullptr; }
-  void SaveEixt();
+        void RegisterRecvCallBack(RecvCallBack cb) {
+            callback_ = cb;
+        }
+        void UnRegisterRecvCallBack() {
+            callback_ = nullptr;
+        }
+        void SaveEixt();
 
-private:
-  void Accepted();
-  int Recvieve(int cilent_socket);
+    private:
+        void Accepted();
+        int Recvieve(int cilent_socket);
 
-private:
-  int sockfd;
-  int quit_;
-  struct sockaddr_in serverAddress;
-  struct sockaddr_in clientAddress;
-  vector<shared_ptr<thread>> accept_threads_;
-  vector<shared_ptr<thread>> recv_threads_;
-  RecvCallBack callback_;
+    private:
+        int sockfd;
+        int quit_;
+        struct sockaddr_in serverAddress;
+        struct sockaddr_in clientAddress;
+        vector<shared_ptr<thread>> accept_threads_;
+        vector<shared_ptr<thread>> recv_threads_;
+        RecvCallBack callback_;
 };
 
 #endif

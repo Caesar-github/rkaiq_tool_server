@@ -5,19 +5,19 @@
 #include "rk_aiq_user_api_sysctl.h"
 
 class RKAiqToolSysCtl {
-public:
-  RKAiqToolSysCtl(rk_aiq_sys_ctx_t *ctx);
-  virtual ~RKAiqToolSysCtl();
+    public:
+        RKAiqToolSysCtl(rk_aiq_sys_ctx_t* ctx);
+        virtual ~RKAiqToolSysCtl();
 
-  int SetCpsLtCfg(rk_aiq_cpsl_cfg_t *cfg);
-  int GetCpsLtInfo(rk_aiq_cpsl_info_t *info);
-  int QueryCpsLtCap(rk_aiq_cpsl_cap_t *cap);
-  int SetWorkingModeDyn(rk_aiq_working_mode_t mode);
+        int SetCpsLtCfg(rk_aiq_cpsl_cfg_t* cfg);
+        int GetCpsLtInfo(rk_aiq_cpsl_info_t* info);
+        int QueryCpsLtCap(rk_aiq_cpsl_cap_t* cap);
+        int SetWorkingModeDyn(rk_aiq_working_mode_t mode);
 
-  int GetVersionInfo(rk_aiq_ver_info_t *vers);
+        int GetVersionInfo(rk_aiq_ver_info_t* vers);
 
-private:
-  rk_aiq_sys_ctx_t *ctx_;
+    private:
+        rk_aiq_sys_ctx_t* ctx_;
 };
 
 #endif // _TOOL_RKAIQ_API_SYSCTL_H_

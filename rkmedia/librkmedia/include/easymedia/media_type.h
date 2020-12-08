@@ -61,14 +61,14 @@ enum class Type { None = -1, Audio = 0, Image, Video, Text };
 #define AUDIO_PCM_FLTP "audio:pcm_fltp"
 
 #define AUDIO_PCM                                                              \
-  TYPENEAR(AUDIO_PCM_U8)                                                       \
-  TYPENEAR(AUDIO_PCM_S16)                                                      \
-  TYPENEAR(AUDIO_PCM_S32)                                                      \
-  TYPENEAR(AUDIO_PCM_FLT)                                                      \
-  TYPENEAR(AUDIO_PCM_U8P)                                                      \
-  TYPENEAR(AUDIO_PCM_S16P)                                                     \
-  TYPENEAR(AUDIO_PCM_S32P)                                                     \
-  TYPENEAR(AUDIO_PCM_FLTP)
+    TYPENEAR(AUDIO_PCM_U8)                                                       \
+    TYPENEAR(AUDIO_PCM_S16)                                                      \
+    TYPENEAR(AUDIO_PCM_S32)                                                      \
+    TYPENEAR(AUDIO_PCM_FLT)                                                      \
+    TYPENEAR(AUDIO_PCM_U8P)                                                      \
+    TYPENEAR(AUDIO_PCM_S16P)                                                     \
+    TYPENEAR(AUDIO_PCM_S32P)                                                     \
+    TYPENEAR(AUDIO_PCM_FLTP)
 
 #define AUDIO_AAC "audio:aac"
 #define AUDIO_MP2 "audio:mp2"
@@ -99,36 +99,36 @@ enum class Type { None = -1, Audio = 0, Image, Video, Text };
 #define MUXER_MPEG_PS "mpeg"
 
 typedef enum {
-  CODEC_TYPE_NONE = -1,
-  // Audio
-  CODEC_TYPE_AAC,
-  CODEC_TYPE_MP2,
-  CODEC_TYPE_VORBIS,
-  CODEC_TYPE_G711A,
-  CODEC_TYPE_G711U,
-  CODEC_TYPE_G726,
-  // Video
-  CODEC_TYPE_H264,
-  CODEC_TYPE_H265,
-  CODEC_TYPE_JPEG,
-  CODEC_TYPE_NB
+    CODEC_TYPE_NONE = -1,
+    // Audio
+    CODEC_TYPE_AAC,
+    CODEC_TYPE_MP2,
+    CODEC_TYPE_VORBIS,
+    CODEC_TYPE_G711A,
+    CODEC_TYPE_G711U,
+    CODEC_TYPE_G726,
+    // Video
+    CODEC_TYPE_H264,
+    CODEC_TYPE_H265,
+    CODEC_TYPE_JPEG,
+    CODEC_TYPE_NB
 } CodecType;
 
-__attribute__((visibility("default"))) const char *
+__attribute__((visibility("default"))) const char*
 CodecTypeToString(CodecType fmt);
 __attribute__((visibility("default"))) CodecType
-StringToCodecType(const char *fmt_str);
+StringToCodecType(const char* fmt_str);
 
 #include <string>
 
 namespace easymedia {
 
-Type StringToDataType(const char *data_type);
+    Type StringToDataType(const char* data_type);
 
-class SupportMediaTypes {
-public:
-  std::string types;
-};
+    class SupportMediaTypes {
+        public:
+            std::string types;
+    };
 
 } // namespace easymedia
 

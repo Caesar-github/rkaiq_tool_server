@@ -18,38 +18,38 @@
 #include "logger/log.h"
 
 class RKAiqToolManager {
-public:
-  RKAiqToolManager() = delete;
-  RKAiqToolManager(std::string iqfiles_path, std::string sensor_name);
-  virtual ~RKAiqToolManager();
-  int AeIoCtrl(int id, void *data, int size);
-  int ImgProcIoCtrl(int id, void *data, int size);
-  int AnrIoCtrl(int id, void *data, int size);
-  int SharpIoCtrl(int id, void *data, int size);
-  int SysCtlIoCtrl(int id, void *data, int size);
-  int AHDRIoCtrl(int id, void *data, int size);
-  int AGamamIoCtrl(int id, void *data, int size);
-  int ADPCCIoCtrl(int id, void *data, int size);
-  int DEHAZEIoCtrl(int id, void *data, int size);
-  int IoCtrl(int id, void *data, int size);
-  void SaveExit();
+    public:
+        RKAiqToolManager() = delete;
+        RKAiqToolManager(std::string iqfiles_path, std::string sensor_name);
+        virtual ~RKAiqToolManager();
+        int AeIoCtrl(int id, void* data, int size);
+        int ImgProcIoCtrl(int id, void* data, int size);
+        int AnrIoCtrl(int id, void* data, int size);
+        int SharpIoCtrl(int id, void* data, int size);
+        int SysCtlIoCtrl(int id, void* data, int size);
+        int AHDRIoCtrl(int id, void* data, int size);
+        int AGamamIoCtrl(int id, void* data, int size);
+        int ADPCCIoCtrl(int id, void* data, int size);
+        int DEHAZEIoCtrl(int id, void* data, int size);
+        int IoCtrl(int id, void* data, int size);
+        void SaveExit();
 
-private:
-  std::string iqfiles_path_;
-  std::string sensor_name_;
-  rk_aiq_sys_ctx_t *ctx_;
-  std::thread *rkaiq_engine_thread_;
-  static int thread_quit_;
-  std::unique_ptr<RKAiqEngine> engine_;
-  std::unique_ptr<RKAiqToolImgProc> imgproc_;
-  std::unique_ptr<RKAiqToolAE> ae_;
-  std::unique_ptr<RKAiqToolANR> anr_;
-  std::unique_ptr<RKAiqToolSharp> asharp_;
-  std::unique_ptr<RKAiqToolSysCtl> sysctl_;
-  std::unique_ptr<RKAiqToolAHDR> ahdr_;
-  std::unique_ptr<RKAiqToolADPCC> dpcc_;
-  std::unique_ptr<RKAiqToolAGamma> gamma_;
-  std::unique_ptr<RKAiqToolDehaze> dehaze_;
+    private:
+        std::string iqfiles_path_;
+        std::string sensor_name_;
+        rk_aiq_sys_ctx_t* ctx_;
+        std::thread* rkaiq_engine_thread_;
+        static int thread_quit_;
+        std::unique_ptr<RKAiqEngine> engine_;
+        std::unique_ptr<RKAiqToolImgProc> imgproc_;
+        std::unique_ptr<RKAiqToolAE> ae_;
+        std::unique_ptr<RKAiqToolANR> anr_;
+        std::unique_ptr<RKAiqToolSharp> asharp_;
+        std::unique_ptr<RKAiqToolSysCtl> sysctl_;
+        std::unique_ptr<RKAiqToolAHDR> ahdr_;
+        std::unique_ptr<RKAiqToolADPCC> dpcc_;
+        std::unique_ptr<RKAiqToolAGamma> gamma_;
+        std::unique_ptr<RKAiqToolDehaze> dehaze_;
 };
 
 #endif // _TOOL_RKAIQ_API_MANAGER_H_

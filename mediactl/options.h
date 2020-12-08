@@ -23,19 +23,19 @@
 #define __OPTIONS_H
 
 struct media_options {
-  const char *devname;
-  unsigned int interactive : 1, print : 1, print_dot : 1, reset : 1,
-      verbose : 1;
-  const char *entity;
-  const char *formats;
-  const char *links;
-  const char *fmt_pad;
-  const char *get_dv_pad;
-  const char *dv_pad;
+    const char* devname;
+    unsigned int interactive : 1, print : 1, print_dot : 1, reset : 1,
+             verbose : 1;
+    const char* entity;
+    const char* formats;
+    const char* links;
+    const char* fmt_pad;
+    const char* get_dv_pad;
+    const char* dv_pad;
 };
 
 extern struct media_options media_opts;
 
-extern int parse_cmdline(int argc, char **argv);
+extern int parse_cmdline(int argc, char** argv);
 
 #endif /* __OPTIONS_H */

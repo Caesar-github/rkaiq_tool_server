@@ -13,16 +13,16 @@
 #include "rkaiq_online_protocol.h"
 #include "rkaiq_raw_protocol.h"
 
-int StopProcess(const char *process, const char *str);
-int WaitProcessExit(const char *process, int sec);
+int StopProcess(const char* process, const char* str);
+int WaitProcessExit(const char* process, int sec);
 
 class RKAiqProtocol {
-public:
-  RKAiqProtocol() = default;
-  virtual ~RKAiqProtocol() = default;
-  static int DoChangeAppMode(appRunStatus mode);
-  static void HandlerTCPMessage(int sockfd, char *buffer, int size);
-  static void HandlerCheckDevice(int sockfd, char *buffer, int size);
+    public:
+        RKAiqProtocol() = default;
+        virtual ~RKAiqProtocol() = default;
+        static int DoChangeAppMode(appRunStatus mode);
+        static void HandlerTCPMessage(int sockfd, char* buffer, int size);
+        static void HandlerCheckDevice(int sockfd, char* buffer, int size);
 };
 
 #endif

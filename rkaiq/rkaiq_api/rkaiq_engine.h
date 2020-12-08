@@ -11,36 +11,38 @@
 #include "logger/log.h"
 
 typedef enum rk_aiq_state_e {
-  AIQ_STATE_INVALID = 0,
-  AIQ_STATE_INITIALIZED = 1,
-  AIQ_STATE_PREPARED = 2,
-  AIQ_STATE_RUNNING = 3,
-  AIQ_STATE_STOPPED = 4,
-  AIQ_STATE_MAX
+    AIQ_STATE_INVALID = 0,
+    AIQ_STATE_INITIALIZED = 1,
+    AIQ_STATE_PREPARED = 2,
+    AIQ_STATE_RUNNING = 3,
+    AIQ_STATE_STOPPED = 4,
+    AIQ_STATE_MAX
 } rk_aiq_state_t;
 
 class RKAiqEngine {
-public:
-  RKAiqEngine() = delete;
-  RKAiqEngine(std::string iqfiles_path, std::string sensor_name);
-  virtual ~RKAiqEngine();
-  static void RKAiqEngineLoop(void *arg);
-  rk_aiq_sys_ctx_t *GetContext() { return ctx_; }
-  int InitEngine();
-  int InitEngine(int mode);
-  int StartEngine();
-  int StopEngine();
-  int DeInitEngine();
+    public:
+        RKAiqEngine() = delete;
+        RKAiqEngine(std::string iqfiles_path, std::string sensor_name);
+        virtual ~RKAiqEngine();
+        static void RKAiqEngineLoop(void* arg);
+        rk_aiq_sys_ctx_t* GetContext() {
+            return ctx_;
+        }
+        int InitEngine();
+        int InitEngine(int mode);
+        int StartEngine();
+        int StopEngine();
+        int DeInitEngine();
 
-  friend class RKAiqToolManager;
+        friend class RKAiqToolManager;
 
-private:
-  std::string iqfiles_path_;
-  rk_aiq_sys_ctx_t *ctx_;
-  rk_aiq_working_mode_t mode_;
-  std::string sensor_entity_name_;
-  int width_;
-  int height_;
+    private:
+        std::string iqfiles_path_;
+        rk_aiq_sys_ctx_t* ctx_;
+        rk_aiq_working_mode_t mode_;
+        std::string sensor_entity_name_;
+        int width_;
+        int height_;
 };
 
 #endif // _TOOL_RKAIQ_API_ENGINE_H_

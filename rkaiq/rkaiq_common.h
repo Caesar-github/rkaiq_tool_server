@@ -12,22 +12,22 @@
 #include "camera_infohw.h"
 #include "rkaiq_manager.h"
 #ifdef ENABLE_RSTP_SERVER
-#include "rtsp_server.h"
+    #include "rtsp_server.h"
 #endif
 #include "tcp_server.h"
 
 typedef enum {
-  KNOCK_KNOCK = 0x80,
-  READY,
-  BUSY,
-  RES_FAILED = 0x00,
-  RES_SUCCESS
+    KNOCK_KNOCK = 0x80,
+    READY,
+    BUSY,
+    RES_FAILED = 0x00,
+    RES_SUCCESS
 } cmdStatus;
 
 typedef enum {
-  PACKET_TYPE_SET = 0x00,
-  PACKET_TYPE_GET = 0x01,
-  PACKET_TYPE_STATUS = 0x80
+    PACKET_TYPE_SET = 0x00,
+    PACKET_TYPE_GET = 0x01,
+    PACKET_TYPE_STATUS = 0x80
 } packeType;
 
 typedef enum { PC_TO_DEVICE = 0x00, DEVICE_TO_PC } cmdType;
@@ -44,59 +44,59 @@ extern std::shared_ptr<RKAiqToolManager> rkaiq_manager;
 
 #pragma pack(1)
 typedef struct CommandData_s {
-  uint8_t RKID[8];
-  uint16_t cmdType;
-  uint16_t cmdID;
-  uint8_t version[8];
-  uint16_t datLen;
-  uint8_t dat[48];
-  uint16_t checkSum;
+    uint8_t RKID[8];
+    uint16_t cmdType;
+    uint16_t cmdID;
+    uint8_t version[8];
+    uint16_t datLen;
+    uint8_t dat[48];
+    uint16_t checkSum;
 } CommandData_t;
 #pragma pack()
 
 typedef enum {
-  CMD_TYPE_UAPI_SET = 0x00,
-  CMD_TYPE_UAPI_GET = 0x01,
-  CMD_TYPE_CAPTURE = 0x02,
-  CMD_TYPE_DUMP_RAW = 0x03,
-  CMD_TYPE_STATUS = 0x80,
+    CMD_TYPE_UAPI_SET = 0x00,
+    CMD_TYPE_UAPI_GET = 0x01,
+    CMD_TYPE_CAPTURE = 0x02,
+    CMD_TYPE_DUMP_RAW = 0x03,
+    CMD_TYPE_STATUS = 0x80,
 } FuncType_e;
 
 typedef enum {
-  CMD_ID_CAPTURE_STATUS = 0x0001,
-  CMD_ID_CAPTURE_RAW_CAPTURE = 0x0002,
-  CMD_ID_CAPTURE_YUV_CAPTURE = 0x0006,
+    CMD_ID_CAPTURE_STATUS = 0x0001,
+    CMD_ID_CAPTURE_RAW_CAPTURE = 0x0002,
+    CMD_ID_CAPTURE_YUV_CAPTURE = 0x0006,
 } RkispCmdCaptureID_e;
 
 typedef enum {
-  CMD_ID_GET_STATUS = 0x0100,
+    CMD_ID_GET_STATUS = 0x0100,
 } RkispCmdStatusID_e;
 
 typedef enum {
-  DATA_ID_CAPTURE_RAW_STATUS = 0x00,
-  DATA_ID_CAPTURE_RAW_GET_PARAM = 0x01,
-  DATA_ID_CAPTURE_RAW_SET_PARAM = 0x02,
-  DATA_ID_CAPTURE_RAW_START = 0x03,
-  DATA_ID_CAPTURE_RAW_CHECKSUM = 0x04,
+    DATA_ID_CAPTURE_RAW_STATUS = 0x00,
+    DATA_ID_CAPTURE_RAW_GET_PARAM = 0x01,
+    DATA_ID_CAPTURE_RAW_SET_PARAM = 0x02,
+    DATA_ID_CAPTURE_RAW_START = 0x03,
+    DATA_ID_CAPTURE_RAW_CHECKSUM = 0x04,
 } RkispCmdRawCaptureProcID_e;
 
 typedef enum {
-  DATA_ID_CAPTURE_YUV_STATUS = 0x00,
-  DATA_ID_CAPTURE_YUV_GET_PARAM = 0x01,
-  DATA_ID_CAPTURE_YUV_SET_PARAM = 0x02,
-  DATA_ID_CAPTURE_YUV_START = 0x03,
-  DATA_ID_CAPTURE_YUV_CHECKSUM = 0x04,
+    DATA_ID_CAPTURE_YUV_STATUS = 0x00,
+    DATA_ID_CAPTURE_YUV_GET_PARAM = 0x01,
+    DATA_ID_CAPTURE_YUV_SET_PARAM = 0x02,
+    DATA_ID_CAPTURE_YUV_START = 0x03,
+    DATA_ID_CAPTURE_YUV_CHECKSUM = 0x04,
 } RkispCmdYuvCaptureProcID_e;
 
 typedef enum {
-  RKISP_FORMAT_NV12 = 0x0,
-  RKISP_FORMAT_NV16,
+    RKISP_FORMAT_NV12 = 0x0,
+    RKISP_FORMAT_NV16,
 } RkispFmt_e;
 
 #define VICAP_COMPACT_TEST_OFF                                                 \
-  "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
+    "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
 
 #define VICAP2_COMPACT_TEST_OFF                                                \
-  "echo 0 > /sys/devices/platform/rkcif_lite_mipi_lvds/compact_test"
+    "echo 0 > /sys/devices/platform/rkcif_lite_mipi_lvds/compact_test"
 
 #endif

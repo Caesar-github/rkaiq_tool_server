@@ -22,91 +22,93 @@ std::shared_ptr<TCPServer> tcp;
 std::shared_ptr<RKAiqToolManager> rkaiq_manager;
 std::shared_ptr<RKAiqMedia> rkaiq_media;
 
-static int get_env(const char *name, int *value, int default_value) {
-  char *ptr = getenv(name);
-  if (NULL == ptr) {
-    *value = default_value;
-  } else {
-    char *endptr;
-    int base = (ptr[0] == '0' && ptr[1] == 'x') ? (16) : (10);
-    errno = 0;
-    *value = strtoul(ptr, &endptr, base);
-    if (errno || (ptr == endptr)) {
-      errno = 0;
-      *value = default_value;
+static int get_env(const char* name, int* value, int default_value) {
+    char* ptr = getenv(name);
+    if(NULL == ptr) {
+        *value = default_value;
+    } else {
+        char* endptr;
+        int base = (ptr[0] == '0' && ptr[1] == 'x') ? (16) : (10);
+        errno = 0;
+        *value = strtoul(ptr, &endptr, base);
+        if(errno || (ptr == endptr)) {
+            errno = 0;
+            *value = default_value;
+        }
     }
-  }
-  return 0;
+    return 0;
 }
 
 void sigterm_handler(int sig) {
-  fprintf(stderr, "sigterm_handler signal %d\n", sig);
-  quit = 1;
-  tcp->SaveEixt();
+    fprintf(stderr, "sigterm_handler signal %d\n", sig);
+    quit = 1;
+    tcp->SaveEixt();
 }
 
-static void parse_args(int argc, char **argv);
+static void parse_args(int argc, char** argv);
 
-int main(int argc, char **argv) {
-  signal(SIGQUIT, sigterm_handler);
-  signal(SIGINT, sigterm_handler);
-  signal(SIGTERM, sigterm_handler);
-  signal(SIGXCPU, sigterm_handler);
-  signal(SIGIO, sigterm_handler);
-  signal(SIGPIPE, sigterm_handler);
-  get_env("rkaiq_tool_server_log_level", &log_level, 4);
+int main(int argc, char** argv) {
+    signal(SIGQUIT, sigterm_handler);
+    signal(SIGINT, sigterm_handler);
+    signal(SIGTERM, sigterm_handler);
+    signal(SIGXCPU, sigterm_handler);
+    signal(SIGIO, sigterm_handler);
+    signal(SIGPIPE, sigterm_handler);
+    get_env("rkaiq_tool_server_log_level", &log_level, 4);
 
-  parse_args(argc, argv);
-  LOG_ERROR("iqfile cmd_parser.get  %s\n", iqfile.c_str());
-  LOG_ERROR("g_mode cmd_parser.get  %d\n", g_mode);
-  LOG_ERROR("g_dump cmd_parser.get  %d\n", g_dump);
-  LOG_ERROR("g_width     cmd_parser.get  %d\n", g_width);
-  LOG_ERROR("g_height    cmd_parser.get  %d\n", g_height);
-  LOG_ERROR("g_device_id cmd_parser.get  %d\n", g_device_id);
-  LOG_ERROR("g_rtsp_en   cmd_parser.get  %d\n", g_rtsp_en);
+    parse_args(argc, argv);
+    LOG_ERROR("iqfile cmd_parser.get  %s\n", iqfile.c_str());
+    LOG_ERROR("g_mode cmd_parser.get  %d\n", g_mode);
+    LOG_ERROR("g_dump cmd_parser.get  %d\n", g_dump);
+    LOG_ERROR("g_width     cmd_parser.get  %d\n", g_width);
+    LOG_ERROR("g_height    cmd_parser.get  %d\n", g_height);
+    LOG_ERROR("g_device_id cmd_parser.get  %d\n", g_device_id);
+    LOG_ERROR("g_rtsp_en   cmd_parser.get  %d\n", g_rtsp_en);
 
-  std::string exe_name = argv[0];
-  system(STOP_RKLUNCH_CMD);
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  WaitProcessExit("mediaserver", 10);
-  WaitProcessExit("ispserver", 10);
-
-  rkaiq_media = std::make_shared<RKAiqMedia>();
-  rkaiq_media->GetMediaInfo();
-  if (g_dump)
-    rkaiq_media->DumpMediaInfo();
-  g_sensor_name = rkaiq_media->GetSensorName(g_device_id);
-  rkaiq_media->LinkToIsp(true);
-
-  if (app_run_mode == APP_RUN_STATUS_TUNRING) {
-    LOG_INFO("app_run_mode %d  [0: turning 1: capture]\n", app_run_mode);
-    rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
+    std::string exe_name = argv[0];
+    system(STOP_RKLUNCH_CMD);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-#ifndef ANDROID
-    if (g_rtsp_en) {
-      media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
-      init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+    WaitProcessExit("mediaserver", 10);
+    WaitProcessExit("ispserver", 10);
+
+    rkaiq_media = std::make_shared<RKAiqMedia>();
+    rkaiq_media->GetMediaInfo();
+    if(g_dump) {
+        rkaiq_media->DumpMediaInfo();
     }
-#endif
-  }
+    g_sensor_name = rkaiq_media->GetSensorName(g_device_id);
+    rkaiq_media->LinkToIsp(true);
 
-  tcp = std::make_shared<TCPServer>();
-  tcp->RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);
-  tcp->Process(SERVER_PORT);
-  while (!quit) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  }
-  fprintf(stderr, "go quit %d\n", quit);
-  tcp->SaveEixt();
-  if (app_run_mode == APP_RUN_STATUS_TUNRING) {
+    if(app_run_mode == APP_RUN_STATUS_TUNRING) {
+        LOG_INFO("app_run_mode %d  [0: turning 1: capture]\n", app_run_mode);
+        rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifndef ANDROID
-    if (g_rtsp_en)
-      deinit_rtsp();
+        if(g_rtsp_en) {
+            media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+            init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+        }
 #endif
-    rkaiq_manager.reset();
-    rkaiq_manager = nullptr;
-  }
-  return 0;
+    }
+
+    tcp = std::make_shared<TCPServer>();
+    tcp->RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);
+    tcp->Process(SERVER_PORT);
+    while(!quit) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    fprintf(stderr, "go quit %d\n", quit);
+    tcp->SaveEixt();
+    if(app_run_mode == APP_RUN_STATUS_TUNRING) {
+#ifndef ANDROID
+        if(g_rtsp_en) {
+            deinit_rtsp();
+        }
+#endif
+        rkaiq_manager.reset();
+        rkaiq_manager = nullptr;
+    }
+    return 0;
 }
 
 static const char short_options[] = "i:m:Dd:w:h:r:";
@@ -119,47 +121,49 @@ static const struct option long_options[] = {
     {"device_id", required_argument, NULL, 'd'},
     {"rtsp_en", required_argument, NULL, 'r'},
     {"help", no_argument, NULL, 'h'},
-    {0, 0, 0, 0}};
-static void parse_args(int argc, char **argv) {
-  for (;;) {
-    int idx;
-    int c;
-    c = getopt_long(argc, argv, short_options, long_options, &idx);
-    if (-1 == c)
-      break;
-    switch (c) {
-    case 0: /* getopt_long() flag */
-      break;
-    case 'i':
-      iqfile = optarg;
-      break;
-    case 'm':
-      g_mode = atoi(optarg);
-      break;
-    case 'w':
-      g_width = atoi(optarg);
-      break;
-    case 'h':
-      g_height = atoi(optarg);
-      break;
-    case 'd':
-      g_device_id = atoi(optarg);
-      break;
-    case 'r':
-      g_rtsp_en = atoi(optarg);
-      break;
-    case 'D':
-      g_dump = 1;
-      break;
-    default:
-      break;
+    {0, 0, 0, 0}
+};
+static void parse_args(int argc, char** argv) {
+    for(;;) {
+        int idx;
+        int c;
+        c = getopt_long(argc, argv, short_options, long_options, &idx);
+        if(-1 == c) {
+            break;
+        }
+        switch(c) {
+            case 0: /* getopt_long() flag */
+                break;
+            case 'i':
+                iqfile = optarg;
+                break;
+            case 'm':
+                g_mode = atoi(optarg);
+                break;
+            case 'w':
+                g_width = atoi(optarg);
+                break;
+            case 'h':
+                g_height = atoi(optarg);
+                break;
+            case 'd':
+                g_device_id = atoi(optarg);
+                break;
+            case 'r':
+                g_rtsp_en = atoi(optarg);
+                break;
+            case 'D':
+                g_dump = 1;
+                break;
+            default:
+                break;
+        }
     }
-  }
-  if (iqfile.empty()) {
+    if(iqfile.empty()) {
 #ifdef ANDROID
-    iqfile = "/vendor/etc/camera/rkisp1";
+        iqfile = "/vendor/etc/camera/rkisp1";
 #else
-    iqfile = "/oem/etc/iqfiles";
+        iqfile = "/oem/etc/iqfiles";
 #endif
-  }
+    }
 }

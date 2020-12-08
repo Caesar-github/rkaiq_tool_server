@@ -6,17 +6,17 @@
 
 namespace easymedia {
 
-DEFINE_REFLECTOR(Decoder)
+    DEFINE_REFLECTOR(Decoder)
 
 // request should equal codec_name
-DEFINE_FACTORY_COMMON_PARSE(Decoder)
+    DEFINE_FACTORY_COMMON_PARSE(Decoder)
 
-bool Decoder::InitConfig(const MediaConfig &cfg) {
-  UNUSED(cfg);
-  return true;
-}
+    bool Decoder::InitConfig(const MediaConfig &cfg) {
+        UNUSED(cfg);
+        return true;
+    }
 
-DEFINE_PART_FINAL_EXPOSE_PRODUCT(AudioDecoder, Decoder)
-DEFINE_PART_FINAL_EXPOSE_PRODUCT(VideoDecoder, Decoder)
+    DEFINE_PART_FINAL_EXPOSE_PRODUCT(AudioDecoder, Decoder)
+    DEFINE_PART_FINAL_EXPOSE_PRODUCT(VideoDecoder, Decoder)
 
 } // namespace easymedia

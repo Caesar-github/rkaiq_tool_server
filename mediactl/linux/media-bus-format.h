@@ -34,7 +34,7 @@
 
 #define MEDIA_BUS_FMT_FIXED 0x0001
 
-/* RGB - next is	0x101c */
+/* RGB - next is    0x101c */
 #define MEDIA_BUS_FMT_RGB444_1X12 0x1016
 #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_BE 0x1001
 #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_LE 0x1002
@@ -63,7 +63,7 @@
 #define MEDIA_BUS_FMT_RGB121212_1X36 0x1019
 #define MEDIA_BUS_FMT_RGB161616_1X48 0x101a
 
-/* YUV (including grey) - next is	0x202d */
+/* YUV (including grey) - next is   0x202d */
 #define MEDIA_BUS_FMT_Y8_1X8 0x2001
 #define MEDIA_BUS_FMT_UV8_1X8 0x2015
 #define MEDIA_BUS_FMT_UYVY8_1_5X8 0x2002
@@ -109,7 +109,7 @@
 #define MEDIA_BUS_FMT_YUV16_1X48 0x202a
 #define MEDIA_BUS_FMT_UYYVYY16_0_5X48 0x202b
 
-/* Bayer - next is	0x3021 */
+/* Bayer - next is  0x3021 */
 #define MEDIA_BUS_FMT_SBGGR8_1X8 0x3001
 #define MEDIA_BUS_FMT_SGBRG8_1X8 0x3013
 #define MEDIA_BUS_FMT_SGRBG8_1X8 0x3002
@@ -143,15 +143,15 @@
 #define MEDIA_BUS_FMT_SGRBG16_1X16 0x301f
 #define MEDIA_BUS_FMT_SRGGB16_1X16 0x3020
 
-/* JPEG compressed formats - next is	0x4002 */
+/* JPEG compressed formats - next is    0x4002 */
 #define MEDIA_BUS_FMT_JPEG_1X8 0x4001
 
-/* Vendor specific formats - next is	0x5002 */
+/* Vendor specific formats - next is    0x5002 */
 
 /* S5C73M3 sensor specific interleaved UYVY and JPEG */
 #define MEDIA_BUS_FMT_S5C_UYVY_JPEG_1X8 0x5001
 
-/* HSV - next is	0x6002 */
+/* HSV - next is    0x6002 */
 #define MEDIA_BUS_FMT_AHSV8888_1X32 0x6001
 
 #endif /* __LINUX_MEDIA_BUS_FORMAT_H */
