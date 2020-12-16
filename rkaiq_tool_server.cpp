@@ -55,7 +55,7 @@ static int get_env(const char* name, int* value, int default_value) {
 void sigterm_handler(int sig) {
     fprintf(stderr, "sigterm_handler signal %d\n", sig);
     quit = 1;
-    tcp->SaveEixt();
+    tcp->SaveExit();
 }
 
 static void parse_args(int argc, char** argv);
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
     fprintf(stderr, "go quit %d\n", quit);
-    tcp->SaveEixt();
+    tcp->SaveExit();
     if(app_run_mode == APP_RUN_STATUS_TUNRING) {
 #ifndef ANDROID
         if(g_rtsp_en) {

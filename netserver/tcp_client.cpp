@@ -79,7 +79,7 @@ string TCPClient::Receive(int size) {
     string reply;
     if(recv(sock, buffer, size, 0) < 0) {
         LOG_ERROR("receive failed!\n", size);
-        return nullptr;
+        return "\0";
     }
     buffer[size - 1] = '\0';
     reply = buffer;

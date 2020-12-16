@@ -25,8 +25,7 @@ using namespace std;
 #define MAXPACKETSIZE 8192
 #define MAX_CLIENT 1000
 
-using RecvCallBack =
-    add_pointer<void(int sockfd, char* buffer, int size)>::type;
+using RecvCallBack = add_pointer<void(int sockfd, char* buffer, int size)>::type;
 
 class TCPServer {
     public:
@@ -44,7 +43,7 @@ class TCPServer {
         void UnRegisterRecvCallBack() {
             callback_ = nullptr;
         }
-        void SaveEixt();
+        void SaveExit();
 
     private:
         void Accepted();

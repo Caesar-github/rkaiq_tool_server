@@ -70,6 +70,9 @@ RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
     dpcc_.reset(new RKAiqToolADPCC(ctx_));
     gamma_.reset(new RKAiqToolAGamma(ctx_));
     dehaze_.reset(new RKAiqToolDehaze(ctx_));
+    ccm_.reset(new RKAiqToolCCM(ctx_));
+    awb_.reset(new RKAiqToolAWB(ctx_));
+    cproc_.reset(new RKAiqToolCPROC(ctx_));
 
     rk_aiq_ver_info_t vers;
     sysctl_->GetVersionInfo(&vers);
@@ -78,8 +81,18 @@ RKAiqToolManager::RKAiqToolManager(std::string iqfiles_path,
 }
 
 RKAiqToolManager::~RKAiqToolManager() {
-    anr_.reset(nullptr);
     ae_.reset(nullptr);
+    anr_.reset(nullptr);
+    asharp_.reset(nullptr);
+    sysctl_.reset(nullptr);
+    ahdr_.reset(nullptr);
+    dpcc_.reset(nullptr);
+    gamma_.reset(nullptr);
+    dehaze_.reset(nullptr);
+    ccm_.reset(nullptr);
+    awb_.reset(nullptr);
+    cproc_.reset(nullptr);
+    imgproc_.reset(nullptr);
     imgproc_.reset(nullptr);
     engine_.reset(nullptr);
 }
@@ -108,6 +121,12 @@ int RKAiqToolManager::IoCtrl(int id, void* data, int size) {
         DEHAZEIoCtrl(id, data, size);
     } else if(id > ENUM_ID_RKMEDIA_START && id < ENUM_ID_RKMEDIA_END) {
         RkMediaCtrl(id, data, size);
+    } else if(id > ENUM_ID_ACCM_START && id < ENUM_ID_ACCM_END) {
+        CCMIoCtrl(id, data, size);
+    } else if(id > ENUM_ID_AWB_START && id < ENUM_ID_AWB_END) {
+        AWBIoCtrl(id, data, size);
+    } else if(id > ENUM_ID_CPROC_START && id < ENUM_ID_CPROC_END) {
+        CPROCIoCtrl(id, data, size);
     }
     LOG_INFO("IoCtrl id: 0x%x exit\n", id);
     return 0;
@@ -536,7 +555,6 @@ int RKAiqToolManager::RkMediaCtrl(int id, void* data, int size) {
             }
 
             if(needResetRtspFlag == true) {
-
                 if(g_rtsp_en) {
                     deinit_rtsp();
                     rkaiq_media->LinkToIsp(false);
@@ -648,6 +666,76 @@ int RKAiqToolManager::RkMediaCtrl(int id, void* data, int size) {
 
             memcpy(data, param, sizeof(RkMedia_User_Params_s));
             break;
+        default:
+            LOG_INFO("cmdID: Unknow\n");
+            break;
+    }
+    return 0;
+}
+
+int RKAiqToolManager::CCMIoCtrl(int id, void* data, int size) {
+    LOG_INFO("CCMIoCtrl id: 0x%x\n", id);
+    switch(id) {
+        case ENUM_ID_ACCM_SETATTRIB: {
+            CHECK_PARAM_SIZE(rk_aiq_ccm_attrib_t, size);
+            ccm_->SetAttrib(*(rk_aiq_ccm_attrib_t*)data);
+        }
+        break;
+        case ENUM_ID_ACCM_GETATTRIB: {
+            CHECK_PARAM_SIZE(rk_aiq_ccm_attrib_t, size);
+            ccm_->GetAttrib((rk_aiq_ccm_attrib_t*)data);
+        }
+        break;
+        case ENUM_ID_ACCM_QUERYCCMINFO: {
+            CHECK_PARAM_SIZE(rk_aiq_ccm_querry_info_t, size);
+            ccm_->QueryCCMInfo((rk_aiq_ccm_querry_info_t*)data);
+        }
+        break;
+        default:
+            LOG_INFO("cmdID: Unknow\n");
+            break;
+    }
+    return 0;
+}
+
+int RKAiqToolManager::AWBIoCtrl(int id, void* data, int size) {
+    LOG_INFO("AWBIoCtrl id: 0x%x\n", id);
+    switch(id) {
+        case ENUM_ID_AWB_SETATTRIB: {
+            CHECK_PARAM_SIZE(rk_aiq_wb_attrib_t, size);
+            awb_->SetAttrib(*(rk_aiq_wb_attrib_t*)data);
+        }
+        break;
+        case ENUM_ID_AWB_GETATTRIB: {
+            CHECK_PARAM_SIZE(rk_aiq_wb_attrib_t, size);
+            awb_->GetAttrib((rk_aiq_wb_attrib_t*)data);
+        }
+        break;
+        case ENUM_ID_AWB_QUERYWBINFO: {
+            CHECK_PARAM_SIZE(rk_aiq_wb_querry_info_t, size);
+            awb_->QueryWBInfo((rk_aiq_wb_querry_info_t*)data);
+        }
+        break;
+        default:
+            LOG_INFO("cmdID: Unknow\n");
+            break;
+    }
+    return 0;
+}
+
+int RKAiqToolManager::CPROCIoCtrl(int id, void* data, int size) {
+    LOG_INFO("CPROCIoCtrl id: 0x%x\n", id);
+    switch(id) {
+        case ENUM_ID_CPROC_SETATTRIB: {
+            CHECK_PARAM_SIZE(acp_attrib_t, size);
+            cproc_->SetAttrib(*(acp_attrib_t*)data);
+        }
+        break;
+        case ENUM_ID_CPROC_GETATTRIB: {
+            CHECK_PARAM_SIZE(acp_attrib_t, size);
+            cproc_->GetAttrib((acp_attrib_t*)data);
+        }
+        break;
         default:
             LOG_INFO("cmdID: Unknow\n");
             break;

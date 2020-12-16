@@ -12,6 +12,9 @@
 #include "rkaiq_imgproc.h"
 #include "rkaiq_sharp.h"
 #include "rkaiq_sysctl.h"
+#include "rkaiq_ccm.h"
+#include "rkaiq_awb.h"
+#include "rkaiq_cproc.h"
 #include <memory>
 #include <thread>
 
@@ -32,6 +35,9 @@ class RKAiqToolManager {
         int ADPCCIoCtrl(int id, void* data, int size);
         int DEHAZEIoCtrl(int id, void* data, int size);
         int RkMediaCtrl(int id, void* data, int size);
+        int CCMIoCtrl(int id, void* data, int size);
+        int AWBIoCtrl(int id, void* data, int size);
+        int CPROCIoCtrl(int id, void* data, int size);
         int IoCtrl(int id, void* data, int size);
         void SaveExit();
 
@@ -51,6 +57,9 @@ class RKAiqToolManager {
         std::unique_ptr<RKAiqToolADPCC> dpcc_;
         std::unique_ptr<RKAiqToolAGamma> gamma_;
         std::unique_ptr<RKAiqToolDehaze> dehaze_;
+        std::unique_ptr<RKAiqToolCCM> ccm_;
+        std::unique_ptr<RKAiqToolAWB> awb_;
+        std::unique_ptr<RKAiqToolCPROC> cproc_;
 };
 
 #endif // _TOOL_RKAIQ_API_MANAGER_H_

@@ -18,7 +18,7 @@ TCPServer::~TCPServer() {
     accept_threads_.clear();
 }
 
-void TCPServer::SaveEixt() {
+void TCPServer::SaveExit() {
     quit_ = 1;
 }
 
