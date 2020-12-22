@@ -1,4 +1,5 @@
 #include "rkaiq_online_protocol.h"
+#include "tcp_client.h"
 
 extern int g_width;
 extern int g_height;
@@ -121,18 +122,19 @@ static void OnLineSet(int sockfd, CommandData_t* cmd, uint16_t &check_sum,
         check_sum += param[i];
     }
 
-    LOG_INFO("DO Sycn Setting, CmdId: 0x%x, expect ParamSize 0x%x\n", cmd->cmdID,
-             param_size);
+    LOG_INFO("DO Sycn Setting, CmdId: 0x%x, expect ParamSize %d\n", cmd->cmdID, param_size);
     if(rkaiq_manager) {
         result = rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
     }
-
-    free(param);
+    if(param != NULL) {
+        free(param);
+    }
     LOG_INFO("exit\n");
 }
 
 static int OnLineGet(int sockfd, CommandData_t* cmd) {
     int ret = 0;
+    int ioRet = 0;
     int send_size = 0;
     int param_size = *(int*)cmd->dat;
     int remain_size = param_size;
@@ -141,10 +143,13 @@ static int OnLineGet(int sockfd, CommandData_t* cmd) {
 
     uint8_t* param = (uint8_t*)malloc(param_size);
 
-    LOG_INFO("DO Get Setting, CmdId: 0x%x, expect ParamSize 0x%x\n", cmd->cmdID,
-             param_size);
+    LOG_INFO("DO Get Setting, CmdId: 0x%x, expect ParamSize %d\n", cmd->cmdID, param_size);
     if(rkaiq_manager) {
-        rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
+        ioRet = rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
+        if(ioRet != 0) {
+            LOG_INFO("DO Get Setting, io get data failed. return\n");
+            return 1;
+        }
     }
 
     while(remain_size > 0) {
@@ -160,13 +165,15 @@ static int OnLineGet(int sockfd, CommandData_t* cmd) {
 
     ret = DoCheckSum(sockfd, check_sum);
 
-    free(param);
-    LOG_INFO("exit\n");
+    if(param != NULL) {
+        free(param);
+        param = NULL;
+    }
     return ret;
 }
 
 static void SendYuvData(int socket, int index, void* buffer, int size) {
-    LOG_INFO(" SendYuvData\n");
+    LOG_INFO("SendYuvData\n");
     char* buf = NULL;
     int total = size;
     int packet_len = MAXPACKETSIZE;
@@ -347,17 +354,19 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size) {
             uint32_t result;
             DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
             OnLineSet(sockfd, common_cmd, check_sum, result);
-            DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum, result ? RES_FAILED : RES_SUCCESS);
+            DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum,
+                      result ? RES_FAILED : RES_SUCCESS);
         }
         break;
-        case CMD_TYPE_UAPI_GET:
+        case CMD_TYPE_UAPI_GET: {
             ret = OnLineGet(sockfd, common_cmd);
             if(ret == 0) {
                 DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
             } else {
                 DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_FAILED);
             }
-            break;
+        }
+        break;
         case CMD_TYPE_CAPTURE: {
             LOG_INFO("CMD_TYPE_CAPTURE in\n");
             DoCaptureYuv(sockfd);

@@ -1,11 +1,12 @@
 #include "rkaiq_protocol.h"
+#include "tcp_client.h"
 
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
 #define LOG_TAG "rkaiq_protocol.cpp"
 
-extern int app_run_mode;
+extern int g_app_run_mode;
 extern int g_width;
 extern int g_height;
 extern int g_rtsp_en;
@@ -64,7 +65,7 @@ int WaitProcessExit(const char* process, int sec) {
 }
 
 int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
-    if(app_run_mode == mode) {
+    if(g_app_run_mode == mode) {
         return 0;
     }
     if(mode == APP_RUN_STATUS_CAPTURE) {
@@ -81,7 +82,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     } else {
         LOG_INFO("Switch to APP_RUN_STATUS_TUNRING\n");
         rkaiq_media->LinkToIsp(true);
-        rkaiq_manager = std::make_shared<RKAiqToolManager>(iqfile, g_sensor_name);
+        rkaiq_manager = std::make_shared<RKAiqToolManager>();
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifndef ANDROID
         if(g_rtsp_en) {
@@ -90,7 +91,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
         }
 #endif
     }
-    app_run_mode = mode;
+    g_app_run_mode = mode;
     return 0;
 }
 

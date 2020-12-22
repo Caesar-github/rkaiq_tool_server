@@ -2,17 +2,15 @@
 #define _TOOL_RKAIQ_API_CPROC_H_
 
 #include "rk_aiq_user_api_acp.h"
+#include "rkaiq_socket.h"
 
 class RKAiqToolCPROC {
     public:
-        RKAiqToolCPROC(rk_aiq_sys_ctx_t* ctx);
+        RKAiqToolCPROC();
         virtual ~RKAiqToolCPROC();
 
-        int SetAttrib(acp_attrib_t attr);
-        int GetAttrib(acp_attrib_t* attr);
-
-    private:
-        rk_aiq_sys_ctx_t* ctx_;
+        int SetAttrib(acp_attrib_t attr, int cmdID);
+        int GetAttrib(acp_attrib_t* attr, int cmdID);
 };
 
 #endif // _TOOL_RKAIQ_API_CPROC_H_

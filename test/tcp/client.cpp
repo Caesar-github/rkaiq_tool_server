@@ -12,10 +12,10 @@ int main(int argc, char* argv[]) {
     }
     signal(SIGINT, sig_exit);
 
-    TCPClient tcp;
-    tcp.Setup(argv[1], atoi(argv[2]));
+    TCPClient tcpClient;
+    tcpClient.Setup(argv[1], atoi(argv[2]));
     while(1) {
-        tcp.Send(argv[3]);
+        tcpClient.Send(argv[3]);
         sleep(1);
     }
     return 0;

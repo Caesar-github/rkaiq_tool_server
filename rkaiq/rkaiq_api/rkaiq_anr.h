@@ -2,31 +2,29 @@
 #define _TOOL_RKAIQ_API_BAYERNR_H_
 
 #include "rk_aiq_user_api_anr.h"
-
 #include "logger/log.h"
+#include "rkaiq_socket.h"
+#include "rkaiq_cmdid.h"
 
 class RKAiqToolANR {
     public:
-        RKAiqToolANR(rk_aiq_sys_ctx_t* ctx);
+        RKAiqToolANR();
         virtual ~RKAiqToolANR();
 
-        int SetAttrib(rk_aiq_nr_attrib_t* attr);
-        int GetAttrib(rk_aiq_nr_attrib_t* attr);
-        int SetIQPara(rk_aiq_nr_IQPara_t* attr);
-        int GetIQPara(rk_aiq_nr_IQPara_t* attr);
-        int SetLumaSFStrength(float fPercnt);
-        int SetLumaTFStrength(float fPercnt);
-        int GetLumaSFStrength(float* pPercnt);
-        int GetLumaTFStrength(float* pPercnt);
-        int SetChromaSFStrength(float fPercnt);
-        int SetChromaTFStrength(float fPercnt);
-        int GetChromaSFStrength(float* pPercnt);
-        int GetChromaTFStrength(float* pPercnt);
-        int SetRawnrSFStrength(float fPercnt);
-        int GetRawnrSFStrength(float* pPercnt);
-
-    private:
-        rk_aiq_sys_ctx_t* ctx_;
+        int SetAttrib(rk_aiq_nr_attrib_t* attr, int cmdID);
+        int GetAttrib(rk_aiq_nr_attrib_t* attr, int cmdID);
+        int SetIQPara(void* attr, int cmdID);
+        int GetIQPara(void* attr, int cmdID);
+        int SetLumaSFStrength(float fPercnt, int cmdID);
+        int SetLumaTFStrength(float fPercnt, int cmdID);
+        int GetLumaSFStrength(float* pPercnt, int cmdID);
+        int GetLumaTFStrength(float* pPercnt, int cmdID);
+        int SetChromaSFStrength(float fPercnt, int cmdID);
+        int SetChromaTFStrength(float fPercnt, int cmdID);
+        int GetChromaSFStrength(float* pPercnt, int cmdID);
+        int GetChromaTFStrength(float* pPercnt, int cmdID);
+        int SetRawnrSFStrength(float fPercnt, int cmdID);
+        int GetRawnrSFStrength(float* pPercnt, int cmdID);
 };
 
 #endif // _TOOL_RKAIQ_API_BAYERNR_H_

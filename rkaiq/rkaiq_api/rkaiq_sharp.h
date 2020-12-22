@@ -2,23 +2,21 @@
 #define _TOOL_RKAIQ_API_SHARP_H_
 
 #include "rk_aiq_user_api_asharp.h"
+#include "rkaiq_cmdid.h"
 
 class RKAiqToolSharp {
     public:
-        RKAiqToolSharp(rk_aiq_sys_ctx_t* ctx);
+        RKAiqToolSharp();
         virtual ~RKAiqToolSharp();
 
-        int SetAttrib(rk_aiq_sharp_attrib_t* attr);
-        int GetAttrib(rk_aiq_sharp_attrib_t* attr);
-        int SetIQPara(rk_aiq_sharp_IQpara_t* para);
-        int GetIQPara(rk_aiq_sharp_IQpara_t* para);
-        int SetIQEFPara(rk_aiq_sharp_IQpara_t* para);
-        int GetIQEFPara(rk_aiq_sharp_IQpara_t* para);
-        int SetStrength(float fPercent);
-        int GetStrength(float* pPercent);
-
-    private:
-        rk_aiq_sys_ctx_t* ctx_;
+        int SetAttrib(rk_aiq_sharp_attrib_t* attr, int cmdID);
+        int GetAttrib(rk_aiq_sharp_attrib_t* attr, int cmdID);
+        int SetIQPara(void* para, int cmdID);
+        int GetIQPara(void* para, int cmdID);
+        int SetIQEFPara(rk_aiq_sharp_IQpara_t* para, int cmdID);
+        int GetIQEFPara(rk_aiq_sharp_IQpara_t* para, int cmdID);
+        int SetStrength(float fPercent, int cmdID);
+        int GetStrength(float* pPercent, int cmdID);
 };
 
 #endif // _TOOL_RKAIQ_API_SHARP_H_

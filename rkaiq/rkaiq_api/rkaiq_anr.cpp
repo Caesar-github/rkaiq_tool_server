@@ -5,76 +5,86 @@
 #endif
 #define LOG_TAG "rkaiq_anr.cpp"
 
-RKAiqToolANR::RKAiqToolANR(rk_aiq_sys_ctx_t* ctx) : ctx_(ctx) {}
+RKAiqToolANR::RKAiqToolANR() {}
 
 RKAiqToolANR::~RKAiqToolANR() {}
 
-int RKAiqToolANR::SetAttrib(rk_aiq_nr_attrib_t* attr) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_SetAttrib(ctx_, attr);
+int RKAiqToolANR::SetAttrib(rk_aiq_nr_attrib_t* attr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)attr, sizeof(rk_aiq_nr_attrib_t));
 }
 
-int RKAiqToolANR::GetAttrib(rk_aiq_nr_attrib_t* attr) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_GetAttrib(ctx_, attr);
+int RKAiqToolANR::GetAttrib(rk_aiq_nr_attrib_t* attr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)attr, sizeof(rk_aiq_nr_attrib_t));
 }
 
-int RKAiqToolANR::SetIQPara(rk_aiq_nr_IQPara_t* attr) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_SetIQPara(ctx_, attr);
+int RKAiqToolANR::SetIQPara(void* attr, int cmdID) {
+    int paramSize = 0;
+    if(cmdID == ENUM_ID_ANR_SETBAYERNRATTR) {
+        paramSize = sizeof(CalibDb_BayerNr_t);
+    } else if(cmdID == ENUM_ID_ANR_SETMFNRATTR) {
+        paramSize = sizeof(CalibDb_MFNR_t);
+    } else if(cmdID == ENUM_ID_ANR_SETUVNRATTR) {
+        paramSize = sizeof(CalibDb_UVNR_t);
+    } else if(cmdID == ENUM_ID_ANR_SETYNRATTR) {
+        paramSize = sizeof(CalibDb_YNR_t);
+    } else {
+        return 1;
+    }
+    return RkAiqSocketClientINETSend(cmdID, attr, paramSize);
 }
 
-int RKAiqToolANR::GetIQPara(rk_aiq_nr_IQPara_t* attr) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_GetIQPara(ctx_, attr);
+int RKAiqToolANR::GetIQPara(void* attr, int cmdID) {
+    int paramSize = 0;
+    if(cmdID == ENUM_ID_ANR_GETBAYERNRATTR) {
+        paramSize = sizeof(CalibDb_BayerNr_t);
+    } else if(cmdID == ENUM_ID_ANR_GETMFNRATTR) {
+        paramSize = sizeof(CalibDb_MFNR_t);
+    } else if(cmdID == ENUM_ID_ANR_GETUVNRATTR) {
+        paramSize = sizeof(CalibDb_UVNR_t);
+    } else if(cmdID == ENUM_ID_ANR_GETYNRATTR) {
+        paramSize = sizeof(CalibDb_YNR_t);
+    } else {
+        return 1;
+    }
+    return RkAiqSocketClientINETReceive(cmdID, attr, paramSize);
 }
 
-int RKAiqToolANR::SetLumaSFStrength(float fPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_SetLumaSFStrength(ctx_, fPercnt);
+int RKAiqToolANR::SetLumaSFStrength(float fPercnt, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)&fPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::SetLumaTFStrength(float fPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_SetLumaTFStrength(ctx_, fPercnt);
+int RKAiqToolANR::GetLumaSFStrength(float* pPercnt, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::GetLumaSFStrength(float* pPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_GetLumaSFStrength(ctx_, pPercnt);
+int RKAiqToolANR::SetLumaTFStrength(float fPercnt, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)&fPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::GetLumaTFStrength(float* pPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_GetLumaTFStrength(ctx_, pPercnt);
+int RKAiqToolANR::GetLumaTFStrength(float* pPercnt, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::SetChromaSFStrength(float fPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_SetChromaSFStrength(ctx_, fPercnt);
+int RKAiqToolANR::SetChromaSFStrength(float fPercnt, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)&fPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::SetChromaTFStrength(float fPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_SetChromaTFStrength(ctx_, fPercnt);
+int RKAiqToolANR::GetChromaSFStrength(float* pPercnt, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::GetChromaSFStrength(float* pPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_GetChromaSFStrength(ctx_, pPercnt);
+int RKAiqToolANR::SetChromaTFStrength(float fPercnt, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)&fPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::GetChromaTFStrength(float* pPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_GetChromaTFStrength(ctx_, pPercnt);
+int RKAiqToolANR::GetChromaTFStrength(float* pPercnt, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::SetRawnrSFStrength(float fPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_SetRawnrSFStrength(ctx_, fPercnt);
+int RKAiqToolANR::SetRawnrSFStrength(float fPercnt, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)&fPercnt, sizeof(float));
 }
 
-int RKAiqToolANR::GetRawnrSFStrength(float* pPercnt) {
-    LOG_DEBUG("\n");
-    return rk_aiq_user_api_anr_GetRawnrSFStrength(ctx_, pPercnt);
+int RKAiqToolANR::GetRawnrSFStrength(float* pPercnt, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pPercnt, sizeof(float));
 }

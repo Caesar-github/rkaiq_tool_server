@@ -1,13 +1,13 @@
 #include "rkaiq_ahdr.h"
 
-RKAiqToolAHDR::RKAiqToolAHDR(rk_aiq_sys_ctx_t* ctx) : ctx_(ctx) {}
+RKAiqToolAHDR::RKAiqToolAHDR() {}
 
 RKAiqToolAHDR::~RKAiqToolAHDR() {}
 
-int RKAiqToolAHDR::SetAttrib(const ahdr_attrib_t attr) {
-    return rk_aiq_user_api_ahdr_SetAttrib(ctx_, attr);
+int RKAiqToolAHDR::SetAttrib(const ahdr_attrib_t attr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)&attr, sizeof(ahdr_attrib_t));
 }
 
-int RKAiqToolAHDR::GetAttrib(ahdr_attrib_t* attr) {
-    return rk_aiq_user_api_ahdr_GetAttrib(ctx_, attr);
+int RKAiqToolAHDR::GetAttrib(ahdr_attrib_t* attr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)attr, sizeof(ahdr_attrib_t));
 }

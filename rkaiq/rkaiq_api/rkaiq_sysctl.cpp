@@ -1,26 +1,26 @@
 #include "rkaiq_sysctl.h"
+#include "rkaiq_socket.h"
 
-RKAiqToolSysCtl::RKAiqToolSysCtl(rk_aiq_sys_ctx_t* ctx) : ctx_(ctx) {}
+RKAiqToolSysCtl::RKAiqToolSysCtl() {}
 
 RKAiqToolSysCtl::~RKAiqToolSysCtl() {}
 
-int RKAiqToolSysCtl::SetCpsLtCfg(rk_aiq_cpsl_cfg_t* cfg) {
-    return rk_aiq_uapi_sysctl_setCpsLtCfg(ctx_, cfg);
+int RKAiqToolSysCtl::SetCpsLtCfg(rk_aiq_cpsl_cfg_t* cfg, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)cfg, sizeof(rk_aiq_cpsl_cfg_t));
 }
 
-int RKAiqToolSysCtl::GetCpsLtInfo(rk_aiq_cpsl_info_t* info) {
-    return rk_aiq_uapi_sysctl_getCpsLtInfo(ctx_, info);
+int RKAiqToolSysCtl::GetCpsLtInfo(rk_aiq_cpsl_info_t* info, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)info, sizeof(rk_aiq_cpsl_info_t));
 }
 
-int RKAiqToolSysCtl::QueryCpsLtCap(rk_aiq_cpsl_cap_t* cap) {
-    return rk_aiq_uapi_sysctl_queryCpsLtCap(ctx_, cap);
+int RKAiqToolSysCtl::QueryCpsLtCap(rk_aiq_cpsl_cap_t* cap, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)cap, sizeof(rk_aiq_cpsl_cap_t));
 }
 
-int RKAiqToolSysCtl::SetWorkingModeDyn(rk_aiq_working_mode_t mode) {
-    return rk_aiq_uapi_sysctl_swWorkingModeDyn(ctx_, mode);
+int RKAiqToolSysCtl::SetWorkingModeDyn(rk_aiq_working_mode_t mode, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)&mode, sizeof(rk_aiq_working_mode_t));
 }
 
-int RKAiqToolSysCtl::GetVersionInfo(rk_aiq_ver_info_t* vers) {
-    rk_aiq_uapi_get_version_info(vers);
-    return 0;
+int RKAiqToolSysCtl::GetVersionInfo(rk_aiq_ver_info_t* vers, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)vers, sizeof(rk_aiq_ver_info_t));
 }

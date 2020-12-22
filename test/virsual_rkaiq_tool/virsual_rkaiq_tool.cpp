@@ -153,103 +153,103 @@ void DumpCommand(char* buff) {
     }
 }
 
-void CMD_CheckStatus(TCPClient &tcp) {
+void CMD_CheckStatus(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_CheckStatus\n");
     ICMD_CheckStatus(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     DumpCommand(send_data);
 }
 
-void CMD_SetAppStatus(TCPClient &tcp) {
+void CMD_SetAppStatus(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_SetAppStatus\n");
     ICMD_SetAppStatus(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     DumpCommand(send_data);
 }
 
-void CMD_GetAppStatus(TCPClient &tcp) {
+void CMD_GetAppStatus(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_GetAppStatus\n");
     ICMD_GetAppStatus(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     DumpCommand(send_data);
 }
 
-void CMD_GetVideoDevStatus(TCPClient &tcp) {
+void CMD_GetVideoDevStatus(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_GetVideoDevStatus\n");
     ICMD_GetVideoDevStatus(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     DumpCommand(send_data);
 }
 
-void CMD_GetPclkHtsVts(TCPClient &tcp) {
+void CMD_GetPclkHtsVts(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_GetPclkHtsVts\n");
     ICMD_GetPclkHtsVts(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     DumpCommand(send_data);
 }
 
-void CMD_GetSetParam(TCPClient &tcp) {
+void CMD_GetSetParam(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_GetSetParam\n");
     ICMD_GetSetParam(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     DumpCommand(send_data);
 }
 
-void CMD_DoCapture(TCPClient &tcp) {
+void CMD_DoCapture(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_DoCapture\n");
     ICMD_DoCapture(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    int ret_val = tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    int ret_val = tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     while(sizeof(Common_Cmd_s) == MAX_BUFFER_SIZE) {
-        tcp.Receive(send_data, MAX_BUFFER_SIZE);
+        tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     }
 }
 
-void CMD_DoSumCheck(TCPClient &tcp) {
+void CMD_DoSumCheck(TCPClient &tcpClient) {
     Common_Cmd_t send_cmd;
     char send_data[MAX_BUFFER_SIZE];
     fprintf(stderr, "CMD_DoSumCheck\n");
     ICMD_DoSumCheck(&send_cmd);
     memcpy(send_data, &send_cmd, sizeof(Common_Cmd_s));
-    tcp.Send(send_data, sizeof(Common_Cmd_s));
-    tcp.Receive(send_data, MAX_BUFFER_SIZE);
+    tcpClient.Send(send_data, sizeof(Common_Cmd_s));
+    tcpClient.Receive(send_data, MAX_BUFFER_SIZE);
     DumpCommand(send_data);
 }
 
-void CMD_CaptureRaw(TCPClient &tcp) {
-    CMD_SetAppStatus(tcp);
-    CMD_GetVideoDevStatus(tcp);
-    CMD_GetPclkHtsVts(tcp);
-    CMD_GetSetParam(tcp);
-    CMD_DoCapture(tcp);
-    CMD_DoSumCheck(tcp);
+void CMD_CaptureRaw(TCPClient &tcpClient) {
+    CMD_SetAppStatus(tcpClient);
+    CMD_GetVideoDevStatus(tcpClient);
+    CMD_GetPclkHtsVts(tcpClient);
+    CMD_GetSetParam(tcpClient);
+    CMD_DoCapture(tcpClient);
+    CMD_DoSumCheck(tcpClient);
 }
 
 int main(int argc, char* argv[]) {
@@ -261,8 +261,8 @@ int main(int argc, char* argv[]) {
 
     int msg_id = 0;
     int proc_id = 0;
-    TCPClient tcp;
-    tcp.Setup(argv[1], SERVER_PORT);
+    TCPClient tcpClient;
+    tcpClient.Setup(argv[1], SERVER_PORT);
     msg_id = atoi(argv[2]);
 
     if(argc == 5) {
@@ -276,10 +276,10 @@ int main(int argc, char* argv[]) {
 
     switch(msg_id) {
         case CHECK_DEVICE_STATUS:
-            CMD_CheckStatus(tcp);
+            CMD_CheckStatus(tcpClient);
             break;
         case RAW_CAPTURE:
-            CMD_CaptureRaw(tcp);
+            CMD_CaptureRaw(tcpClient);
             break;
         default:
             break;

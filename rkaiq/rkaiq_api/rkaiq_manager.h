@@ -22,8 +22,7 @@
 
 class RKAiqToolManager {
     public:
-        RKAiqToolManager() = delete;
-        RKAiqToolManager(std::string iqfiles_path, std::string sensor_name);
+        RKAiqToolManager();
         virtual ~RKAiqToolManager();
         int AeIoCtrl(int id, void* data, int size);
         int ImgProcIoCtrl(int id, void* data, int size);
@@ -44,7 +43,6 @@ class RKAiqToolManager {
     private:
         std::string iqfiles_path_;
         std::string sensor_name_;
-        rk_aiq_sys_ctx_t* ctx_;
         std::thread* rkaiq_engine_thread_;
         static int thread_quit_;
         std::unique_ptr<RKAiqEngine> engine_;

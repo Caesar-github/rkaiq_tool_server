@@ -5,72 +5,65 @@
 #endif
 #define LOG_TAG "rkaiq_ae.cpp"
 
-RKAiqToolAE::RKAiqToolAE(rk_aiq_sys_ctx_t* ctx) : ctx_(ctx) {}
-
+RKAiqToolAE::RKAiqToolAE() {}
 RKAiqToolAE::~RKAiqToolAE() {}
 
-int RKAiqToolAE::setExpSwAttr(const Uapi_ExpSwAttr_t expSwAttr) {
-    return rk_aiq_user_api_ae_setExpSwAttr(ctx_, expSwAttr);
+int RKAiqToolAE::queryExpResInfo(Uapi_ExpQueryInfo_t* pExpResInfo, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pExpResInfo, sizeof(Uapi_ExpQueryInfo_t));
 }
 
-int RKAiqToolAE::getExpSwAttr(Uapi_ExpSwAttr_t* pExpSwAttr) {
-    return rk_aiq_user_api_ae_getExpSwAttr(ctx_, pExpSwAttr);
+int RKAiqToolAE::setExpSwAttr(const Uapi_ExpSwAttr_t expSwAttr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)(&expSwAttr), sizeof(Uapi_ExpSwAttr_t));
 }
 
-int RKAiqToolAE::setLinAeDayRouteAttr(
-    const Uapi_LinAeRouteAttr_t linAeRouteAttr) {
-    return rk_aiq_user_api_ae_setLinAeDayRouteAttr(ctx_, linAeRouteAttr);
+int RKAiqToolAE::getExpSwAttr(Uapi_ExpSwAttr_t* pExpSwAttr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pExpSwAttr, sizeof(Uapi_ExpSwAttr_t));
 }
 
-int RKAiqToolAE::getLinAeDayRouteAttr(Uapi_LinAeRouteAttr_t* pLinAeRouteAttr) {
-    return rk_aiq_user_api_ae_getLinAeDayRouteAttr(ctx_, pLinAeRouteAttr);
+int RKAiqToolAE::setLinAeDayRouteAttr(const Uapi_LinAeRouteAttr_t linAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)(&linAeRouteAttr), sizeof(Uapi_LinAeRouteAttr_t));
 }
 
-int RKAiqToolAE::setLinAeNightRouteAttr(
-    const Uapi_LinAeRouteAttr_t linAeRouteAttr) {
-    return rk_aiq_user_api_ae_setLinAeNightRouteAttr(ctx_, linAeRouteAttr);
+int RKAiqToolAE::getLinAeDayRouteAttr(Uapi_LinAeRouteAttr_t* pLinAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pLinAeRouteAttr, sizeof(Uapi_LinAeRouteAttr_t));
 }
 
-int RKAiqToolAE::getLinAeNightRouteAttr(
-    Uapi_LinAeRouteAttr_t* pLinAeRouteAttr) {
-    return rk_aiq_user_api_ae_getLinAeNightRouteAttr(ctx_, pLinAeRouteAttr);
+int RKAiqToolAE::setLinAeNightRouteAttr(const Uapi_LinAeRouteAttr_t linAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)(&linAeRouteAttr), sizeof(Uapi_LinAeRouteAttr_t));
 }
 
-int RKAiqToolAE::setHdrAeDayRouteAttr(
-    const Uapi_HdrAeRouteAttr_t hdrAeRouteAttr) {
-    return rk_aiq_user_api_ae_setHdrAeDayRouteAttr(ctx_, hdrAeRouteAttr);
+int RKAiqToolAE::getLinAeNightRouteAttr(Uapi_LinAeRouteAttr_t* pLinAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pLinAeRouteAttr, sizeof(Uapi_LinAeRouteAttr_t));
 }
 
-int RKAiqToolAE::getHdrAeDayRouteAttr(Uapi_HdrAeRouteAttr_t* pHdrAeRouteAttr) {
-    return rk_aiq_user_api_ae_getHdrAeDayRouteAttr(ctx_, pHdrAeRouteAttr);
+int RKAiqToolAE::setHdrAeDayRouteAttr(const Uapi_HdrAeRouteAttr_t hdrAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)(&hdrAeRouteAttr), sizeof(Uapi_HdrAeRouteAttr_t));
 }
 
-int RKAiqToolAE::setHdrAeNightRouteAttr(
-    const Uapi_HdrAeRouteAttr_t hdrAeRouteAttr) {
-    return rk_aiq_user_api_ae_setHdrAeNightRouteAttr(ctx_, hdrAeRouteAttr);
+int RKAiqToolAE::getHdrAeDayRouteAttr(Uapi_HdrAeRouteAttr_t* pHdrAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pHdrAeRouteAttr, sizeof(Uapi_HdrAeRouteAttr_t));
 }
 
-int RKAiqToolAE::getHdrAeNightRouteAttr(
-    Uapi_HdrAeRouteAttr_t* pHdrAeRouteAttr) {
-    return rk_aiq_user_api_ae_getHdrAeNightRouteAttr(ctx_, pHdrAeRouteAttr);
+int RKAiqToolAE::setHdrAeNightRouteAttr(const Uapi_HdrAeRouteAttr_t hdrAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)(&hdrAeRouteAttr), sizeof(Uapi_HdrAeRouteAttr_t));
 }
 
-int RKAiqToolAE::queryExpResInfo(Uapi_ExpQueryInfo_t* pExpResInfo) {
-    return rk_aiq_user_api_ae_queryExpResInfo(ctx_, pExpResInfo);
+int RKAiqToolAE::getHdrAeNightRouteAttr(Uapi_HdrAeRouteAttr_t* pHdrAeRouteAttr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pHdrAeRouteAttr, sizeof(Uapi_HdrAeRouteAttr_t));
 }
 
-int RKAiqToolAE::setLinExpAttr(const Uapi_LinExpAttr_t linExpAttr) {
-    return rk_aiq_user_api_ae_setLinExpAttr(ctx_, linExpAttr);
+int RKAiqToolAE::setLinExpAttr(const Uapi_LinExpAttr_t linExpAttr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)(&linExpAttr), sizeof(Uapi_LinExpAttr_t));
 }
 
-int RKAiqToolAE::getLinExpAttr(Uapi_LinExpAttr_t* pLinExpAttr) {
-    return rk_aiq_user_api_ae_getLinExpAttr(ctx_, pLinExpAttr);
+int RKAiqToolAE::getLinExpAttr(Uapi_LinExpAttr_t* pLinExpAttr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pLinExpAttr, sizeof(Uapi_LinExpAttr_t));
 }
 
-int RKAiqToolAE::setHdrExpAttr(const Uapi_HdrExpAttr_t hdrExpAttr) {
-    return rk_aiq_user_api_ae_setHdrExpAttr(ctx_, hdrExpAttr);
+int RKAiqToolAE::setHdrExpAttr(const Uapi_HdrExpAttr_t hdrExpAttr, int cmdID) {
+    return RkAiqSocketClientINETSend(cmdID, (void*)(&hdrExpAttr), sizeof(Uapi_HdrExpAttr_t));
 }
 
-int RKAiqToolAE::getHdrExpAttr(Uapi_HdrExpAttr_t* pHdrExpAttr) {
-    return rk_aiq_user_api_ae_getHdrExpAttr(ctx_, pHdrExpAttr);
+int RKAiqToolAE::getHdrExpAttr(Uapi_HdrExpAttr_t* pHdrExpAttr, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)pHdrExpAttr, sizeof(Uapi_HdrExpAttr_t));
 }

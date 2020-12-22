@@ -21,13 +21,9 @@ typedef enum rk_aiq_state_e {
 
 class RKAiqEngine {
     public:
-        RKAiqEngine() = delete;
-        RKAiqEngine(std::string iqfiles_path, std::string sensor_name);
+        RKAiqEngine();
         virtual ~RKAiqEngine();
         static void RKAiqEngineLoop(void* arg);
-        rk_aiq_sys_ctx_t* GetContext() {
-            return ctx_;
-        }
         int InitEngine();
         int InitEngine(int mode);
         int StartEngine();
@@ -38,7 +34,6 @@ class RKAiqEngine {
 
     private:
         std::string iqfiles_path_;
-        rk_aiq_sys_ctx_t* ctx_;
         rk_aiq_working_mode_t mode_;
         std::string sensor_entity_name_;
         int width_;

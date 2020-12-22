@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
     signal(SIGIO, sigterm_handler);
     signal(SIGPIPE, SIG_IGN);
 
-    TCPServer tcp;
-    tcp.Process(atoi(argv[1]));
+    TCPServer tcpServer;
+    tcpServer.Process(atoi(argv[1]));
 
     while(!quit) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));

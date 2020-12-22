@@ -10,16 +10,6 @@
 
 #include "rtsp_server.h"
 
-extern std::string g_encoder;
-extern int g_bps;
-extern int g_gop;
-extern int g_qpMax;
-extern int g_qpMin;
-extern int g_qpInit;
-extern int g_qpStep;
-extern int g_qpMaxi;
-extern int g_qpMini;
-
 static std::shared_ptr<easymedia::Flow> video_cap_flow = nullptr;
 std::shared_ptr<easymedia::Flow> g_video_enc_flow = nullptr;
 std::shared_ptr<easymedia::Flow> g_video_rtsp_flow = nullptr;
@@ -125,31 +115,6 @@ std::string get_video_enc_stream_param(std::string pixel_format,
     PARAM_STRING_APPEND(stream_param, KEY_FPS, "30/0");
     PARAM_STRING_APPEND(stream_param, KEY_FPS_IN, "30/0");
     PARAM_STRING_APPEND_TO(stream_param, KEY_FULL_RANGE, 1);
-    if(g_bps != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_COMPRESS_BITRATE, g_bps);
-    }
-    if(g_gop != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_VIDEO_GOP, g_gop);
-    }
-    if(g_qpMax != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_COMPRESS_QP_MAX, g_qpMax);
-    }
-    if(g_qpMin != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_COMPRESS_QP_MIN, g_qpMin);
-    }
-    if(g_qpInit != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_COMPRESS_QP_INIT, g_qpInit);
-    }
-    if(g_qpStep != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_COMPRESS_QP_STEP, g_qpStep);
-    }
-    if(g_qpMaxi != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_COMPRESS_QP_MAX_I, g_qpMaxi);
-    }
-    if(g_qpMini != -1) {
-        PARAM_STRING_APPEND_TO(stream_param, KEY_COMPRESS_QP_MIN_I, g_qpMini);
-    }
-
     return stream_param;
 }
 
@@ -303,10 +268,6 @@ void deinit_rtsp() {
 int init_rtsp(const char* video_dev, int width, int height, std::string enc_type) {
     int fps = 30;
     std::string yuv_format = IMAGE_NV12;
-    if(g_encoder != "") {
-        enc_type = g_encoder;
-        g_encoder = "";
-    }
     printf("init_rtsp video_dev %s\n", video_dev);
 
     easymedia::REFLECTOR(Flow)::DumpFactories();
