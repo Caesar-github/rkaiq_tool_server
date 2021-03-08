@@ -65,10 +65,26 @@ void RKAiqMedia::GetIsppSubDevs(int id, struct media_device* device,
     media_entity* entity = NULL;
     const char* entity_name = NULL;
     int index = 0;
+    isp_info_t* isp0_info = NULL;
+    isp_info_t* isp1_info = NULL;
     ispp_info_t* ispp_info = NULL;
 
-    for(index = 0; index < MAX_CAM_NUM; index++) {
+    isp0_info = &media_info[0].isp;
+    isp1_info = &media_info[1].isp;
+
+    for(int i = 0; i < MAX_CAM_NUM; i++) {
+        if (!isp0_info->media_dev_path.empty() && 
+            !isp1_info->media_dev_path.empty() &&
+            isp0_info->model_idx > isp1_info->model_idx) {
+            if (i == 0) {
+                index = 1;
+            } else if (i == 1) {
+                index = 0;
+            } else
+                index = i;
+        }
         ispp_info = &media_info[index].ispp;
+
         if(ispp_info->media_dev_path.empty()) {
             break;
         }
