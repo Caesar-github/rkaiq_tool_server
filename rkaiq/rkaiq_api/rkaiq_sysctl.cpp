@@ -24,3 +24,7 @@ int RKAiqToolSysCtl::SetWorkingModeDyn(rk_aiq_working_mode_t mode, int cmdID) {
 int RKAiqToolSysCtl::GetVersionInfo(rk_aiq_ver_info_t* vers, int cmdID) {
     return RkAiqSocketClientINETReceive(cmdID, (void*)vers, sizeof(rk_aiq_ver_info_t));
 }
+
+int RKAiqToolSysCtl::EnumStaticMetas(rk_aiq_static_info_t* static_info, int cmdID) {
+    return RkAiqSocketClientINETReceive(cmdID, (void*)static_info, sizeof(rk_aiq_static_info_t));
+}

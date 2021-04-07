@@ -19,6 +19,8 @@ int g_rtsp_en = 0;
 
 std::string iqfile;
 std::string g_sensor_name;
+std::string g_sensor_name1;
+
 std::shared_ptr<TCPServer> tcpServer;
 std::shared_ptr<RKAiqToolManager> rkaiq_manager;
 std::shared_ptr<RKAiqMedia> rkaiq_media;
@@ -115,12 +117,22 @@ int main(int argc, char** argv) {
     LOG_DEBUG("g_height cmd_parser.get  %d\n", g_height);
     LOG_DEBUG("g_device_id cmd_parser.get  %d\n", g_device_id);
 
-    rkaiq_manager = std::make_shared<RKAiqToolManager>();
+    rkaiq_media = std::make_shared<RKAiqMedia>();
+    rkaiq_media->GetMediaInfo();
 
-    if(g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
-        LOG_INFO("domain connect failed\n");
-        return -1;
+    if (g_device_id  == 0) {
+        if(g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
+            LOG_INFO("domain connect failed\n");
+            return -1;
+        }
+    } else {
+        if(g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
+            LOG_INFO("domain connect failed\n");
+            return -1;
+        }
     }
+
+    rkaiq_manager = std::make_shared<RKAiqToolManager>();
     //g_tcpClient.Send("UNIX.domain connect success,this is test data", 45);
     LOG_INFO("domain connect success\n");
 
