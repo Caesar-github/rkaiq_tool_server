@@ -40,10 +40,12 @@ find_path(RKAIQ_API_INCLUDE_DIR
     HINTS ${CMAKE_FIND_ROOT_PATH}
     PATH_SUFFIXES rkaiq/uAPI)
 include_directories(${RKAIQ_API_INCLUDE_DIR}/)
+include_directories(${RKAIQ_API_INCLUDE_DIR}/..)
 include_directories(${RKAIQ_API_INCLUDE_DIR}/../xcore)
 include_directories(${RKAIQ_API_INCLUDE_DIR}/../common)
 include_directories(${RKAIQ_API_INCLUDE_DIR}/../algos)
 include_directories(${RKAIQ_API_INCLUDE_DIR}/../iq_parser)
+include_directories(${RKAIQ_API_INCLUDE_DIR}/../iq_parser_v2)
 include_directories(${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_api)
 link_libraries(rkaiq)
 add_definitions(-DENABLE_RKAIQ_UAPI)
@@ -54,9 +56,10 @@ option(BUILD_RKMEDIA_INDE "depend on rkmedia library independent" ON)
 if(BUILD_RKMEDIA)
 add_definitions(-DENABLE_RSTP_SERVER)
 if(BUILD_RKMEDIA_INDE)
-include_directories(${PROJECT_SOURCE_DIR}/rkmedia/)
-include_directories(${PROJECT_SOURCE_DIR}/rkmedia/include/)
-include_directories(${PROJECT_SOURCE_DIR}/rkmedia/librkmedia/include/easymedia/)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia/include)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia/librkmedia/include)
+include_directories(${PROJECT_SOURCE_DIR}/rkmedia/librkmedia/include/easymedia)
 add_subdirectory(rkmedia/librkmedia)
 set(RKMEDIA_SOURCE
 	${RKMEDIA_SOURCE}
@@ -71,7 +74,7 @@ pkg_check_modules(PKG_EASYMEDIA QUIET "libeasymedia")
 set(EASYMEDIA_DEFINITIONS ${PKG_EASYMEDIA_CFLAGS_OTHER})
 find_path(EASYMEDIA_INCLUDE_DIR
     NAMES buffer.h
-    HINTS ${PKG_EASYMEDIA_INCLUDEDIR} ${PKG_EASYMEDIA_INCLUDE_DIRS}
+    HINTS ${PKG_EASYMEDIA_INCLUDEDIR} ${PKG_EASYMEDIA_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/rkmedia/include
     PATH_SUFFIXES easymedia)
 include_directories(${PROJECT_SOURCE_DIR}/rkmedia/)
 link_libraries(easymedia)

@@ -3,3 +3,4 @@ build/
 build/*
 lbuild
 .vscode
+output
