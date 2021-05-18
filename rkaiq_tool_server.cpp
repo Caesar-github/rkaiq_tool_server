@@ -98,6 +98,10 @@ static void parse_args(int argc, char** argv) {
     }
 }
 
+#ifdef __ANDROID__
+#define LOCAL_SOCKET_PATH "/dev/socket/camera_tool"
+#endif
+
 int main(int argc, char** argv) {
     LOG_ERROR("#### AIQ tool server 20201222-0933 ####\n");
 
@@ -120,6 +124,12 @@ int main(int argc, char** argv) {
     rkaiq_media = std::make_shared<RKAiqMedia>();
     rkaiq_media->GetMediaInfo();
 
+#ifdef __ANDROID__
+    if(g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
+        LOG_INFO("domain connect failed\n");
+        return -1;
+    }
+#else
     if (g_device_id  == 0) {
         if(g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
             LOG_INFO("domain connect failed\n");
@@ -131,6 +141,7 @@ int main(int argc, char** argv) {
             return -1;
         }
     }
+#endif
 
     rkaiq_manager = std::make_shared<RKAiqToolManager>();
     //g_tcpClient.Send("UNIX.domain connect success,this is test data", 45);
