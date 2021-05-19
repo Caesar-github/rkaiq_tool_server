@@ -23,6 +23,11 @@ class RKAiqProtocol {
         static int DoChangeAppMode(appRunStatus mode);
         static void HandlerTCPMessage(int sockfd, char* buffer, int size);
         static void HandlerCheckDevice(int sockfd, char* buffer, int size);
+        static int MessageForward(int sockfd, char* buffer, int size);
+        static int doMessageForward(int sockfd);
+    private:
+        static bool is_recv_running;
+        static std::shared_ptr<std::thread> forward_thread;
 };
 
 #endif

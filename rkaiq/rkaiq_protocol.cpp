@@ -1,5 +1,6 @@
 #include "rkaiq_protocol.h"
 #include "tcp_client.h"
+#include "domain_tcp_client.h"
 
 #ifdef LOG_TAG
     #undef LOG_TAG
@@ -11,9 +12,13 @@ extern int g_width;
 extern int g_height;
 extern int g_rtsp_en;
 extern int g_device_id;
+extern DomainTCPClient g_tcpClient;
 extern std::string iqfile;
 extern std::string g_sensor_name;
 extern std::shared_ptr<RKAiqMedia> rkaiq_media;
+
+bool RKAiqProtocol::is_recv_running = false;
+std::shared_ptr<std::thread> RKAiqProtocol::forward_thread = nullptr;
 
 static int ProcessExists(const char* process_name) {
     FILE* fp;
@@ -189,5 +194,36 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
 #endif
     } else if(strcmp((char*)common_cmd->RKID, RKID_CHECK) == 0) {
         HandlerCheckDevice(sockfd, buffer, size);
+    } else {
+      MessageForward(sockfd, buffer, size);
     }
 }
+
+int RKAiqProtocol::doMessageForward(int sockfd)
+{
+  is_recv_running = true;
+  while (is_recv_running) {
+    char recv_buffer[MAXPACKETSIZE] = {0};
+    int recv_len = g_tcpClient.Receive(recv_buffer, MAXPACKETSIZE);
+    if (recv_len > 0) {
+      send(sockfd, recv_buffer, recv_len, 0);
+    }
+  }
+
+  return 0;
+}
+
+int RKAiqProtocol::MessageForward(int sockfd, char* buffer, int size)
+{
+  LOG_INFO("[%s]got data:%d!\n", __func__, size);
+  g_tcpClient.Send((char*)buffer, size);
+
+  if (is_recv_running) {
+    return 0;
+  }
+
+  forward_thread = make_shared<thread>(&RKAiqProtocol::doMessageForward, sockfd);
+
+  return 0;
+}
+

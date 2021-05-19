@@ -34,15 +34,19 @@ int TCPServer::Recvieve(int cilent_socket) {
     setsockopt(cilent_socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&interval,
                sizeof(struct timeval));
     while(!quit_) {
-        int length = recv(cilent_socket, buffer, size, 0);
-        LOG_INFO("socket recvieve length: %d\n", length);
-        if(length <= 0) {
-            LOG_ERROR("socket recvieve exit\n");
-            break;
-        }
-        if(callback_) {
-            callback_(cilent_socket, buffer, length);
-        }
+      int length = recv(cilent_socket, buffer, size, 0);
+      LOG_INFO("socket recvieve length: %d\n", length);
+      if (length == 0) {
+        LOG_ERROR("socket recvieve exit\n");
+        break;
+      } else if (length < 0) {
+        LOG_INFO("socket recvieve finished\n");
+        continue;
+      }
+
+      if(callback_) {
+        callback_(cilent_socket, buffer, length);
+      }
     }
     return 0;
 }
