@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#ifndef ANDROID
+#ifndef __ANDROID__
     #include <v4l2subdev.h>
 #endif
 

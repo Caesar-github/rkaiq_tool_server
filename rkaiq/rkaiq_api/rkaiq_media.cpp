@@ -3,7 +3,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "rkaiq_engine.cpp"
+#define LOG_TAG "aiqtool"
 
 extern int g_width;
 extern int g_height;

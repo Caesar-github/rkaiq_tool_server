@@ -1,9 +1,11 @@
 #include "tcp_server.h"
 
+#include <net/if.h>
+
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "tcp_server.cpp"
+#define LOG_TAG "aiqtool"
 
 TCPServer::~TCPServer() {
     for(auto &iter : recv_threads_) {
@@ -37,10 +39,10 @@ int TCPServer::Recvieve(int cilent_socket) {
       int length = recv(cilent_socket, buffer, size, 0);
       LOG_INFO("socket recvieve length: %d\n", length);
       if (length == 0) {
-        LOG_ERROR("socket recvieve exit\n");
+        LOG_INFO("socket recvieve exit\n");
         break;
       } else if (length < 0) {
-        LOG_INFO("socket recvieve finished\n");
+        LOG_INFO("socket recvieve failed\n");
         continue;
       }
 
@@ -66,7 +68,7 @@ void TCPServer::Accepted() {
             }
             continue;
         }
-        LOG_INFO("socket accept ip %s\n", inet_ntoa(clientAddress.sin_addr));
+        LOG_DEBUG("socket accept ip %s\n", inet_ntoa(clientAddress.sin_addr));
 
         std::shared_ptr<std::thread> recv_thread;
         recv_thread =
@@ -74,7 +76,7 @@ void TCPServer::Accepted() {
         recv_thread->join();
         recv_thread = nullptr;
         close(cilent_socket);
-        LOG_INFO("socket accept close\n");
+        LOG_DEBUG("socket accept close\n");
     }
     LOG_INFO("socket accept exit\n");
 }
@@ -83,6 +85,20 @@ int TCPServer::Process(int port) {
     LOG_INFO("TCPServer::Process\n");
     int opt = 1;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        LOG_ERROR("Failed to create socket with tunner");
+        exit(EXIT_FAILURE);
+    }
+
+#if 0
+    struct ifreq nif;
+    const char *inface = "usb0";
+    strncpy(nif.ifr_name, inface, IFNAMSIZ);
+    if (setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, (char *)&nif, sizeof(nif)) < 0) {
+        LOG_ERROR("Failed to bind to device %s", inface);
+        exit(EXIT_FAILURE);
+    }
+#endif
     memset(&serverAddress, 0, sizeof(serverAddress));
     if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
                   sizeof(opt))) {

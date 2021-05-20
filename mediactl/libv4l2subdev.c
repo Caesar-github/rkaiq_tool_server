@@ -976,7 +976,7 @@ static struct {
     {"470bg", V4L2_COLORSPACE_470_SYSTEM_BG},
     {"jpeg", V4L2_COLORSPACE_JPEG},
     {"srgb", V4L2_COLORSPACE_SRGB},
-#ifdef ANDROID
+#ifdef __ANDROID__
     {"oprgb", V4L2_COLORSPACE_ADOBERGB},
 #else
     {"oprgb", V4L2_COLORSPACE_OPRGB},
@@ -1016,7 +1016,7 @@ static struct {
     {"default", V4L2_XFER_FUNC_DEFAULT},
     {"709", V4L2_XFER_FUNC_709},
     {"srgb", V4L2_XFER_FUNC_SRGB},
-#ifdef ANDROID
+#ifdef __ANDROID__
     {"oprgb", V4L2_XFER_FUNC_ADOBERGB},
 #else
     {"oprgb", V4L2_XFER_FUNC_OPRGB},

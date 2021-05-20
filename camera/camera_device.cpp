@@ -3,7 +3,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "camera_device.cpp"
+#define LOG_TAG "aiqtool"
 
 void device_close(int dev_fd) {
     if(-1 == close(dev_fd)) {

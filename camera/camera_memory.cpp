@@ -3,7 +3,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "camera_memory.cpp"
+#define LOG_TAG "aiqtool"
 
 void errno_debug(const char* s) {
     LOG_ERROR("%s error %d, %s\n", s, errno, strerror(errno));

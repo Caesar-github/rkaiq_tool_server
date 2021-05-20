@@ -3,7 +3,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "tcp_client.cpp"
+#define LOG_TAG "aiqtool"
 
 TCPClient::TCPClient() {
     sock = -1;

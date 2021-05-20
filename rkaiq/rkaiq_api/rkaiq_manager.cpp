@@ -7,7 +7,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "rkaiq_manager.cpp"
+#define LOG_TAG "aiqtool"
 
 extern int g_device_id;
 extern int g_width;

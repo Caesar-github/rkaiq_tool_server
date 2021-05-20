@@ -1,3 +1,3 @@
 #include "logger/log.h"
 
-int log_level = 4;
+int log_level = 0;

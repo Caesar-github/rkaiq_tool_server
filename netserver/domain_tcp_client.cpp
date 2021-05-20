@@ -10,7 +10,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "domain_tcp_client.cpp"
+#define LOG_TAG "aiqtool"
 
 #ifdef __ANDROID__
 #define ANDROID_RESERVED_SOCKET_PREFIX "/dev/socket/"

@@ -3,7 +3,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "rkaiq_anr.cpp"
+#define LOG_TAG "aiqtool"
 
 RKAiqToolANR::RKAiqToolANR() {}
 

@@ -3,7 +3,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "camera_capture.cpp"
+#define LOG_TAG "aiqtool"
 
 void process_image(struct capture_info* cap_info, const void* p, int size) {
     static int image_index = 0;

@@ -3,6 +3,8 @@
 
 #include "domain_tcp_client.h"
 
+#define LOG_TAG "aiqtool"
+
 #define MAX_PACKET_SIZE 8192
 
 extern DomainTCPClient g_tcpClient;

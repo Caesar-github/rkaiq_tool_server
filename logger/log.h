@@ -7,8 +7,8 @@
 
 #include <chrono>
 
-#ifdef ANDROID
-    #include <log/log.h>
+#ifdef __ANDROID__
+#include <log/log.h>
 #endif
 
 extern int log_level;
@@ -19,64 +19,63 @@ extern int log_level;
 #define LOG_LEVEL_DEBUG 3
 
 #ifndef LOG_TAG
-    #define LOG_TAG ""
-#endif // LOG_TAG
-#ifdef ANDROID
+#define LOG_TAG "aiqtool"
+#endif  // LOG_TAG
+
+#define __BI_FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+
+#ifdef __ANDROID__
 #define LOG_INFO(format, ...)                                                  \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_INFO)                                            \
-            break;                                                                   \
-        ALOGI(format, ##__VA_ARGS__);                                              \
+    do {                                                                       \
+        if (log_level < LOG_LEVEL_INFO) break;                                 \
+        ALOGI("%s:%d - " format "", __BI_FILENAME__, __LINE__, ##__VA_ARGS__); \
     } while (0)
 
 #define LOG_WARN(format, ...)                                                  \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_WARN)                                            \
-            break;                                                                   \
-        ALOGW(format, ##__VA_ARGS__);                                              \
+    do {                                                                       \
+        if (log_level < LOG_LEVEL_WARN) break;                                 \
+        ALOGW("%s:%d - " format "", __BI_FILENAME__, __LINE__, ##__VA_ARGS__); \
     } while (0)
 
 #define LOG_ERROR(format, ...)                                                 \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_ERROR)                                           \
-            break;                                                                   \
-        ALOGE(format, ##__VA_ARGS__);                                              \
+    do {                                                                       \
+        if (log_level < LOG_LEVEL_ERROR) break;                                \
+        ALOGE("%s:%d - " format "", __BI_FILENAME__, __LINE__, ##__VA_ARGS__); \
     } while (0)
 
 #define LOG_DEBUG(format, ...)                                                 \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_DEBUG)                                           \
-            break;                                                                   \
-        ALOGD(format, ##__VA_ARGS__);                                              \
+    do {                                                                       \
+        if (log_level < LOG_LEVEL_DEBUG) break;                                \
+        ALOGD("%s:%d - " format "", __BI_FILENAME__, __LINE__, ##__VA_ARGS__); \
     } while (0)
 #else
 
-#define LOG_INFO(format, ...)                                                  \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_INFO)                                            \
-            break;                                                                   \
-        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, ##__VA_ARGS__); \
+#define LOG_INFO(format, ...)                                      \
+    do {                                                           \
+        if (log_level < LOG_LEVEL_INFO) break;                     \
+        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, \
+                ##__VA_ARGS__);                                    \
     } while (0)
 
-#define LOG_WARN(format, ...)                                                  \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_WARN)                                            \
-            break;                                                                   \
-        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, ##__VA_ARGS__); \
+#define LOG_WARN(format, ...)                                      \
+    do {                                                           \
+        if (log_level < LOG_LEVEL_WARN) break;                     \
+        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, \
+                ##__VA_ARGS__);                                    \
     } while (0)
 
-#define LOG_ERROR(format, ...)                                                 \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_ERROR)                                           \
-            break;                                                                   \
-        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, ##__VA_ARGS__); \
+#define LOG_ERROR(format, ...)                                     \
+    do {                                                           \
+        if (log_level < LOG_LEVEL_ERROR) break;                    \
+        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, \
+                ##__VA_ARGS__);                                    \
     } while (0)
 
-#define LOG_DEBUG(format, ...)                                                 \
-    do {                                                                         \
-        if (log_level < LOG_LEVEL_DEBUG)                                           \
-            break;                                                                   \
-        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, ##__VA_ARGS__); \
+#define LOG_DEBUG(format, ...)                                     \
+    do {                                                           \
+        if (log_level < LOG_LEVEL_DEBUG) break;                    \
+        fprintf(stderr, "[%s][%s]:" format, LOG_TAG, __FUNCTION__, \
+                ##__VA_ARGS__);                                    \
     } while (0)
 
 #endif
@@ -89,25 +88,19 @@ inline int64_t gettimeofday() {
 }
 
 class AutoDuration {
-    public:
-        AutoDuration() {
-            Reset();
-        }
-        int64_t Get() {
-            return gettimeofday() - start;
-        }
-        void Reset() {
-            start = gettimeofday();
-        }
-        int64_t GetAndReset() {
-            int64_t now = gettimeofday();
-            int64_t pretime = start;
-            start = now;
-            return now - pretime;
-        }
+   public:
+    AutoDuration() { Reset(); }
+    int64_t Get() { return gettimeofday() - start; }
+    void Reset() { start = gettimeofday(); }
+    int64_t GetAndReset() {
+        int64_t now = gettimeofday();
+        int64_t pretime = start;
+        start = now;
+        return now - pretime;
+    }
 
-    private:
-        int64_t start;
+   private:
+    int64_t start;
 };
 
 #endif

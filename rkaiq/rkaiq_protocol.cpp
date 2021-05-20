@@ -5,7 +5,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "rkaiq_protocol.cpp"
+#define LOG_TAG "aiqtool"
 
 extern int g_app_run_mode;
 extern int g_width;
@@ -75,7 +75,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     }
     if(mode == APP_RUN_STATUS_CAPTURE) {
         LOG_INFO("Switch to APP_RUN_STATUS_CAPTURE\n");
-#ifndef ANDROID
+#ifndef __ANDROID__
         if(g_rtsp_en) {
             deinit_rtsp();
         }
@@ -89,7 +89,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
         rkaiq_media->LinkToIsp(true);
         rkaiq_manager = std::make_shared<RKAiqToolManager>();
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-#ifndef ANDROID
+#ifndef __ANDROID__
         if(g_rtsp_en) {
             media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
             init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
@@ -189,7 +189,7 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
         RKAiqRawProtocol::HandlerRawCapMessage(sockfd, buffer, size);
     } else if(strcmp((char*)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
         DoChangeAppMode(APP_RUN_STATUS_TUNRING);
-#ifndef ANDROID
+#ifndef __ANDROID__
         RKAiqOLProtocol::HandlerOnLineMessage(sockfd, buffer, size);
 #endif
     } else if(strcmp((char*)common_cmd->RKID, RKID_CHECK) == 0) {

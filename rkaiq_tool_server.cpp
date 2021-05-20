@@ -6,6 +6,8 @@
 #include <csignal>
 #include <ctime>
 
+#define LOG_TAG "aiqtool"
+
 #define SERVER_PORT 5543
 #define UNIX_DOMAIN "/tmp/UNIX.domain"
 
@@ -90,8 +92,8 @@ static void parse_args(int argc, char** argv) {
         }
     }
     if(iqfile.empty()) {
-#ifdef ANDROID
-        iqfile = "/vendor/etc/camera/rkisp1";
+#ifdef __ANDROID__
+        iqfile = "/vendor/etc/camera/rkisp2";
 #else
         iqfile = "/oem/etc/iqfiles";
 #endif
@@ -126,26 +128,26 @@ int main(int argc, char** argv) {
 
 #ifdef __ANDROID__
     if(g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
-        LOG_INFO("domain connect failed\n");
+        LOG_ERROR("domain connect failed\n");
         return -1;
     }
 #else
     if (g_device_id  == 0) {
         if(g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
-            LOG_INFO("domain connect failed\n");
+            LOG_ERROR("domain connect failed\n");
             return -1;
         }
     } else {
         if(g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
-            LOG_INFO("domain connect failed\n");
+            LOG_ERROR("domain connect failed\n");
             return -1;
         }
     }
 #endif
 
-    rkaiq_manager = std::make_shared<RKAiqToolManager>();
+    //rkaiq_manager = std::make_shared<RKAiqToolManager>();
     //g_tcpClient.Send("UNIX.domain connect success,this is test data", 45);
-    LOG_INFO("domain connect success\n");
+    LOG_DEBUG("domain connect success\n");
 
     tcpServer = std::make_shared<TCPServer>();
     tcpServer->RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);

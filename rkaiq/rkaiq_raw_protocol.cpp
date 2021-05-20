@@ -4,7 +4,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "rkaiq_raw_protocol.cpp"
+#define LOG_TAG "aiqtool"
 
 static int capture_status = READY;
 static int capture_mode = CAPTURE_NORMAL;

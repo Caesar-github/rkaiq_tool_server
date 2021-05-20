@@ -3,7 +3,7 @@
 #ifdef LOG_TAG
     #undef LOG_TAG
 #endif
-#define LOG_TAG "camera_infohw.cpp"
+#define LOG_TAG "aiqtool"
 
 __u32 convert_to_v4l2fmt(struct capture_info* media_info, int code) {
     __u32 v4l2_fmt = 0;
