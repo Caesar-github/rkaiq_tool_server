@@ -23,9 +23,8 @@
 #define __TOOLS_H__
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
-#define FIELD_SIZEOF(t, f) (sizeof(((t *)0)->f))
+#define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
 
-void media_print_streampos(struct media_device* media, const char* p,
-                           const char* end);
+void media_print_streampos(struct media_device* media, const char* p, const char* end);
 
 #endif /* __TOOLS_H__ */

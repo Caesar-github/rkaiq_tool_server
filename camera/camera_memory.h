@@ -2,19 +2,17 @@
 #define _CAMERA_MEMORY_H_
 
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <getopt.h> /* getopt_long() */
-
 #include <errno.h>
-#include <fcntl.h> /* low-level i/o */
+#include <fcntl.h>  /* low-level i/o */
+#include <getopt.h> /* getopt_long() */
 #include <linux/v4l2-controls.h>
 #include <linux/v4l2-subdev.h>
 #include <linux/videodev2.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
@@ -31,67 +29,67 @@
 #define MAX_MEDIA_INDEX 4
 
 enum io_method {
-    IO_METHOD_READ,
-    IO_METHOD_MMAP,
-    IO_METHOD_USERPTR,
+  IO_METHOD_READ,
+  IO_METHOD_MMAP,
+  IO_METHOD_USERPTR,
 };
 
 enum sensor_link {
-    link_to_vicap,
-    link_to_isp,
+  link_to_vicap,
+  link_to_isp,
 };
 
 struct buffer {
-    void* start;
-    size_t length;
-    int socket;
-    unsigned short checksum;
+  void* start;
+  size_t length;
+  int socket;
+  unsigned short checksum;
 };
 
 struct isp_t {
-    char media_dev_path[DEV_PATH_LEN];
-    char isp_main_path[DEV_PATH_LEN];
-    char isp_sd_path[DEV_PATH_LEN];
-    int width;
-    int height;
-    __u32 sd_fmt;
+  char media_dev_path[DEV_PATH_LEN];
+  char isp_main_path[DEV_PATH_LEN];
+  char isp_sd_path[DEV_PATH_LEN];
+  int width;
+  int height;
+  __u32 sd_fmt;
 };
 
 struct vicap_t {
-    char cif_video_path[DEV_PATH_LEN];
-    int width;
-    int height;
-    __u32 sd_fmt;
+  char cif_video_path[DEV_PATH_LEN];
+  int width;
+  int height;
+  __u32 sd_fmt;
 };
 
 struct sensor_t {
-    char device_name[DEV_PATH_LEN];
-    char sensor_name[DEV_PATH_LEN];
-    int width;
-    int height;
-    int bits;
-    __u32 sen_fmt;
+  char device_name[DEV_PATH_LEN];
+  char sensor_name[DEV_PATH_LEN];
+  int width;
+  int height;
+  int bits;
+  __u32 sen_fmt;
 };
 
 struct capture_info {
-    const char* dev_name;
-    int dev_fd;
-    int subdev_fd;
-    enum io_method io;
-    struct buffer* buffers;
-    struct isp_t vd_path;
-    struct vicap_t cif_path;
-    struct sensor_t sd_path;
-    unsigned int n_buffers;
-    __u32 format;
-    int width;
-    int height;
-    int lhcg;
-    enum sensor_link link;
-    enum v4l2_buf_type capture_buf_type;
-    int frame_count;
-    char out_file[255];
-    FILE* out_fp;
+  const char* dev_name;
+  int dev_fd;
+  int subdev_fd;
+  enum io_method io;
+  struct buffer* buffers;
+  struct isp_t vd_path;
+  struct vicap_t cif_path;
+  struct sensor_t sd_path;
+  unsigned int n_buffers;
+  __u32 format;
+  int width;
+  int height;
+  int lhcg;
+  enum sensor_link link;
+  enum v4l2_buf_type capture_buf_type;
+  int frame_count;
+  char out_file[255];
+  FILE* out_fp;
 };
 
 void errno_debug(const char* s);

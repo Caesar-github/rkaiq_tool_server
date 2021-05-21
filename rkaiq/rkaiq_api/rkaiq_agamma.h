@@ -6,12 +6,12 @@
 #include "rkaiq_socket.h"
 
 class RKAiqToolAGamma {
-    public:
-        RKAiqToolAGamma();
-        virtual ~RKAiqToolAGamma();
+ public:
+  RKAiqToolAGamma();
+  virtual ~RKAiqToolAGamma();
 
-        int SetAttrib(const rk_aiq_gamma_attrib_t attr, int cmdID);
-        int GetAttrib(rk_aiq_gamma_attrib_t* attr, int cmdID);
+  int SetAttrib(const rk_aiq_gamma_attrib_t attr, int cmdID);
+  int GetAttrib(rk_aiq_gamma_attrib_t* attr, int cmdID);
 };
 
-#endif // _TOOL_RKAIQ_API_AGAMMA_H_
+#endif  // _TOOL_RKAIQ_API_AGAMMA_H_
