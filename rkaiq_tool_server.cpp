@@ -5,6 +5,9 @@
 #include "domain_tcp_client.h"
 #include <csignal>
 #include <ctime>
+#ifdef __ANDROID__
+#include <cutils/properties.h>>
+#endif
 
 #define LOG_TAG "aiqtool"
 
@@ -114,7 +117,13 @@ int main(int argc, char** argv) {
     signal(SIGIO, sigterm_handler);
     signal(SIGPIPE, sigterm_handler);
 
+#ifdef __ANDROID__
+    char property_value[PROPERTY_VALUE_MAX] = {0};
+    property_get("persist.vendor.aiqtool.log", property_value, "0");
+    log_level = strtoull(property_value, nullptr, 16);
+#else
     get_env("rkaiq_tool_server_log_level", &log_level, 0);
+#endif
 
     parse_args(argc, argv);
     LOG_DEBUG("iqfile cmd_parser.get  %s\n", iqfile.c_str());
