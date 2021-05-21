@@ -1,5 +1,5 @@
 cc_defaults {
-    name: "aiqserver_default_flags",
+    name: "rkaiq_tool_server_default_flags",
 
 	vendor: true,
     proprietary: true,
@@ -47,7 +47,7 @@ cc_defaults {
 }
 
 cc_defaults {
-    name: "aiqserver_default_libs",
+    name: "rkaiq_tool_server_default_libs",
 
     static_libs: [
     ],
@@ -146,8 +146,8 @@ cc_prebuilt_library_static {
 cc_library_static {
     name: "librkmedia",
     defaults: [
-        "aiqserver_default_flags",
-        "aiqserver_default_libs",
+        "rkaiq_tool_server_default_flags",
+        "rkaiq_tool_server_default_libs",
     ],
     cflags: [
         "-DHAVE_LIBV4L2",
@@ -187,10 +187,10 @@ cc_library_static {
 }
 
 cc_binary {
-    name: "aiqserver",
+    name: "rkaiq_tool_server",
     defaults: [
-        "aiqserver_default_flags",
-        "aiqserver_default_libs",
+        "rkaiq_tool_server_default_flags",
+        "rkaiq_tool_server_default_libs",
     ],
 
     srcs: [
