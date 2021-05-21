@@ -3,26 +3,13 @@
 #include <net/if.h>
 
 #ifdef LOG_TAG
-    #undef LOG_TAG
+#undef LOG_TAG
 #endif
 #define LOG_TAG "aiqtool"
 
-TCPServer::~TCPServer() {
-    for(auto &iter : recv_threads_) {
-        iter->join();
-        iter = nullptr;
-    }
-    recv_threads_.clear();
-    for(auto &iter : accept_threads_) {
-        iter->join();
-        iter = nullptr;
-    }
-    accept_threads_.clear();
-}
+TCPServer::~TCPServer() {}
 
-void TCPServer::SaveExit() {
-    quit_ = 1;
-}
+void TCPServer::SaveExit() { quit_ = 1; }
 
 int TCPServer::Send(int cilent_socket, char* buff, int size) {
     return send(cilent_socket, buff, size, 0);
@@ -35,20 +22,20 @@ int TCPServer::Recvieve(int cilent_socket) {
     struct timeval interval = {3, 0};
     setsockopt(cilent_socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&interval,
                sizeof(struct timeval));
-    while(!quit_) {
-      int length = recv(cilent_socket, buffer, size, 0);
-      LOG_INFO("socket recvieve length: %d\n", length);
-      if (length == 0) {
-        LOG_INFO("socket recvieve exit\n");
-        break;
-      } else if (length < 0) {
-        LOG_INFO("socket recvieve failed\n");
-        continue;
-      }
+    while (!quit_) {
+        int length = recv(cilent_socket, buffer, size, 0);
+        LOG_INFO("socket recvieve length: %d\n", length);
+        if (length == 0) {
+            LOG_INFO("socket recvieve exit\n");
+            break;
+        } else if (length < 0) {
+            LOG_INFO("socket recvieve failed\n");
+            continue;
+        }
 
-      if(callback_) {
-        callback_(cilent_socket, buffer, length);
-      }
+        if (callback_) {
+            callback_(cilent_socket, buffer, length);
+        }
     }
     return 0;
 }
@@ -58,13 +45,15 @@ void TCPServer::Accepted() {
     struct timeval interval = {3, 0};
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&interval,
                sizeof(struct timeval));
-    while(!quit_) {
+    while (!quit_) {
         int cilent_socket;
         socklen_t sosize = sizeof(clientAddress);
-        cilent_socket = accept(sockfd, (struct sockaddr*)&clientAddress, &sosize);
-        if(cilent_socket < 0) {
-            if(errno != EAGAIN) {
-                LOG_ERROR("Error socket accept failed %d %d\n", cilent_socket, errno);
+        cilent_socket =
+            accept(sockfd, (struct sockaddr*)&clientAddress, &sosize);
+        if (cilent_socket < 0) {
+            if (errno != EAGAIN) {
+                LOG_ERROR("Error socket accept failed %d %d\n", cilent_socket,
+                          errno);
             }
             continue;
         }
@@ -90,18 +79,9 @@ int TCPServer::Process(int port) {
         exit(EXIT_FAILURE);
     }
 
-#if 0
-    struct ifreq nif;
-    const char *inface = "usb0";
-    strncpy(nif.ifr_name, inface, IFNAMSIZ);
-    if (setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, (char *)&nif, sizeof(nif)) < 0) {
-        LOG_ERROR("Failed to bind to device %s", inface);
-        exit(EXIT_FAILURE);
-    }
-#endif
     memset(&serverAddress, 0, sizeof(serverAddress));
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
-                  sizeof(opt))) {
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+                   sizeof(opt))) {
         LOG_ERROR("Error setsockopt\n");
         exit(EXIT_FAILURE);
     }
@@ -109,18 +89,19 @@ int TCPServer::Process(int port) {
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(port);
-    if((::bind(sockfd, (struct sockaddr*)&serverAddress,
-               sizeof(serverAddress))) < 0) {
+    if ((::bind(sockfd, (struct sockaddr*)&serverAddress,
+                sizeof(serverAddress))) < 0) {
         LOG_ERROR("Error bind\n");
         exit(EXIT_FAILURE);
     }
-    if(listen(sockfd, 5) < 0) {
+    if (listen(sockfd, 5) < 0) {
         LOG_ERROR("Error listen\n");
         exit(EXIT_FAILURE);
     }
 
-    std::shared_ptr<std::thread> accept_thread;
-    accept_thread = make_shared<thread>(&TCPServer::Accepted, this);
+    std::unique_ptr<std::thread> accept_thread;
+    accept_thread = std::unique_ptr<std::thread>(
+        new std::thread(&TCPServer::Accepted, this));
     accept_thread->join();
     accept_thread = nullptr;
 
