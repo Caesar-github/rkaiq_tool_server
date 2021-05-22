@@ -17,6 +17,7 @@ typedef enum {
 typedef enum { VIDEO_APP_OFF = 0x80, VIDEO_APP_ON } videoAppStatus;
 
 typedef enum {
+  APP_RUN_STATUS_INIT = -1,
   APP_RUN_STATUS_TUNRING = 0,
   APP_RUN_STATUS_CAPTURE = 1,
 } appRunStatus;

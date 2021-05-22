@@ -1,11 +1,11 @@
 #include "rkaiq_raw_protocol.h"
 
 #include "multiframe_process.h"
+#include "rkaiq_protocol.h"
 
-#ifdef LOG_TAG
-#undef LOG_TAG
-#endif
+#ifndef LOG_TAG
 #define LOG_TAG "aiqtool"
+#endif
 
 static int capture_status = READY;
 static int capture_mode = CAPTURE_NORMAL;

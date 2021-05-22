@@ -11,6 +11,11 @@
 #include <string>
 
 #include "logger/log.h"
+
+#ifdef __ANDROID__
+#define LOCAL_SOCKET_PATH "/dev/socket/camera_tool"
+#endif
+
 using namespace std;
 
 class DomainTCPClient {

@@ -1,5 +1,9 @@
 #include "rkaiq_protocol.h"
 
+#ifdef __ANDROID__
+#include <cutils/properties.h>
+#endif
+
 #include "domain_tcp_client.h"
 #include "tcp_client.h"
 
@@ -74,11 +78,20 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     return 0;
   }
   if (mode == APP_RUN_STATUS_CAPTURE) {
-    LOG_INFO("Switch to APP_RUN_STATUS_CAPTURE\n");
+    LOG_DEBUG("Switch to APP_RUN_STATUS_CAPTURE\n");
 #ifndef __ANDROID__
     if (g_rtsp_en) {
       deinit_rtsp();
     }
+#endif
+#ifdef __ANDROID__
+    unlink(LOCAL_SOCKET_PATH);
+    property_set("ctrl.stop", "cameraserver");
+    property_set("ctrl.stop", "vendor.camera-provider-2-4");
+    property_set("ctrl.stop", "vendor.camera-provider-2-4-ext");
+    system("stop cameraserver");
+    system("stop vendor.camera-provider-2-4");
+    system("stop vendor.camera-provider-2-4-ext");
 #endif
 #if 0
     rkaiq_manager.reset();
@@ -87,8 +100,18 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     rkaiq_media->LinkToIsp(false);
   } else {
-    LOG_INFO("Switch to APP_RUN_STATUS_TUNRING\n");
+    LOG_DEBUG("Switch to APP_RUN_STATUS_TUNRING\n");
     rkaiq_media->LinkToIsp(true);
+#ifdef __ANDROID__
+    property_set("ctrl.start", "cameraserver");
+    system("start cameraserver");
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
+      LOG_ERROR("domain connect failed\n");
+      return -1;
+    }
+#endif
+
 #if 0
     rkaiq_manager = std::make_shared<RKAiqToolManager>();
 #endif
@@ -198,6 +221,7 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
   } else if (strcmp((char*)common_cmd->RKID, RKID_CHECK) == 0) {
     HandlerCheckDevice(sockfd, buffer, size);
   } else {
+    DoChangeAppMode(APP_RUN_STATUS_TUNRING);
     MessageForward(sockfd, buffer, size);
   }
 }

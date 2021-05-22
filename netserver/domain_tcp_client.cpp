@@ -50,6 +50,9 @@ DomainTCPClient::~DomainTCPClient() {
 
 bool DomainTCPClient::Setup(string domainPath) {
 #ifdef __ANDROID__
+  if (sock > 0) {
+    close(sock);
+  }
   sock = socket_local_client(android::base::Basename(domainPath), SOCK_STREAM);
   if (sock < 0) {
     LOG_ERROR("Could not create domain socket %s\n", strerror(errno));
@@ -71,12 +74,16 @@ bool DomainTCPClient::Setup(string domainPath) {
 
   if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
     LOG_ERROR("connect domain server failed. Error");
+    close(sock);
+    sock = -1;
     return false;
   }
 #endif
   struct ucred rcred, scred;
   socklen_t len = sizeof(struct ucred);
   if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, &scred, &len) == -1) {
+      close(sock);
+      sock = -1;
       LOG_ERROR("getsockopt");
   }
 
