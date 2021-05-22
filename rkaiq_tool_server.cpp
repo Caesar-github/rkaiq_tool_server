@@ -29,7 +29,9 @@ std::string g_sensor_name;
 std::string g_sensor_name1;
 
 std::shared_ptr<TCPServer> tcpServer;
+#if 0
 std::shared_ptr<RKAiqToolManager> rkaiq_manager;
+#endif
 std::shared_ptr<RKAiqMedia> rkaiq_media;
 
 void sigterm_handler(int sig) {
@@ -154,7 +156,6 @@ int main(int argc, char** argv) {
   }
 #endif
 
-  // rkaiq_manager = std::make_shared<RKAiqToolManager>();
   // g_tcpClient.Send("UNIX.domain connect success,this is test data", 45);
   LOG_DEBUG("domain connect success\n");
 
@@ -166,7 +167,9 @@ int main(int argc, char** argv) {
   }
   tcpServer->SaveExit();
 
+#if 0
   rkaiq_manager.reset();
   rkaiq_manager = nullptr;
+#endif
   return 0;
 }

@@ -81,14 +81,18 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       deinit_rtsp();
     }
 #endif
+#if 0
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;
+#endif
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     rkaiq_media->LinkToIsp(false);
   } else {
     LOG_INFO("Switch to APP_RUN_STATUS_TUNRING\n");
     rkaiq_media->LinkToIsp(true);
+#if 0
     rkaiq_manager = std::make_shared<RKAiqToolManager>();
+#endif
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifndef __ANDROID__
     if (g_rtsp_en) {
