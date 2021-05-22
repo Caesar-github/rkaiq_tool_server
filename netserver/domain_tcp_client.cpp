@@ -74,6 +74,14 @@ bool DomainTCPClient::Setup(string domainPath) {
     return false;
   }
 #endif
+  struct ucred rcred, scred;
+  socklen_t len = sizeof(struct ucred);
+  if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, &scred, &len) == -1) {
+      LOG_ERROR("getsockopt");
+  }
+
+  LOG_DEBUG("Credentials from SO_PEERCRED: pid=%ld, euid=%ld, egid=%ld\n",
+         (long) scred.pid, (long) scred.uid, (long) scred.gid);
   return true;
 }
 
