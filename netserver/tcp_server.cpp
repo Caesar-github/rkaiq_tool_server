@@ -24,9 +24,11 @@ int TCPServer::Recvieve(int cilent_socket) {
     if (length == 0) {
       LOG_INFO("socket recvieve exit\n");
       break;
-    } else if (length < 0) {
+    } else if (length < 0 && errno == EAGAIN) {
       //LOG_INFO("socket recvieve failed\n");
       continue;
+    } else if (length < 0) {
+      break;
     }
     LOG_INFO("socket recvieve length: %d\n", length);
 
@@ -34,6 +36,7 @@ int TCPServer::Recvieve(int cilent_socket) {
       callback_(cilent_socket, buffer, length);
     }
   }
+  close(cilent_socket);
   return 0;
 }
 
@@ -55,9 +58,10 @@ void TCPServer::Accepted() {
 
     std::shared_ptr<std::thread> recv_thread;
     recv_thread = make_shared<thread>(&TCPServer::Recvieve, this, cilent_socket);
-    recv_thread->join();
-    recv_thread = nullptr;
-    close(cilent_socket);
+    recv_thread->detach();
+    //recv_thread->join();
+    //recv_thread = nullptr;
+    //close(cilent_socket);
     LOG_DEBUG("socket accept close\n");
   }
   LOG_INFO("socket accept exit\n");
