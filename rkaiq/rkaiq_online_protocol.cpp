@@ -119,9 +119,11 @@ static void OnLineSet(int sockfd, CommandData_t* cmd, uint16_t& check_sum, uint3
   }
 
   LOG_INFO("DO Sycn Setting, CmdId: 0x%x, expect ParamSize %d\n", cmd->cmdID, param_size);
+#if 0
   if (rkaiq_manager) {
     result = rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
   }
+#endif
   if (param != NULL) {
     free(param);
   }
@@ -140,6 +142,7 @@ static int OnLineGet(int sockfd, CommandData_t* cmd) {
   uint8_t* param = (uint8_t*)malloc(param_size);
 
   LOG_INFO("DO Get Setting, CmdId: 0x%x, expect ParamSize %d\n", cmd->cmdID, param_size);
+#if 0
   if (rkaiq_manager) {
     ioRet = rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
     if (ioRet != 0) {
@@ -147,6 +150,7 @@ static int OnLineGet(int sockfd, CommandData_t* cmd) {
       return 1;
     }
   }
+#endif
 
   while (remain_size > 0) {
     int offset = param_size - remain_size;

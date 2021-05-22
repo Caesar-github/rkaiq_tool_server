@@ -17,7 +17,13 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 aux_source_directory(${PROJECT_SOURCE_DIR}/logger/ LOGGER_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/netserver NET_SERVER_SOURCE)
-aux_source_directory(${PROJECT_SOURCE_DIR}/rkaiq RKAIQ_SOURCE)
+set(RKAIQ_SOURCE
+    ${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_api/rkaiq_media.cpp
+    ${PROJECT_SOURCE_DIR}/rkaiq/multiframe_process.cpp
+    ${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_online_protocol.cpp
+    ${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_raw_protocol.cpp
+    ${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_protocol.cpp
+    )
 aux_source_directory(${PROJECT_SOURCE_DIR}/camera/ CAMERA_SOURCE)
 aux_source_directory(${PROJECT_SOURCE_DIR}/mediactl/ MEDIACTL_SOURCE)
 

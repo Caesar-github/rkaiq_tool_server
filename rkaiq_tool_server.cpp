@@ -17,7 +17,7 @@
 #define UNIX_DOMAIN "/tmp/UNIX.domain"
 
 DomainTCPClient g_tcpClient;
-std::atomic_bool quit = false;
+std::atomic_bool quit{false};
 int g_app_run_mode = APP_RUN_STATUS_INIT;
 int g_width = 1920;
 int g_height = 1080;

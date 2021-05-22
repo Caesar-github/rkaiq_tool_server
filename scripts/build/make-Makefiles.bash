@@ -2,8 +2,8 @@
 
 export TOPDIR=$(pwd)
 export CURDIR=$TOPDIR/scripts/build
-#Qexport AIQ_BUILD_HOST_DIR=/home/camera/camera/rv1109_sdk/buildroot/output/rockchip_rv1126_rv1109/host
-export AIQ_BUILD_HOST_DIR=/work/linux/rv1109/src/buildroot/output/rockchip_rv1126_rv1109/host
+export AIQ_BUILD_HOST_DIR=/home/camera/camera/rv1109_sdk/buildroot/output/rockchip_rv1126_rv1109/host
+#export AIQ_BUILD_HOST_DIR=/work/linux/rv1109/src/buildroot/output/rockchip_rv1126_rv1109/host
 TOOLCHAIN_FILE=$CURDIR/arm_linux_buildroot.cmake
 #TOOLCHAIN_FILE=$AIQ_BUILD_HOST_DIR/share/buildroot/toolchainfile.cmake
 export OUTPUT=$TOPDIR/output/arm

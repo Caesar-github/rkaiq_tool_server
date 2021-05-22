@@ -59,9 +59,9 @@ void TCPServer::Accepted() {
     std::shared_ptr<std::thread> recv_thread;
     recv_thread = make_shared<thread>(&TCPServer::Recvieve, this, cilent_socket);
     recv_thread->detach();
-    //recv_thread->join();
-    //recv_thread = nullptr;
-    //close(cilent_socket);
+    // recv_thread->join();
+    // recv_thread = nullptr;
+    // close(cilent_socket);
     LOG_DEBUG("socket accept close\n");
   }
   LOG_INFO("socket accept exit\n");
