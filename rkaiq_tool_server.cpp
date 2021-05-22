@@ -13,9 +13,6 @@
 
 #define LOG_TAG "aiqtool"
 
-#define SERVER_PORT 5543
-#define UNIX_DOMAIN "/tmp/UNIX.domain"
-
 DomainTCPClient g_tcpClient;
 std::atomic_bool quit{false};
 int g_app_run_mode = APP_RUN_STATUS_INIT;
@@ -134,27 +131,6 @@ int main(int argc, char** argv) {
   rkaiq_media->GetMediaInfo();
 
   RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
-
-#ifdef __ANDROID__
-#if 0
-  if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
-    LOG_ERROR("domain connect failed\n");
-    return -1;
-  }
-#endif
-#else
-  if (g_device_id == 0) {
-    if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
-      LOG_ERROR("domain connect failed\n");
-      return -1;
-    }
-  } else {
-    if (g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
-      LOG_ERROR("domain connect failed\n");
-      return -1;
-    }
-  }
-#endif
 
   // g_tcpClient.Send("UNIX.domain connect success,this is test data", 45);
   LOG_DEBUG("domain connect success\n");

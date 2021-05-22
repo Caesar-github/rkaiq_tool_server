@@ -110,6 +110,18 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       LOG_ERROR("domain connect failed\n");
       return -1;
     }
+#else
+    if (g_device_id == 0) {
+      if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
+        LOG_ERROR("domain connect failed\n");
+        return -1;
+      }
+    } else {
+      if (g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
+        LOG_ERROR("domain connect failed\n");
+        return -1;
+      }
+    }
 #endif
 
 #if 0

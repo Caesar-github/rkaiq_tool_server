@@ -16,6 +16,9 @@
 #define LOCAL_SOCKET_PATH "/dev/socket/camera_tool"
 #endif
 
+#define SERVER_PORT 5543
+#define UNIX_DOMAIN "/tmp/UNIX.domain"
+
 using namespace std;
 
 class DomainTCPClient {
