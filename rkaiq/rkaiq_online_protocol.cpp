@@ -361,32 +361,32 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size) {
       char* datBuf = (char*)(common_cmd->dat);
       switch (datBuf[0]) {
         case DATA_ID_CAPTURE_YUV_STATUS:
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_STATUS in\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_STATUS in\n");
           ReplyStatus(sockfd, &send_cmd, READY);
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_STATUS out\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_STATUS out\n");
           break;
         case DATA_ID_CAPTURE_YUV_GET_PARAM:
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_GET_PARAM in\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_GET_PARAM in\n");
           ReplySensorPara(sockfd, &send_cmd);
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_GET_PARAM out\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_GET_PARAM out\n");
           break;
         case DATA_ID_CAPTURE_YUV_SET_PARAM:
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_SET_PARAM in\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_SET_PARAM in\n");
           SetSensorPara(sockfd, common_cmd, &send_cmd);
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_SET_PARAM out\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_SET_PARAM out\n");
           break;
         case DATA_ID_CAPTURE_YUV_START: {
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_START in\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_START in\n");
           capture_status = BUSY;
           DoCaptureYuv(sockfd);
           capture_status = READY;
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_START out\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_START out\n");
           break;
         }
         case DATA_ID_CAPTURE_YUV_CHECKSUM:
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_CHECKSUM in\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM in\n");
           SendYuvDataResult(sockfd, &send_cmd, common_cmd);
-          LOG_INFO("ProcID DATA_ID_CAPTURE_RAW_CHECKSUM out\n");
+          LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM out\n");
           break;
         default:
           break;

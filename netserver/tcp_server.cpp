@@ -14,21 +14,21 @@ void TCPServer::SaveExit() { quit_ = true; }
 int TCPServer::Send(int cilent_socket, char* buff, int size) { return send(cilent_socket, buff, size, 0); }
 
 int TCPServer::Recvieve(int cilent_socket) {
-  LOG_INFO("TCPServer::Recvieve\n");
+  //LOG_INFO("TCPServer::Recvieve\n");
   char buffer[MAXPACKETSIZE];
   int size = sizeof(buffer);
   struct timeval interval = {3, 0};
   setsockopt(cilent_socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&interval, sizeof(struct timeval));
   while (!quit_) {
     int length = recv(cilent_socket, buffer, size, 0);
-    LOG_INFO("socket recvieve length: %d\n", length);
     if (length == 0) {
       LOG_INFO("socket recvieve exit\n");
       break;
     } else if (length < 0) {
-      LOG_INFO("socket recvieve failed\n");
+      //LOG_INFO("socket recvieve failed\n");
       continue;
     }
+    LOG_INFO("socket recvieve length: %d\n", length);
 
     if (callback_) {
       callback_(cilent_socket, buffer, length);

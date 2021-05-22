@@ -1,11 +1,8 @@
 #include "camera_memory.h"
 
-#ifdef LOG_TAG
-#undef LOG_TAG
-#endif
+#ifndef LOG_TAG
 #define LOG_TAG "aiqtool"
-
-void errno_debug(const char* s) { LOG_ERROR("%s error %d, %s\n", s, errno, strerror(errno)); }
+#endif
 
 int xioctl(int fh, int request, void* arg) {
   int ret;

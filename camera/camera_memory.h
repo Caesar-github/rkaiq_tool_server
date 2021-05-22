@@ -2,7 +2,6 @@
 #define _CAMERA_MEMORY_H_
 
 #include <assert.h>
-#include <errno.h>
 #include <fcntl.h>  /* low-level i/o */
 #include <getopt.h> /* getopt_long() */
 #include <linux/v4l2-controls.h>
@@ -92,7 +91,6 @@ struct capture_info {
   FILE* out_fp;
 };
 
-void errno_debug(const char* s);
 int xioctl(int fh, int request, void* arg);
 void init_read(struct capture_info* cap_info, unsigned int buffer_size);
 void init_mmap(struct capture_info* cap_info);

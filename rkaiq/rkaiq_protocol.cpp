@@ -3,10 +3,9 @@
 #include "domain_tcp_client.h"
 #include "tcp_client.h"
 
-#ifdef LOG_TAG
-#undef LOG_TAG
-#endif
+#ifndef LOG_TAG
 #define LOG_TAG "aiqtool"
+#endif
 
 extern int g_app_run_mode;
 extern int g_width;

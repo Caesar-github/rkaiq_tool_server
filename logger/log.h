@@ -5,6 +5,8 @@
 #ifndef _RK_LOGGER_H_
 #define _RK_LOGGER_H_
 
+#include <errno.h>
+
 #include <chrono>
 
 #ifdef __ANDROID__
@@ -75,6 +77,8 @@ extern int log_level;
   } while (0)
 
 #endif
+
+#define errno_debug(fmt) LOG_ERROR("%s error %d, %s\n", (fmt), errno, strerror(errno))
 
 inline int64_t gettimeofday() {
   std::chrono::microseconds us =

@@ -105,6 +105,9 @@ string DomainTCPClient::Receive(int size) {
   char buffer[size];
   memset(&buffer[0], 0, sizeof(buffer));
   string reply;
+  if (sock < 0) {
+      return "\0";
+  }
   if (recv(sock, buffer, size, 0) < 0) {
     LOG_ERROR("domain receive failed 1!\n", size);
     return "\0";
@@ -116,6 +119,9 @@ string DomainTCPClient::Receive(int size) {
 
 int DomainTCPClient::Receive(char* buff, int size) {
   int ret = -1;
+  if (sock < 0) {
+      return 0;
+  }
   memset(buff, 0, size);
   ret = recv(sock, buff, size, 0);
   if (ret < 0) {
