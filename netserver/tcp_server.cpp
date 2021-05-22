@@ -9,7 +9,7 @@
 
 TCPServer::~TCPServer() {}
 
-void TCPServer::SaveExit() { quit_ = 1; }
+void TCPServer::SaveExit() { quit_ = true; }
 
 int TCPServer::Send(int cilent_socket, char* buff, int size) { return send(cilent_socket, buff, size, 0); }
 

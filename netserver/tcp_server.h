@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <iostream>
 #include <mutex>
@@ -29,7 +30,7 @@ using RecvCallBack = add_pointer<void(int sockfd, char* buffer, int size)>::type
 
 class TCPServer {
  public:
-  TCPServer() : sockfd(-1), quit_(0), serverAddress{0}, clientAddress{0}, callback_(nullptr){};
+  TCPServer() : sockfd(-1), quit_(false), serverAddress{0}, clientAddress{0}, callback_(nullptr){};
   virtual ~TCPServer();
 
   int Send(int cilent_socket, char* buff, int size);
@@ -45,7 +46,7 @@ class TCPServer {
 
  private:
   int sockfd;
-  int quit_;
+  std::atomic_bool quit_;
   struct sockaddr_in serverAddress;
   struct sockaddr_in clientAddress;
   RecvCallBack callback_;

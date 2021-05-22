@@ -1,3 +1,4 @@
+#include <atomic>
 #include <csignal>
 #include <ctime>
 
@@ -16,7 +17,7 @@
 #define UNIX_DOMAIN "/tmp/UNIX.domain"
 
 DomainTCPClient g_tcpClient;
-int quit = 0;
+std::atomic_bool quit = false;
 int g_app_run_mode = APP_RUN_STATUS_TUNRING;
 int g_width = 1920;
 int g_height = 1080;
@@ -33,7 +34,7 @@ std::shared_ptr<RKAiqMedia> rkaiq_media;
 
 void sigterm_handler(int sig) {
   fprintf(stderr, "sigterm_handler signal %d\n", sig);
-  quit = 1;
+  quit = true;
   tcpServer->SaveExit();
 }
 
@@ -163,7 +164,6 @@ int main(int argc, char** argv) {
   while (!quit) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
-  fprintf(stderr, "go quit %d\n", quit);
   tcpServer->SaveExit();
 
   rkaiq_manager.reset();
