@@ -4,6 +4,8 @@ cc_defaults {
 	vendor: true,
     proprietary: true,
 
+    defaults: [ "rkaiq-defaults", "rkaiq-defaults-flags", ],
+
 	rtti: true,
     cflags: [
         "-Wall",
