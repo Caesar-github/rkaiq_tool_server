@@ -1,8 +1,9 @@
 #include "camera_memory.h"
 
-#ifndef LOG_TAG
-#define LOG_TAG "aiqtool"
+#ifdef LOG_TAG
+#undef LOG_TAG
 #endif
+#define LOG_TAG "aiqtool"
 
 int xioctl(int fh, int request, void* arg) {
   int ret;

@@ -7,9 +7,10 @@
 #include "domain_tcp_client.h"
 #include "tcp_client.h"
 
-#ifndef LOG_TAG
-#define LOG_TAG "aiqtool"
+#ifdef LOG_TAG
+#undef LOG_TAG
 #endif
+#define LOG_TAG "aiqtool"
 
 extern int g_app_run_mode;
 extern int g_width;
