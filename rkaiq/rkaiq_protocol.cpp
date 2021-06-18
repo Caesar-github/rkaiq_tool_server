@@ -275,9 +275,7 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
   if (strcmp((char*)common_cmd->RKID, TAG_PC_TO_DEVICE) == 0) {
     RKAiqRawProtocol::HandlerRawCapMessage(sockfd, buffer, size);
   } else if (strcmp((char*)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
-#ifndef __ANDROID__
     RKAiqOLProtocol::HandlerOnLineMessage(sockfd, buffer, size);
-#endif
   } else if (strcmp((char*)common_cmd->RKID, RKID_CHECK) == 0) {
     HandlerCheckDevice(sockfd, buffer, size);
   } else {
