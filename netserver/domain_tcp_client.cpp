@@ -12,6 +12,8 @@
 #endif
 #define LOG_TAG "aiqtool"
 
+extern struct ucred* g_aiqCred;
+
 #ifdef __ANDROID__
 #define ANDROID_RESERVED_SOCKET_PREFIX "/dev/socket/"
 
@@ -43,6 +45,10 @@ static int socket_local_client(const std::string& name, int type) {
 DomainTCPClient::DomainTCPClient() { sock = -1; }
 
 DomainTCPClient::~DomainTCPClient() {
+  if (g_aiqCred) {
+    delete g_aiqCred;
+    g_aiqCred = nullptr;
+  }
   if (sock > 0) {
     close(sock);
   }
@@ -79,16 +85,18 @@ bool DomainTCPClient::Setup(string domainPath) {
     return false;
   }
 #endif
-  struct ucred rcred, scred;
+  if (g_aiqCred == nullptr) {
+    g_aiqCred = new ucred();
+  }
   socklen_t len = sizeof(struct ucred);
-  if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, &scred, &len) == -1) {
-      close(sock);
-      sock = -1;
-      LOG_ERROR("getsockopt");
+  if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, (void*)g_aiqCred, &len) == -1) {
+    close(sock);
+    sock = -1;
+    LOG_ERROR("getsockopt");
   }
 
-  LOG_DEBUG("Credentials from SO_PEERCRED: pid=%ld, euid=%ld, egid=%ld\n",
-         (long) scred.pid, (long) scred.uid, (long) scred.gid);
+  LOG_DEBUG("Credentials from SO_PEERCRED: pid=%ld, euid=%ld, egid=%ld\n", (long)g_aiqCred->pid, (long)g_aiqCred->uid,
+            (long)g_aiqCred->gid);
   return true;
 }
 

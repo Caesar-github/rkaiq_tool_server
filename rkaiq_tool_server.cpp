@@ -14,6 +14,7 @@
 #define LOG_TAG "aiqtool"
 
 DomainTCPClient g_tcpClient;
+struct ucred* g_aiqCred = nullptr;
 std::atomic_bool quit{false};
 int g_app_run_mode = APP_RUN_STATUS_INIT;
 int g_width = 1920;
@@ -142,6 +143,14 @@ int main(int argc, char** argv) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
   tcpServer->SaveExit();
+  if (g_aiqCred != nullptr) {
+      delete g_aiqCred;
+      g_aiqCred = nullptr;
+  }
+
+  if (g_rtsp_en) {
+      deinit_rtsp();
+  }
 
 #if 0
   rkaiq_manager.reset();

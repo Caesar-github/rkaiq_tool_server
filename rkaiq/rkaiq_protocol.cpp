@@ -1,5 +1,8 @@
 #include "rkaiq_protocol.h"
 
+#include <signal.h>
+#include <sys/types.h>
+
 #ifdef __ANDROID__
 #include <cutils/properties.h>
 #endif
@@ -18,6 +21,7 @@ extern int g_height;
 extern int g_rtsp_en;
 extern int g_device_id;
 extern DomainTCPClient g_tcpClient;
+extern struct ucred* g_aiqCred;
 extern std::string iqfile;
 extern std::string g_sensor_name;
 extern std::shared_ptr<RKAiqMedia> rkaiq_media;
@@ -93,6 +97,12 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     system("stop cameraserver");
     system("stop vendor.camera-provider-2-4");
     system("stop vendor.camera-provider-2-4-ext");
+#else
+    if (g_aiqCred != nullptr) {
+      kill(g_aiqCred->pid, SIGTERM);
+      delete g_aiqCred;
+      g_aiqCred = nullptr;
+    }
 #endif
 #if 0
     rkaiq_manager.reset();
