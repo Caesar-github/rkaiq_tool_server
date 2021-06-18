@@ -28,6 +28,7 @@ extern std::shared_ptr<RKAiqMedia> rkaiq_media;
 
 bool RKAiqProtocol::is_recv_running = false;
 std::shared_ptr<std::thread> RKAiqProtocol::forward_thread = nullptr;
+std::mutex RKAiqProtocol::mutex_;
 
 static int ProcessExists(const char* process_name) {
   FILE* fp;
@@ -79,10 +80,41 @@ int WaitProcessExit(const char* process, int sec) {
 }
 
 int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
+  LOG_DEBUG("Switch to mode %d->%d\n", g_app_run_mode, mode);
   if (g_app_run_mode == mode) {
     return 0;
   }
-  if (mode == APP_RUN_STATUS_CAPTURE) {
+  g_app_run_mode = mode;
+  if (mode == APP_RUN_STATUS_STREAMING) {
+    LOG_DEBUG("Switch to APP_RUN_STATUS_STREAMING\n");
+    rkaiq_media->LinkToIsp(true);
+#ifdef __ANDROID__
+    property_set("ctrl.start", "cameraserver");
+    system("start cameraserver");
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
+      LOG_DEBUG("domain connect failed\n");
+    }
+#else
+    if (g_device_id == 0) {
+      if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
+        LOG_DEBUG("domain connect failed\n");
+      }
+    } else {
+      if (g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
+        LOG_DEBUG("domain connect failed\n");
+      }
+    }
+#endif
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+#ifndef __ANDROID__
+    if (g_rtsp_en) {
+      // media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+      // init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+      init_rtsp("/dev/video0", 1920, 1080);
+    }
+#endif
+  } else if (mode == APP_RUN_STATUS_CAPTURE) {
     LOG_DEBUG("Switch to APP_RUN_STATUS_CAPTURE\n");
 #ifndef __ANDROID__
     if (g_rtsp_en) {
@@ -108,10 +140,15 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;
 #endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     rkaiq_media->LinkToIsp(false);
   } else {
     LOG_DEBUG("Switch to APP_RUN_STATUS_TUNRING\n");
+#ifndef __ANDROID__
+    if (g_rtsp_en) {
+      deinit_rtsp();
+    }
+#endif
     rkaiq_media->LinkToIsp(true);
 #ifdef __ANDROID__
     property_set("ctrl.start", "cameraserver");
@@ -138,15 +175,9 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
 #if 0
     rkaiq_manager = std::make_shared<RKAiqToolManager>();
 #endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-#ifndef __ANDROID__
-    if (g_rtsp_en) {
-      media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
-      init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
-    }
-#endif
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  g_app_run_mode = mode;
+  LOG_DEBUG("CHange mode to %d exit\n", g_app_run_mode);
   return 0;
 }
 
@@ -226,6 +257,7 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size) {
 }
 
 void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
+  std::lock_guard<std::mutex> lg(mutex_);
   CommandData_t* common_cmd = (CommandData_t*)buffer;
   LOG_INFO("HandlerTCPMessage:\n");
   LOG_INFO("HandlerTCPMessage CommandData_t: 0x%x\n", sizeof(CommandData_t));
@@ -234,10 +266,8 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
   // TODO Check APP Mode
 
   if (strcmp((char*)common_cmd->RKID, TAG_PC_TO_DEVICE) == 0) {
-    DoChangeAppMode(APP_RUN_STATUS_CAPTURE);
     RKAiqRawProtocol::HandlerRawCapMessage(sockfd, buffer, size);
   } else if (strcmp((char*)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
-    DoChangeAppMode(APP_RUN_STATUS_TUNRING);
 #ifndef __ANDROID__
     RKAiqOLProtocol::HandlerOnLineMessage(sockfd, buffer, size);
 #endif

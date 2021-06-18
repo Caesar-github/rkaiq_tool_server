@@ -20,6 +20,7 @@ typedef enum {
   APP_RUN_STATUS_INIT = -1,
   APP_RUN_STATUS_TUNRING = 0,
   APP_RUN_STATUS_CAPTURE = 1,
+  APP_RUN_STATUS_STREAMING = 2,
 } appRunStatus;
 
 typedef enum { RAW_CAP = 0x00, AVALIABLE } runStaus;

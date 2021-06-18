@@ -16,11 +16,11 @@
 DomainTCPClient g_tcpClient;
 struct ucred* g_aiqCred = nullptr;
 std::atomic_bool quit{false};
-int g_app_run_mode = APP_RUN_STATUS_INIT;
+std::atomic<int> g_app_run_mode(APP_RUN_STATUS_INIT);
 int g_width = 1920;
 int g_height = 1080;
 int g_device_id = 0;
-int g_rtsp_en = 0;
+int g_rtsp_en = 1;
 
 std::string g_stream_dev_name;
 std::string iqfile;
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
 
   parse_args(argc, argv);
   LOG_DEBUG("iqfile cmd_parser.get  %s\n", iqfile.c_str());
-  LOG_DEBUG("g_mode cmd_parser.get  %d\n", g_app_run_mode);
+  LOG_DEBUG("g_mode cmd_parser.get  %d\n", g_app_run_mode.load());
   LOG_DEBUG("g_width cmd_parser.get  %d\n", g_width);
   LOG_DEBUG("g_height cmd_parser.get  %d\n", g_height);
   LOG_DEBUG("g_device_id cmd_parser.get  %d\n", g_device_id);

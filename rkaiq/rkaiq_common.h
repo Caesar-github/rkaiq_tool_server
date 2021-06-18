@@ -49,6 +49,7 @@ typedef enum {
   CMD_TYPE_CAPTURE = 0x02,
   CMD_TYPE_DUMP_RAW = 0x03,
   CMD_TYPE_STATUS = 0x80,
+  CMD_TYPE_STREAMING = 0xff,
 } FuncType_e;
 
 typedef enum {

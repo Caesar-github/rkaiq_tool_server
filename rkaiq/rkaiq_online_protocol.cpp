@@ -1,5 +1,6 @@
 #include "rkaiq_online_protocol.h"
 
+#include "rkaiq_protocol.h"
 #include "tcp_client.h"
 
 extern int g_width;
@@ -341,6 +342,9 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size) {
   LOG_INFO("cmdID: 0x%x cmdType: 0x%x\n", common_cmd->cmdID, common_cmd->cmdType);
 
   switch (common_cmd->cmdType) {
+    case CMD_TYPE_STREAMING:
+      RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
+      break;
     case CMD_TYPE_STATUS:
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
       break;

@@ -558,13 +558,17 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char* buffer, int size) 
   // }
 
   if (common_cmd->cmdType == CMD_TYPE_CAPTURE) {
+    RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_CAPTURE);
     LOG_INFO("cmdType: CMD_TYPE_CAPTURE\n");
+  } else if (common_cmd->cmdType == CMD_TYPE_STREAMING) {
+    RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_STREAMING);
+    LOG_INFO("cmdType: CMD_TYPE_STREAMING\n");
   } else {
-    LOG_INFO("cmdType: Unknow\n");
+    LOG_INFO("cmdType: Unknow %x\n", common_cmd->cmdType);
     return;
   }
 
-  LOG_INFO("cmdID: %d\n", common_cmd->cmdID);
+  LOG_INFO("cmdID: %x\n", common_cmd->cmdID);
 
   switch (common_cmd->cmdID) {
     case CMD_ID_CAPTURE_STATUS:

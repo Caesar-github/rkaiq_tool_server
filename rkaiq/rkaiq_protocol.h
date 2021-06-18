@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <mutex>
+
 #include "logger/log.h"
 #include "rkaiq_cmdid.h"
 #include "rkaiq_media.h"
@@ -25,6 +27,7 @@ class RKAiqProtocol {
   static int doMessageForward(int sockfd);
 
  private:
+  static std::mutex mutex_;
   static bool is_recv_running;
   static std::shared_ptr<std::thread> forward_thread;
 };
