@@ -79,6 +79,7 @@ static void parse_args(int argc, char** argv) {
         break;
       case 's':
         g_stream_dev_name = optarg;
+        break;
       case 'i':
         iqfile = optarg;
         break;
@@ -149,9 +150,11 @@ int main(int argc, char** argv) {
     }
   }
 
+#ifndef __ANDROID__
   if (g_rtsp_en && g_stream_dev_name.length() > 0) {
     init_rtsp(g_stream_dev_name.c_str(), g_width, g_height);
   }
+#endif
 
   tcpServer = std::make_shared<TCPServer>();
   tcpServer->RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);
@@ -165,9 +168,11 @@ int main(int argc, char** argv) {
     g_aiqCred = nullptr;
   }
 
+#ifndef __ANDROID__
   if (g_rtsp_en) {
     deinit_rtsp();
   }
+#endif
 
 #if 0
   rkaiq_manager.reset();
