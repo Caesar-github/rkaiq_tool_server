@@ -44,6 +44,8 @@ typedef struct Capture_Params_s {
   uint8_t bits;
   uint8_t framenumber;
   uint8_t multiframe;
+  uint32_t vblank;
+  uint32_t focus_position;
 } Capture_Params_t;
 #pragma pack()
 

@@ -17,6 +17,7 @@
 
 #define MAX_MEDIA_NUM 10
 #define MAX_CAM_NUM 4
+#define SENSOR_ATTACHED_FLASH_MAX_NUM 2
 
 #define VICAP_COMPACT_TEST_ON "echo 1 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
 #define VICAP2_COMPACT_TEST_ON "echo 1 > /sys/devices/platform/rkcif_lite_mipi_lvds/compact_test"
@@ -76,9 +77,25 @@ typedef struct {
 } cif_info_t;
 
 typedef struct {
+  int model_idx;
+  std::string sensor_name;
+  std::string sensor_subdev_path;
+  std::string media_dev_path;
+  std::string module_lens_dev_name;
+  std::string module_ircut_dev_name;
+  int flash_num;
+  std::string module_flash_dev_name[SENSOR_ATTACHED_FLASH_MAX_NUM];
+  bool fl_strth_adj_sup;
+  int flash_ir_num;
+  std::string module_flash_ir_dev_name[SENSOR_ATTACHED_FLASH_MAX_NUM];
+  bool fl_ir_strth_adj_sup;
+} lens_info_t;
+
+typedef struct {
   isp_info_t isp;
   ispp_info_t ispp;
   cif_info_t cif;
+  lens_info_t lens;
 } media_info_t;
 
 class RKAiqMedia {
@@ -91,6 +108,7 @@ class RKAiqMedia {
   void GetIsppSubDevs(int id, struct media_device* device, const char* devpath);
   void GetIspSubDevs(int id, struct media_device* device, const char* devpath);
   void GetCifSubDevs(int id, struct media_device* device, const char* devpath);
+  void GetLensSubDevs(int id, struct media_device* device, const char* devpath, int count);
   int GetMediaInfo();
   int GetIspVer();
   int DumpMediaInfo();

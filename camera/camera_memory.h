@@ -70,15 +70,21 @@ struct sensor_t {
   __u32 sen_fmt;
 };
 
+struct lens_t {
+  char lens_device_name[DEV_PATH_LEN];
+};
+
 struct capture_info {
   const char* dev_name;
   int dev_fd;
   int subdev_fd;
+  int lensdev_fd;
   enum io_method io;
   struct buffer* buffers;
   struct isp_t vd_path;
   struct vicap_t cif_path;
   struct sensor_t sd_path;
+  struct lens_t lens_path;
   unsigned int n_buffers;
   __u32 format;
   int width;

@@ -30,6 +30,7 @@ int device_setsubdevformat(int dev_fd, struct v4l2_subdev_format* fmt);
 int device_setsubdevcrop(int dev_fd, struct v4l2_subdev_selection* sel);
 int device_getblank(int dev_fd, struct v4l2_queryctrl* ctrl);
 int device_set3aexposure(int dev_fd, struct v4l2_ext_controls* ctrls);
+int device_queryctrl(int dev_fd, struct v4l2_queryctrl* query);
 int device_setctrl(int dev_fd, struct v4l2_control* ctrl);
 int device_getsensorfps(int dev_fd, struct v4l2_subdev_frame_interval* finterval);
 int device_streamon(int dev_fd, enum v4l2_buf_type* type);

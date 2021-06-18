@@ -134,6 +134,14 @@ int device_set3aexposure(int dev_fd, struct v4l2_ext_controls* ctrls) {
   return ret;
 }
 
+int device_queryctrl(int dev_fd, struct v4l2_queryctrl* query) {
+  int ret = xioctl(dev_fd, VIDIOC_QUERYCTRL, query);
+  if (-1 == ret) {
+    errno_debug("VIDIOC_S_CTRL");
+  }
+  return ret;
+}
+
 int device_setctrl(int dev_fd, struct v4l2_control* ctrl) {
   int ret = xioctl(dev_fd, VIDIOC_S_CTRL, ctrl);
   if (-1 == ret) {

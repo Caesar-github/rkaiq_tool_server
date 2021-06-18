@@ -44,6 +44,19 @@ static int SetLHcg(int mode) {
   return 0;
 }
 
+static void InitCommandStreamingAns(CommandData_t* cmd, int ret_status) {
+  strncpy((char*)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
+  cmd->cmdType = CMD_TYPE_STREAMING;
+  cmd->cmdID = 0xffff;
+  cmd->datLen = 1;
+  memset(cmd->dat, 0, sizeof(cmd->dat));
+  cmd->dat[0] = ret_status;
+  cmd->checkSum = 0;
+  for (int i = 0; i < cmd->datLen; i++) {
+    cmd->checkSum += cmd->dat[i];
+  }
+}
+
 static void InitCommandPingAns(CommandData_t* cmd, int ret_status) {
   strncpy((char*)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
   cmd->cmdType = DEVICE_TO_PC;
@@ -89,13 +102,20 @@ static void RawCaptureinit(CommandData_t* cmd) {
   }
   strcpy(cap_info.vd_path.media_dev_path, mi.isp.media_dev_path.c_str());
   strcpy(cap_info.vd_path.isp_sd_path, mi.isp.isp_dev_path.c_str());
+  if (mi.lens.module_lens_dev_name.length()) {
+    strcpy(cap_info.lens_path.lens_device_name, mi.lens.module_lens_dev_name.c_str());
+  } else {
+    cap_info.lens_path.lens_device_name[0] = '\0';
+  }
   cap_info.dev_fd = -1;
   cap_info.subdev_fd = -1;
+  cap_info.lensdev_fd = -1;
   LOG_INFO("cap_info.link: %d \n", cap_info.link);
   LOG_INFO("cap_info.dev_name: %s \n", cap_info.dev_name);
   LOG_INFO("cap_info.isp_media_path: %s \n", cap_info.vd_path.media_dev_path);
   LOG_INFO("cap_info.vd_path.isp_sd_path: %s \n", cap_info.vd_path.isp_sd_path);
   LOG_INFO("cap_info.sd_path.device_name: %s \n", cap_info.sd_path.device_name);
+  LOG_INFO("cap_info.lens_path.lens_dev_name: %s \n", cap_info.lens_path.lens_device_name);
 
   cap_info.io = IO_METHOD_MMAP;
   cap_info.height = Reso->height;
@@ -249,6 +269,7 @@ end:
 }
 
 static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_status) {
+  bool focus_enable = false;
   memset(cmd, 0, sizeof(CommandData_t));
   Capture_Params_t* CapParam = (Capture_Params_t*)(recv_cmd->dat + 1);
 
@@ -262,8 +283,14 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
   LOG_INFO(" set bits        : %d\n", CapParam->bits);
   LOG_INFO(" set framenumber : %d\n", CapParam->framenumber);
   LOG_INFO(" set multiframe  : %d\n", CapParam->multiframe);
+  LOG_INFO(" set vblank      : %d\n", CapParam->vblank);
+  LOG_INFO(" set focus       : %d\n", CapParam->focus_position);
   LOG_INFO(" sd_path subdev  : %s\n", cap_info.sd_path.device_name);
   cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
+  if (strlen(cap_info.lens_path.lens_device_name) > 0) {
+    focus_enable = true;
+  }
+  if (focus_enable) cap_info.lensdev_fd = device_open(cap_info.lens_path.lens_device_name);
 
   capture_frames = CapParam->framenumber;
   capture_frames_index = 0;
@@ -278,7 +305,28 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
   struct v4l2_control gain;
   gain.id = V4L2_CID_ANALOGUE_GAIN;
   gain.value = CapParam->gain;
+  struct v4l2_control vblank;
+  vblank.id = V4L2_CID_VBLANK;
+  vblank.value = CapParam->vblank;
+  struct v4l2_control focus;
 
+  if (focus_enable) {
+    struct v4l2_queryctrl focus_query;
+    focus_query.id = V4L2_CID_FOCUS_ABSOLUTE;
+    if (device_queryctrl(cap_info.lensdev_fd, &focus_query) < 0) {
+      LOG_ERROR(" query focus result failed to device\n");
+      focus_enable = false;
+    }
+    focus.id = V4L2_CID_FOCUS_ABSOLUTE;
+    focus.value = CapParam->focus_position;
+    if (CapParam->focus_position > focus_query.maximum) focus.value = focus_query.maximum;
+    if (CapParam->focus_position < focus_query.minimum) focus.value = focus_query.minimum;
+  }
+
+  if (device_setctrl(cap_info.subdev_fd, &vblank) < 0) {
+    LOG_ERROR(" set vblank result failed to device\n");
+    ret_status = RES_FAILED;
+  }
   if (device_setctrl(cap_info.subdev_fd, &exp) < 0) {
     LOG_ERROR(" set exposure result failed to device\n");
     ret_status = RES_FAILED;
@@ -286,6 +334,12 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
   if (device_setctrl(cap_info.subdev_fd, &gain) < 0) {
     LOG_ERROR(" set gain result failed to device\n");
     ret_status = RES_FAILED;
+  }
+  if (focus_enable) {
+    if (device_setctrl(cap_info.lensdev_fd, &focus) < 0) {
+      LOG_ERROR(" set focus result failed to device\n");
+      ret_status = RES_FAILED;
+    }
   }
 
   strncpy((char*)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
@@ -562,6 +616,8 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char* buffer, int size) 
     LOG_INFO("cmdType: CMD_TYPE_CAPTURE\n");
   } else if (common_cmd->cmdType == CMD_TYPE_STREAMING) {
     RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_STREAMING);
+    InitCommandStreamingAns(&send_cmd, RES_SUCCESS);
+    send(sockfd, &send_cmd, sizeof(CommandData_t), 0);
     LOG_INFO("cmdType: CMD_TYPE_STREAMING\n");
   } else {
     LOG_INFO("cmdType: Unknow %x\n", common_cmd->cmdType);

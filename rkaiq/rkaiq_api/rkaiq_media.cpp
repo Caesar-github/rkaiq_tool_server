@@ -443,6 +443,75 @@ void RKAiqMedia::GetCifSubDevs(int id, struct media_device* device, const char* 
   }
 }
 
+void RKAiqMedia::GetLensSubDevs(int id, struct media_device* device, const char* devpath, int count) {
+  media_entity* entity = NULL;
+  const struct media_entity_desc* entity_info = NULL;
+  const char* entity_name = NULL;
+  uint32_t k;
+  cif_info_t* cif_info = NULL;
+  isp_info_t* isp_info = NULL;
+  lens_info_t* lens_info = nullptr;
+  int index = 0;
+
+  for (index = 0; index < MAX_CAM_NUM; index++) {
+    cif_info = &media_info[index].cif;
+    isp_info = &media_info[index].isp;
+    lens_info = &media_info[index].lens;
+    if (!IsLinkSensor(device)) {
+      continue;
+    }
+    if (!isp_info->media_dev_path.empty() && isp_info->linked_sensor) {
+      lens_info->sensor_name = isp_info->sensor_name;
+      lens_info->sensor_subdev_path = isp_info->sensor_subdev_path;
+      break;
+    } else if (!cif_info->media_dev_path.empty() && cif_info->linked_sensor) {
+      lens_info->sensor_name = cif_info->sensor_name;
+      lens_info->sensor_subdev_path = cif_info->sensor_subdev_path;
+      break;
+    } else {
+      return;
+    }
+  }
+
+  LOG_ERROR("isp media index %d, media info array id  %d\n", id, index);
+  if (index >= MAX_CAM_NUM) {
+    return;
+  }
+
+  for (int index = 0; index < MAX_CAM_NUM; index++) {
+    if (lens_info->media_dev_path.empty()) {
+      break;
+    }
+    if (lens_info->media_dev_path.compare(devpath) == 0) {
+      LOG_ERROR("lens info of path %s exists!", devpath);
+      return;
+    }
+  }
+  lens_info->model_idx = id;
+  lens_info->media_dev_path = devpath;
+
+  for (k = 0; k < count; ++k) {
+    entity = media_get_entity(device, k);
+    entity_info = media_entity_get_info(entity);
+    if ((NULL != entity_info) && (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_LENS)) {
+      if ((entity_info->name[0] == 'm') && (strncmp(entity_info->name, lens_info->sensor_name.c_str(), 3) == 0)) {
+        if (entity_info->flags == 1)
+          lens_info->module_ircut_dev_name = std::string(media_entity_get_devname(entity));
+        else
+          lens_info->module_lens_dev_name = std::string(media_entity_get_devname(entity));
+      }
+    } else if ((NULL != entity_info) && (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_FLASH)) {
+      if ((entity_info->name[0] == 'm') && (strncmp(entity_info->name, lens_info->sensor_name.c_str(), 3) == 0)) {
+        if (strstr(entity_info->name, "-ir") != NULL) {
+          lens_info->module_flash_ir_dev_name[lens_info->flash_ir_num++] =
+              std::string(media_entity_get_devname(entity));
+        } else
+          lens_info->module_flash_dev_name[lens_info->flash_num++] = std::string(media_entity_get_devname(entity));
+      }
+    }
+  }
+}
+
 int RKAiqMedia::LinkToIsp(bool enable) {
   int ret;
   int index = 0;
@@ -632,6 +701,9 @@ out:
 
 int RKAiqMedia::GetMediaInfo() {
   struct media_device* device = NULL;
+  const struct media_entity_desc* entity_info = NULL;
+  struct media_entity* entity = NULL;
+  int32_t nents = 0;
   int ret;
   char sys_path[64];
   unsigned int index = 0, id, i;
@@ -669,6 +741,15 @@ int RKAiqMedia::GetMediaInfo() {
       GetCifSubDevs(id, device, sys_path);
     } else {
       goto media_unref;
+    }
+
+    nents = media_get_entities_count(device);
+    for (int j = 0; j < nents; ++j) {
+      entity = media_get_entity(device, j);
+      entity_info = media_entity_get_info(entity);
+      if ((NULL != entity_info) && (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR)) {
+        GetLensSubDevs(id, device, sys_path, nents);
+      }
     }
 
   media_unref:
