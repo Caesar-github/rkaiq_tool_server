@@ -1,5 +1,9 @@
 #include "rkaiq_media.h"
 
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+
 #ifdef LOG_TAG
 #undef LOG_TAG
 #endif
@@ -589,6 +593,40 @@ int RKAiqMedia::LinkToIsp(bool enable) {
     // ret = v4l2_subdev_parse_setup_formats(device, "crop:(0,0)/2688x1520");
     media_device_unref(device);
   }
+  return ret;
+}
+
+int RKAiqMedia::GetIspVer() {
+  struct v4l2_capability cap;
+  int ret = -1;
+
+  int fd = open(media_info[0].isp.stats_path.c_str(), O_RDWR);
+  if (fd < 0) {
+    LOG_ERROR("Failed to open dev %s", media_info[0].isp.stats_path.c_str());
+    return ret;
+  }
+
+  ret = ioctl(fd, VIDIOC_QUERYCAP, &cap);
+  if (ret < 0) {
+    LOG_ERROR("Failed to query cap from %s", media_info[0].isp.stats_path.c_str());
+    goto out;
+  }
+
+  char* p;
+  p = strrchr((char*)cap.driver, '_');
+  if (p == NULL) {
+    goto out;
+  }
+
+  if (*(p + 1) != 'v') {
+    goto out;
+  }
+
+  ret = atoi(p + 2);
+
+out:
+  if (fd >= 0) close(fd);
+
   return ret;
 }
 

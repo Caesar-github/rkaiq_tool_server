@@ -109,9 +109,16 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 #ifndef __ANDROID__
     if (g_rtsp_en) {
-      // media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
-      // init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
-      init_rtsp("/dev/video0", 1920, 1080);
+      media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+      int isp_ver = rkaiq_media->GetIspVer();
+      LOG_DEBUG(">>>>>>>> isp ver = %d\n", isp_ver);
+      if (isp_ver == 4) {
+        init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+      } else if (isp_ver == 5) {
+        init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+      } else {
+        init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+      }
     }
 #endif
   } else if (mode == APP_RUN_STATUS_CAPTURE) {

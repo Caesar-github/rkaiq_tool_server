@@ -92,6 +92,7 @@ class RKAiqMedia {
   void GetIspSubDevs(int id, struct media_device* device, const char* devpath);
   void GetCifSubDevs(int id, struct media_device* device, const char* devpath);
   int GetMediaInfo();
+  int GetIspVer();
   int DumpMediaInfo();
   int LinkToIsp(bool enable = false);
 
