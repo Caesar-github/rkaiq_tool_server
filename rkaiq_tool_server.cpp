@@ -22,6 +22,7 @@ int g_height = 1080;
 int g_device_id = 0;
 int g_rtsp_en = 0;
 
+std::string g_stream_dev_name;
 std::string iqfile;
 std::string g_sensor_name;
 std::string g_sensor_name1;
@@ -55,8 +56,9 @@ static int get_env(const char* name, int* value, int default_value) {
   return 0;
 }
 
-static const char short_options[] = "i:m:Dd:w:h:r:";
-static const struct option long_options[] = {{"iqfile", required_argument, NULL, 'i'},
+static const char short_options[] = "s:i:m:Dd:w:h:r:";
+static const struct option long_options[] = {{"stream_dev", required_argument, NULL, 's'},
+                                             {"iqfile", required_argument, NULL, 'i'},
                                              {"mode", required_argument, NULL, 'm'},
                                              {"width", no_argument, NULL, 'w'},
                                              {"height", no_argument, NULL, 'h'},
@@ -75,6 +77,8 @@ static void parse_args(int argc, char** argv) {
     switch (c) {
       case 0:
         break;
+      case 's':
+        g_stream_dev_name = optarg;
       case 'i':
         iqfile = optarg;
         break;
@@ -136,6 +140,19 @@ int main(int argc, char** argv) {
   // g_tcpClient.Send("UNIX.domain connect success,this is test data", 45);
   LOG_DEBUG("domain connect success\n");
 
+  if (g_stream_dev_name.length() > 0) {
+    if (0 > access(g_stream_dev_name.c_str(), R_OK | W_OK)) {
+      LOG_DEBUG("Could not access streaming device");
+      g_rtsp_en = 0;
+    } else {
+      g_rtsp_en = 1;
+    }
+  }
+
+  if (g_rtsp_en && g_stream_dev_name.length() > 0) {
+    init_rtsp(g_stream_dev_name.c_str(), g_width, g_height);
+  }
+
   tcpServer = std::make_shared<TCPServer>();
   tcpServer->RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);
   tcpServer->Process(SERVER_PORT);
@@ -144,12 +161,12 @@ int main(int argc, char** argv) {
   }
   tcpServer->SaveExit();
   if (g_aiqCred != nullptr) {
-      delete g_aiqCred;
-      g_aiqCred = nullptr;
+    delete g_aiqCred;
+    g_aiqCred = nullptr;
   }
 
   if (g_rtsp_en) {
-      deinit_rtsp();
+    deinit_rtsp();
   }
 
 #if 0
