@@ -227,7 +227,9 @@ static void SendYuvDataResult(int sockfd, CommandData_t* cmd, CommandData_t* rec
   send(sockfd, send_data, sizeof(CommandData_t), 0);
 }
 
+#ifndef __ANDROID__
 extern std::shared_ptr<easymedia::Flow> video_dump_flow;
+#endif
 static const uint32_t kSocket_fd = (1 << 0);
 static const uint32_t kEnable_Link = (1 << 1);
 
@@ -238,11 +240,13 @@ void LinkCaptureCallBack(unsigned char* buffer, unsigned int buffer_size, int so
 
 static int DoCaptureYuv(int sockfd) {
   LOG_ERROR("sockfd %d\n", sockfd);
+#ifndef __ANDROID__
   if (video_dump_flow) {
     video_dump_flow->SetCaptureHandler(LinkCaptureCallBack);
     video_dump_flow->Control(kSocket_fd, sockfd);
     video_dump_flow->Control(kEnable_Link, capture_frames);
   }
+#endif
   return 0;
 }
 

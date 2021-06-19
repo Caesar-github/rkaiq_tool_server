@@ -208,6 +208,7 @@ cc_binary {
         "rkaiq/rkaiq_api/rkaiq_socket.cpp",
         "rkaiq/multiframe_process.cpp",
         "rkaiq/rkaiq_protocol.cpp",
+        "rkaiq/rkaiq_online_protocol.cpp",
         "rkaiq/rkaiq_raw_protocol.cpp",
         "rkaiq/rkaiq_api/rkaiq_media.cpp",
         "mediactl/libmediactl.c",

@@ -3,6 +3,9 @@
 #include "domain_tcp_client.h"
 #include "rkaiq_manager.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
 #define LOG_TAG "aiqtool"
 
 #define MAX_PACKET_SIZE 8192

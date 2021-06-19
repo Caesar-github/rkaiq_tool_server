@@ -8,7 +8,7 @@
 #include "rkaiq_protocol.h"
 #include "tcp_server.h"
 #ifdef __ANDROID__
-#include <cutils/properties.h>>
+#include <cutils/properties.h>
 #endif
 
 #define LOG_TAG "aiqtool"
