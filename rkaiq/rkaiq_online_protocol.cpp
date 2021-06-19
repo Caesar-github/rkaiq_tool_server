@@ -348,7 +348,13 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size) {
   switch (common_cmd->cmdType) {
     case CMD_TYPE_STREAMING:
       RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
-      DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, RES_SUCCESS);
+      if (common_cmd->cmdID == 0xffff){
+          uint16_t check_sum;
+          uint32_t result;
+          DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
+          OnLineSet(sockfd, common_cmd, check_sum, result);
+          DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum, result ? RES_FAILED : RES_SUCCESS);
+      }
       break;
     case CMD_TYPE_STATUS:
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);

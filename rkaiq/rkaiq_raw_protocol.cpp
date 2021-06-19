@@ -592,6 +592,82 @@ static void SendRawDataResult(CommandData_t* cmd, CommandData_t* recv_cmd) {
   }
 }
 
+static void DoAnswer(int sockfd, CommandData_t* cmd, int cmd_id, int ret_status) {
+  char send_data[MAXPACKETSIZE];
+  LOG_INFO("enter\n");
+
+  strncpy((char*)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
+  cmd->cmdType = CMD_TYPE_CAPTURE;
+  cmd->cmdID = cmd_id;
+  strncpy((char*)cmd->version, RKAIQ_TOOL_VERSION, sizeof(cmd->version));
+  cmd->datLen = 4;
+  memset(cmd->dat, 0, sizeof(cmd->dat));
+  cmd->dat[0] = ret_status;
+  cmd->checkSum = 0;
+  for (int i = 0; i < cmd->datLen; i++) {
+    cmd->checkSum += cmd->dat[i];
+  }
+
+  memcpy(send_data, cmd, sizeof(CommandData_t));
+  send(sockfd, send_data, sizeof(CommandData_t), 0);
+  LOG_INFO("exit\n");
+}
+
+static void DoAnswer2(int sockfd, CommandData_t* cmd, int cmd_id, uint16_t check_sum, uint32_t result) {
+  char send_data[MAXPACKETSIZE];
+  LOG_INFO("enter\n");
+  strncpy((char*)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
+  cmd->cmdType = CMD_TYPE_CAPTURE;
+  cmd->cmdID = cmd_id;
+  strncpy((char*)cmd->version, RKAIQ_TOOL_VERSION, sizeof(cmd->version));
+  cmd->datLen = 4;
+  memset(cmd->dat, 0, sizeof(cmd->dat));
+  cmd->dat[0] = result;
+  cmd->dat[1] = check_sum & 0xFF;
+  cmd->dat[2] = (check_sum >> 8) & 0xFF;
+  cmd->checkSum = 0;
+  for (int i = 0; i < cmd->datLen; i++) {
+    cmd->checkSum += cmd->dat[i];
+  }
+
+  memcpy(send_data, cmd, sizeof(CommandData_t));
+  send(sockfd, send_data, sizeof(CommandData_t), 0);
+  LOG_INFO("exit\n");
+}
+
+static void OnLineSet(int sockfd, CommandData_t* cmd, uint16_t& check_sum, uint32_t& result) {
+  int recv_size = 0;
+  int param_size = *(int*)cmd->dat;
+  int remain_size = param_size;
+
+  LOG_INFO("enter\n");
+  LOG_INFO("expect recv param_size 0x%x\n", param_size);
+  char* param = (char*)malloc(param_size);
+  while (remain_size > 0) {
+    int offset = param_size - remain_size;
+    recv_size = recv(sockfd, param + offset, remain_size, 0);
+    remain_size = remain_size - recv_size;
+  }
+
+  LOG_INFO("recv ready\n");
+
+  for (int i = 0; i < param_size; i++) {
+    check_sum += param[i];
+  }
+
+  LOG_INFO("DO Sycn Setting, CmdId: 0x%x, expect ParamSize %d\n", cmd->cmdID, param_size);
+#if 0
+  if (rkaiq_manager) {
+    result = rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
+  }
+#endif
+  if (param != NULL) {
+    free(param);
+  }
+  LOG_INFO("exit\n");
+}
+
+
 void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char* buffer, int size) {
   CommandData_t* common_cmd = (CommandData_t*)buffer;
   CommandData_t send_cmd;
@@ -619,6 +695,15 @@ void RKAiqRawProtocol::HandlerRawCapMessage(int sockfd, char* buffer, int size) 
     InitCommandStreamingAns(&send_cmd, RES_SUCCESS);
     send(sockfd, &send_cmd, sizeof(CommandData_t), 0);
     LOG_INFO("cmdType: CMD_TYPE_STREAMING\n");
+    if (common_cmd->cmdID == 0xffff){
+      uint16_t check_sum;
+      uint32_t result;
+      DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
+      OnLineSet(sockfd, common_cmd, check_sum, result);
+      DoAnswer2(sockfd, &send_cmd, common_cmd->cmdID, check_sum, result ? RES_FAILED : RES_SUCCESS);
+      return;
+    }
+    
   } else {
     LOG_INFO("cmdType: Unknow %x\n", common_cmd->cmdType);
     return;
