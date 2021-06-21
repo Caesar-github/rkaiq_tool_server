@@ -80,14 +80,18 @@ int WaitProcessExit(const char* process, int sec) {
 }
 
 int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
+  int ret = -1;
   LOG_DEBUG("Switch to mode %d->%d\n", g_app_run_mode, mode);
   if (g_app_run_mode == mode) {
     return 0;
   }
-  g_app_run_mode = mode;
   if (mode == APP_RUN_STATUS_STREAMING) {
     LOG_DEBUG("Switch to APP_RUN_STATUS_STREAMING\n");
-    rkaiq_media->LinkToIsp(true);
+    ret = rkaiq_media->LinkToIsp(true);
+    if (ret) {
+      LOG_ERROR("Switch mode failed!!!");
+      return ret;
+    }
 #ifdef __ANDROID__
     property_set("ctrl.start", "cameraserver");
     system("start cameraserver");
@@ -106,18 +110,22 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       }
     }
 #endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifndef __ANDROID__
     if (g_rtsp_en) {
       media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
       int isp_ver = rkaiq_media->GetIspVer();
       LOG_DEBUG(">>>>>>>> isp ver = %d\n", isp_ver);
       if (isp_ver == 4) {
-        init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+        ret = init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
       } else if (isp_ver == 5) {
-        init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+        ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
       } else {
-        init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+        ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+      }
+      if (ret) {
+        LOGE_ERROR("init_rtsp failed!!");
+        return ret;
       }
     }
 #endif
@@ -147,8 +155,12 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     rkaiq_manager.reset();
     rkaiq_manager = nullptr;
 #endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    rkaiq_media->LinkToIsp(false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    ret = rkaiq_media->LinkToIsp(false);
+    if (ret) {
+      LOG_ERROR("unlink isp failed!!!");
+      return ret;
+    }
   } else {
     LOG_DEBUG("Switch to APP_RUN_STATUS_TUNRING\n");
 #ifndef __ANDROID__
@@ -156,7 +168,11 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       deinit_rtsp();
     }
 #endif
-    rkaiq_media->LinkToIsp(true);
+    ret = rkaiq_media->LinkToIsp(true);
+    if (ret) {
+      LOG_ERROR("link isp failed!!!");
+      return ret;
+    }
 #ifdef __ANDROID__
     property_set("ctrl.start", "cameraserver");
     system("start cameraserver");
@@ -182,8 +198,9 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
 #if 0
     rkaiq_manager = std::make_shared<RKAiqToolManager>();
 #endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
+  g_app_run_mode = mode;
   LOG_DEBUG("CHange mode to %d exit\n", g_app_run_mode);
   return 0;
 }
