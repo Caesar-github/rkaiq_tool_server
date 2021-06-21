@@ -40,6 +40,11 @@
 #include "mediactl.h"
 #include "tools.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "aiqtool"
+
 /* -----------------------------------------------------------------------------
  * Graph access
  */
@@ -192,6 +197,7 @@ int media_setup_link(struct media_device* media, struct media_pad* source, struc
 
   ret = media_device_open(media);
   if (ret < 0) {
+    media_dbg(media, "%s: media device open failed %s\n", __func__, strerror(errno));
     goto done;
   }
 

@@ -37,6 +37,11 @@
 #include "tools.h"
 #include "v4l2subdev.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "aiqtool"
+
 int v4l2_subdev_open(struct media_entity* entity) {
   if (entity->fd != -1) {
     return 0;

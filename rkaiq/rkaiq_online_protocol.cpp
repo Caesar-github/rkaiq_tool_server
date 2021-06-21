@@ -3,6 +3,11 @@
 #include "rkaiq_protocol.h"
 #include "tcp_client.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "aiqtool"
+
 extern int g_width;
 extern int g_height;
 

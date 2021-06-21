@@ -11,6 +11,9 @@
 #include <cutils/properties.h>
 #endif
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
 #define LOG_TAG "aiqtool"
 
 DomainTCPClient g_tcpClient;

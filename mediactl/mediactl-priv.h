@@ -26,6 +26,10 @@
 
 #include "mediactl.h"
 
+#ifdef __ANDROID__
+#include <log/log.h>
+#endif
+
 struct media_entity {
   struct media_device* media;
   struct media_entity_desc info;
@@ -58,6 +62,16 @@ struct media_device {
   } def;
 };
 
+#ifndef __ANDROID__
 #define media_dbg(media, ...) (media)->debug_handler((media)->debug_priv, __VA_ARGS__)
+#else
+#define __BI_FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+
+#define media_dbg(media, format, ...) \
+    do { \
+        ALOGD("%s:%d - " format "", __BI_FILENAME__, __LINE__, ##__VA_ARGS__); \
+    } while(0)
+
+#endif
 
 #endif /* __MEDIA_PRIV_H__ */
