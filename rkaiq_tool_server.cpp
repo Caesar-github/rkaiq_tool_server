@@ -21,6 +21,7 @@ int g_width = 1920;
 int g_height = 1080;
 int g_device_id = 0;
 int g_rtsp_en = 1;
+int g_allow_killapp = 0;
 
 std::string g_stream_dev_name;
 std::string iqfile;
@@ -122,8 +123,11 @@ int main(int argc, char** argv) {
   char property_value[PROPERTY_VALUE_MAX] = {0};
   property_get("persist.vendor.aiqtool.log", property_value, "0");
   log_level = strtoull(property_value, nullptr, 16);
+  property_get("persist.vendor.aiqtool.killapp", property_value, "0");
+  g_allow_killapp = strtoull(property_value, nullptr, 16);
 #else
   get_env("rkaiq_tool_server_log_level", &log_level, 0);
+  get_env("rkaiq_tool_server_kill_app", &g_allow_killapp, 0);
 #endif
 
   parse_args(argc, argv);

@@ -20,6 +20,7 @@ extern int g_width;
 extern int g_height;
 extern int g_rtsp_en;
 extern int g_device_id;
+extern int g_allow_killapp;
 extern DomainTCPClient g_tcpClient;
 extern struct ucred* g_aiqCred;
 extern std::string iqfile;
@@ -93,8 +94,10 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       return ret;
     }
 #ifdef __ANDROID__
-    property_set("ctrl.start", "cameraserver");
-    system("start cameraserver");
+    if (g_allow_killapp) {
+      property_set("ctrl.start", "cameraserver");
+      system("start cameraserver");
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
       LOG_DEBUG("domain connect failed\n");
@@ -137,18 +140,22 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     }
 #endif
 #ifdef __ANDROID__
-    unlink(LOCAL_SOCKET_PATH);
-    property_set("ctrl.stop", "cameraserver");
-    property_set("ctrl.stop", "vendor.camera-provider-2-4");
-    property_set("ctrl.stop", "vendor.camera-provider-2-4-ext");
-    system("stop cameraserver");
-    system("stop vendor.camera-provider-2-4");
-    system("stop vendor.camera-provider-2-4-ext");
+    if (g_allow_killapp) {
+      unlink(LOCAL_SOCKET_PATH);
+      property_set("ctrl.stop", "cameraserver");
+      property_set("ctrl.stop", "vendor.camera-provider-2-4");
+      property_set("ctrl.stop", "vendor.camera-provider-2-4-ext");
+      system("stop cameraserver");
+      system("stop vendor.camera-provider-2-4");
+      system("stop vendor.camera-provider-2-4-ext");
+    }
 #else
-    if (g_aiqCred != nullptr) {
-      kill(g_aiqCred->pid, SIGTERM);
-      delete g_aiqCred;
-      g_aiqCred = nullptr;
+    if (g_allow_killapp) {
+      if (g_aiqCred != nullptr) {
+        kill(g_aiqCred->pid, SIGTERM);
+        delete g_aiqCred;
+        g_aiqCred = nullptr;
+      }
     }
 #endif
 #if 0
@@ -174,8 +181,10 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       return ret;
     }
 #ifdef __ANDROID__
-    property_set("ctrl.start", "cameraserver");
-    system("start cameraserver");
+    if (g_allow_killapp) {
+      property_set("ctrl.start", "cameraserver");
+      system("start cameraserver");
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
       LOG_ERROR("domain connect failed\n");
