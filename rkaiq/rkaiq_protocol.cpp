@@ -80,25 +80,8 @@ int WaitProcessExit(const char* process, int sec) {
   return 0;
 }
 
-int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
-  int ret = -1;
-  LOG_DEBUG("Switch to mode %d->%d\n", g_app_run_mode, mode);
-  if (g_app_run_mode == mode) {
-    return 0;
-  }
-  if (mode == APP_RUN_STATUS_STREAMING) {
-    LOG_DEBUG("Switch to APP_RUN_STATUS_STREAMING\n");
-    ret = rkaiq_media->LinkToIsp(true);
-    if (ret) {
-      LOG_ERROR("Switch mode failed!!!");
-      return ret;
-    }
+void RKAiqProtocol::ConnectAiq() {
 #ifdef __ANDROID__
-    if (g_allow_killapp) {
-      property_set("ctrl.start", "cameraserver");
-      system("start cameraserver");
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
       LOG_DEBUG("domain connect failed\n");
     }
@@ -113,9 +96,67 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       }
     }
 #endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+}
+
+void RKAiqProtocol::DisConnectAiq() { g_tcpClient.Close(); }
+
+void RKAiqProtocol::KillApp() {
+#ifdef __ANDROID__
+  if (g_allow_killapp) {
+    unlink(LOCAL_SOCKET_PATH);
+    property_set("ctrl.stop", "cameraserver");
+    property_set("ctrl.stop", "vendor.camera-provider-2-4");
+    property_set("ctrl.stop", "vendor.camera-provider-2-4-ext");
+    system("stop cameraserver");
+    system("stop vendor.camera-provider-2-4");
+    system("stop vendor.camera-provider-2-4-ext");
+  }
+#else
+  if (g_allow_killapp) {
+    if (g_aiqCred != nullptr) {
+      kill(g_aiqCred->pid, SIGTERM);
+      delete g_aiqCred;
+      g_aiqCred = nullptr;
+    }
+  }
+#endif
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+}
+
+void RKAiqProtocol::StartApp() {
+#ifdef __ANDROID__
+  if (g_allow_killapp) {
+    property_set("ctrl.start", "cameraserver");
+    system("start cameraserver");
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+#else
+  // TODO(Cody): Android does not need to setup link
+  ret = rkaiq_media->LinkToIsp(true);
+  if (ret) {
+    LOG_ERROR("link isp failed!!!");
+    return ret;
+  }
+#endif
+}
+
+int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
+  int ret = -1;
+  LOG_DEBUG("Switch to mode %d->%d\n", g_app_run_mode, mode);
+  if (g_app_run_mode == mode) {
+    return 0;
+  }
+  if (mode == APP_RUN_STATUS_STREAMING) {
+    LOG_DEBUG("Switch to APP_RUN_STATUS_STREAMING\n");
+    KillApp();
 #ifndef __ANDROID__
     if (g_rtsp_en) {
+      // TODO(Cody): Android does not need to setup link
+      ret = rkaiq_media->LinkToIsp(true);
+      if (ret) {
+        LOG_ERROR("link isp failed!!!");
+        return ret;
+      }
       media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
       int isp_ver = rkaiq_media->GetIspVer();
       LOG_DEBUG(">>>>>>>> isp ver = %d\n", isp_ver);
@@ -137,32 +178,10 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
 #ifndef __ANDROID__
     if (g_rtsp_en) {
       deinit_rtsp();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 #endif
-#ifdef __ANDROID__
-    if (g_allow_killapp) {
-      unlink(LOCAL_SOCKET_PATH);
-      property_set("ctrl.stop", "cameraserver");
-      property_set("ctrl.stop", "vendor.camera-provider-2-4");
-      property_set("ctrl.stop", "vendor.camera-provider-2-4-ext");
-      system("stop cameraserver");
-      system("stop vendor.camera-provider-2-4");
-      system("stop vendor.camera-provider-2-4-ext");
-    }
-#else
-    if (g_allow_killapp) {
-      if (g_aiqCred != nullptr) {
-        kill(g_aiqCred->pid, SIGTERM);
-        delete g_aiqCred;
-        g_aiqCred = nullptr;
-      }
-    }
-#endif
-#if 0
-    rkaiq_manager.reset();
-    rkaiq_manager = nullptr;
-#endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    KillApp();
     ret = rkaiq_media->LinkToIsp(false);
     if (ret) {
       LOG_ERROR("unlink isp failed!!!");
@@ -173,41 +192,11 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
 #ifndef __ANDROID__
     if (g_rtsp_en) {
       deinit_rtsp();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 #endif
-    ret = rkaiq_media->LinkToIsp(true);
-    if (ret) {
-      LOG_ERROR("link isp failed!!!");
-      return ret;
-    }
-#ifdef __ANDROID__
-    if (g_allow_killapp) {
-      property_set("ctrl.start", "cameraserver");
-      system("start cameraserver");
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
-      LOG_ERROR("domain connect failed\n");
-      return -1;
-    }
-#else
-    if (g_device_id == 0) {
-      if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
-        LOG_ERROR("domain connect failed\n");
-        return -1;
-      }
-    } else {
-      if (g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
-        LOG_ERROR("domain connect failed\n");
-        return -1;
-      }
-    }
-#endif
-
-#if 0
-    rkaiq_manager = std::make_shared<RKAiqToolManager>();
-#endif
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    StartApp();
+    ConnectAiq();
   }
   g_app_run_mode = mode;
   LOG_DEBUG("CHange mode to %d exit\n", g_app_run_mode);

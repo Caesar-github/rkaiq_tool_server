@@ -102,9 +102,9 @@ class RKAiqMedia {
  public:
   RKAiqMedia();
   virtual ~RKAiqMedia() = default;
-  int IsLinkSensor(struct media_device* device);
-  std::string GetLinkSensorSubDev(struct media_device* device);
-  std::string GetSensorName(struct media_device* device);
+  int IsLinkSensor(struct media_device* device, int cam_index);
+  std::string GetLinkSensorSubDev(struct media_device* device, int cam_index);
+  std::string GetSensorName(struct media_device* device, int cam_index);
   void GetIsppSubDevs(int id, struct media_device* device, const char* devpath);
   void GetIspSubDevs(int id, struct media_device* device, const char* devpath);
   void GetCifSubDevs(int id, struct media_device* device, const char* devpath);

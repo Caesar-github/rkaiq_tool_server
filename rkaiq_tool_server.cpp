@@ -141,7 +141,8 @@ int main(int argc, char** argv) {
   LOG_DEBUG("g_device_id cmd_parser.get  %d\n", g_device_id);
 
   rkaiq_media = std::make_shared<RKAiqMedia>();
-  rkaiq_media->GetMediaInfo();
+  for (int i = 0; i < MAX_CAM_NUM; i++) rkaiq_media->GetMediaInfo();
+  rkaiq_media->DumpMediaInfo();
 
   RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
 

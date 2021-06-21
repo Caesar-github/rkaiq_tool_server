@@ -36,6 +36,7 @@ class DomainTCPClient {
   int Send(char* buff, int size);
   string Receive(int size);
   int Receive(char* buff, int size);
+  void Close();
 };
 
 #endif

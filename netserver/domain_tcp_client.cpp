@@ -44,7 +44,9 @@ static int socket_local_client(const std::string& name, int type) {
 
 DomainTCPClient::DomainTCPClient() { sock = -1; }
 
-DomainTCPClient::~DomainTCPClient() {
+DomainTCPClient::~DomainTCPClient() { Close(); }
+
+void DomainTCPClient::Close() {
   if (g_aiqCred) {
     delete g_aiqCred;
     g_aiqCred = nullptr;

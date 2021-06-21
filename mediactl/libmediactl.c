@@ -194,6 +194,8 @@ int media_setup_link(struct media_device* media, struct media_pad* source, struc
   struct media_link* link;
   unsigned int i;
   int ret;
+  media_dbg(media, "set link %s:%d -> %s:%d ", source->entity->info.name, source->index,
+            sink->entity->info.name, sink->index);
 
   ret = media_device_open(media);
   if (ret < 0) {
@@ -201,8 +203,11 @@ int media_setup_link(struct media_device* media, struct media_pad* source, struc
     goto done;
   }
 
+  media_dbg(media, "source %s links: ", source->entity->info.name);
   for (i = 0; i < source->entity->num_links; i++) {
     link = &source->entity->links[i];
+    media_dbg(media, "%s:%d -> %s:%d", link->source->entity->info.name, link->source->index,
+              link->sink->entity->info.name, link->sink->index);
 
     if (link->source->entity == source->entity && link->source->index == source->index &&
         link->sink->entity == sink->entity && link->sink->index == sink->index) {
@@ -211,7 +216,7 @@ int media_setup_link(struct media_device* media, struct media_pad* source, struc
   }
 
   if (i == source->entity->num_links) {
-    media_dbg(media, "%s: Link not found\n", __func__);
+    media_dbg(media, "%s: Link not found %d\n", __func__, source->entity->num_links);
     ret = -ENOENT;
     goto done;
   }

@@ -25,6 +25,10 @@ class RKAiqProtocol {
   static void HandlerCheckDevice(int sockfd, char* buffer, int size);
   static int MessageForward(int sockfd, char* buffer, int size);
   static int doMessageForward(int sockfd);
+  static void ConnectAiq();
+  static void DisConnectAiq();
+  static void KillApp();
+  static void StartApp();
 
  private:
   static std::mutex mutex_;

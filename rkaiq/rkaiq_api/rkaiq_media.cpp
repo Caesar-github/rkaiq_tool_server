@@ -13,9 +13,13 @@
 
 extern int g_width;
 extern int g_height;
+extern int g_device_id;
 
-std::string RKAiqMedia::GetSensorName(struct media_device* device) {
+std::string RKAiqMedia::GetSensorName(struct media_device* device, int cam_index) {
+  assert(cam_index >= 0 && cam_index < MAX_CAM_NUM);
   std::string sensor_name;
+  std::string sensor_index_str = "m0";
+  sensor_index_str.append(std::to_string(cam_index));
   media_entity* entity = NULL;
   const struct media_entity_desc* entity_info;
   uint32_t nents = media_get_entities_count(device);
@@ -23,14 +27,18 @@ std::string RKAiqMedia::GetSensorName(struct media_device* device) {
     entity = media_get_entity(device, j);
     entity_info = media_entity_get_info(entity);
     if ((NULL != entity_info) && (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR)) {
-      sensor_name = entity_info->name;
-      break;
+      if (sensor_index_str.compare(0, 3, entity_info->name, 0, 3) == 0) {
+        sensor_name = entity_info->name;
+        break;
+      }
     }
   }
   return sensor_name;
 }
 
-int RKAiqMedia::IsLinkSensor(struct media_device* device) {
+int RKAiqMedia::IsLinkSensor(struct media_device* device, int cam_index) {
+  std::string sensor_index_str = "m0";
+  sensor_index_str.append(std::to_string(cam_index));
   int link_sensor = 0;
   media_entity* entity = NULL;
   const struct media_entity_desc* entity_info;
@@ -39,15 +47,19 @@ int RKAiqMedia::IsLinkSensor(struct media_device* device) {
     entity = media_get_entity(device, j);
     entity_info = media_entity_get_info(entity);
     if ((NULL != entity_info) && (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR)) {
-      link_sensor = 1;
-      break;
+      if (sensor_index_str.compare(0, 3, entity_info->name, 0, 3) == 0) {
+        link_sensor = 1;
+        break;
+      }
     }
   }
 
   return link_sensor;
 }
 
-std::string RKAiqMedia::GetLinkSensorSubDev(struct media_device* device) {
+std::string RKAiqMedia::GetLinkSensorSubDev(struct media_device* device, int cam_index) {
+  std::string sensor_index_str = "m0";
+  sensor_index_str.append(std::to_string(cam_index));
   std::string subdev = "";
   media_entity* entity = NULL;
   const struct media_entity_desc* entity_info;
@@ -56,8 +68,10 @@ std::string RKAiqMedia::GetLinkSensorSubDev(struct media_device* device) {
     entity = media_get_entity(device, j);
     entity_info = media_entity_get_info(entity);
     if ((NULL != entity_info) && (entity_info->type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR)) {
-      subdev = media_entity_get_devname(entity);
-      break;
+      if (sensor_index_str.compare(0, 3, entity_info->name, 0, 3) == 0) {
+        subdev = media_entity_get_devname(entity);
+        break;
+      }
     }
   }
   return subdev;
@@ -175,13 +189,13 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device, const char* 
     cif_info = &media_info[index].cif;
     isp_info = &media_info[index].isp;
     if (isp_info->media_dev_path.empty()) {
-      if (IsLinkSensor(device) && !cif_info->media_dev_path.empty()) {
+      if (IsLinkSensor(device, index) && !cif_info->media_dev_path.empty()) {
         continue;
       }
       break;
-    } else if (isp_info->media_dev_path.compare(devpath) == 0) {
-      LOG_ERROR("isp info of path %s exists!", devpath);
-      return;
+    } else if (isp_info->media_dev_path.compare(devpath) == 0 && isp_info->sensor_name.length() > 0) {
+      LOG_ERROR("isp info of path %d %s exists!", index, devpath);
+      continue;
     }
   }
 
@@ -190,10 +204,10 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device, const char* 
     return;
   }
 
-  isp_info->linked_sensor = IsLinkSensor(device);
+  isp_info->linked_sensor = IsLinkSensor(device, index);
   if (isp_info->linked_sensor) {
-    isp_info->sensor_name = GetSensorName(device);
-    isp_info->sensor_subdev_path = GetLinkSensorSubDev(device);
+    isp_info->sensor_name = GetSensorName(device, index);
+    isp_info->sensor_subdev_path = GetLinkSensorSubDev(device, index);
   }
   isp_info->model_idx = id;
   isp_info->media_dev_path = devpath;
@@ -343,14 +357,9 @@ void RKAiqMedia::GetCifSubDevs(int id, struct media_device* device, const char* 
   int index = 0;
   cif_info_t* cif_info = nullptr;
 
-  int link_sensor = IsLinkSensor(device);
-  if (!link_sensor) {
-    return;
-  }
-
   for (index = 0; index < MAX_CAM_NUM; index++) {
     cif_info = &media_info[index].cif;
-    if (cif_info->media_dev_path.empty()) {
+    if (IsLinkSensor(device, index) && cif_info->media_dev_path.empty()) {
       break;
     }
     if (cif_info->media_dev_path.compare(devpath) == 0) {
@@ -365,10 +374,10 @@ void RKAiqMedia::GetCifSubDevs(int id, struct media_device* device, const char* 
   }
 
   cif_info->model_idx = id;
-  cif_info->linked_sensor = link_sensor;
+  cif_info->linked_sensor = IsLinkSensor(device, index);
   if (cif_info->linked_sensor) {
-    cif_info->sensor_name = GetSensorName(device);
-    cif_info->sensor_subdev_path = GetLinkSensorSubDev(device);
+    cif_info->sensor_name = GetSensorName(device, index);
+    cif_info->sensor_subdev_path = GetLinkSensorSubDev(device, index);
   }
   cif_info->media_dev_path = devpath;
 
@@ -459,7 +468,7 @@ void RKAiqMedia::GetLensSubDevs(int id, struct media_device* device, const char*
     cif_info = &media_info[index].cif;
     isp_info = &media_info[index].isp;
     lens_info = &media_info[index].lens;
-    if (!IsLinkSensor(device)) {
+    if (!IsLinkSensor(device, index)) {
       continue;
     }
     if (!isp_info->media_dev_path.empty() && isp_info->linked_sensor) {
@@ -522,6 +531,7 @@ int RKAiqMedia::LinkToIsp(bool enable) {
   media_entity* entity = NULL;
   media_pad *src_pad = NULL, *src_raw2_s = NULL, *src_raw1_l = NULL, *src_raw0_m = NULL;
   media_pad *sink_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
+  media_pad *sink_csi = NULL, *src_sensor = NULL, *src_dphy0 = NULL, *sink_dphy0 = NULL;
 
   LOG_ERROR("############## LinkToIsp\n");
   system(VICAP_COMPACT_TEST_ON);
@@ -621,43 +631,110 @@ int RKAiqMedia::LinkToIsp(bool enable) {
       }
     }
 
+    entity = media_get_entity_by_name(device, "rkisp-csi-subdev");
+    if (entity) {
+      sink_csi = (media_pad*)media_entity_get_pad(entity, 0);
+      if (!sink_csi) {
+        LOG_DEBUG("get rkisp-csi-subdev sink pad failed!\n");
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "rockchip-csi2-dphy0");
+    if (entity) {
+      src_dphy0 = (media_pad*)media_entity_get_pad(entity, 1);
+      if (!src_dphy0 ) {
+        LOG_DEBUG("get rockchip-csi2-dphy0 src pad failed!\n");
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "rockchip-csi2-dphy0");
+    if (entity) {
+      sink_dphy0 = (media_pad*)media_entity_get_pad(entity, 0);
+      if (!sink_dphy0 ) {
+        LOG_DEBUG("get rockchip-csi2-dphy0 sink pad failed!\n");
+      }
+    }
+
+    std::string sensor_name;
+    if (media_info[g_device_id].cif.sensor_name.length() > 0) {
+        sensor_name = media_info[g_device_id].cif.sensor_name;
+    } else if (media_info[g_device_id].isp.sensor_name.length() > 0) {
+        sensor_name = media_info[g_device_id].isp.sensor_name;
+    }
+    LOG_ERROR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> link sensor : %s\n", sensor_name.c_str());
+    if (sensor_name.length() > 0) {
+      entity = media_get_entity_by_name(device, sensor_name.c_str());
+      if (entity) {
+        src_sensor = (media_pad*)media_entity_get_pad(entity, 0);
+        if (!src_sensor) {
+          LOG_DEBUG("get %s subdev sink pad failed!\n", sensor_name.c_str());
+        }
+      }
+    }
+
+    if (sink_csi && src_dphy0) {
+      ret = media_setup_link(device, src_dphy0, sink_csi, MEDIA_LNK_FL_ENABLED);
+      if (ret) {
+        LOG_ERROR("media_setup_link sink_csi FAILED: %d\n", ret);
+      }
+    }
+
+    if (sink_dphy0 && src_sensor) {
+      ret = media_setup_link(device, src_sensor, sink_dphy0, MEDIA_LNK_FL_ENABLED);
+      if (ret) {
+        LOG_ERROR("media_setup_link sink_dphy0 FAILED: %d\n", ret);
+      }
+    }
+
     if (enable) {
-      if (src_pad && sink_pad_bridge && sink_pad_mp) {
+      if (src_pad && sink_pad_mp) {
         ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
         if (ret) {
           LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
         }
+      }
+      if (src_pad && sink_pad_bridge) {
         ret = media_setup_link(device, src_pad, sink_pad_bridge, MEDIA_LNK_FL_ENABLED);
         if (ret) {
           LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
         }
-        LOG_ERROR("media_setup_link isp SUCCESS\n");
-      } else {
-        LOG_ERROR("media_setup_link isp FAILED\n");
       }
+      LOG_ERROR("media_setup_link isp SUCCESS\n");
     } else {
-      if (src_pad && sink_pad_bridge && sink_pad_mp && src_raw2_s && src_raw1_l && src_raw0_m) {
+      if (src_pad && src_raw0_m) {
         ret = media_setup_link(device, src_raw0_m, sink_pad, 0);
         if (ret) {
           LOG_ERROR("media_setup_link src_raw0_m sink_pad FAILED: %d\n", ret);
         }
+      }
+      if (src_pad && src_raw1_l) {
         ret = media_setup_link(device, src_raw1_l, sink_pad, 0);
         if (ret) {
           LOG_ERROR("media_setup_link src_raw1_l sink_pad FAILED: %d\n", ret);
         }
+      }
+      if (src_pad && src_raw2_s) {
         ret = media_setup_link(device, src_raw2_s, sink_pad, 0);
         if (ret) {
           LOG_ERROR("media_setup_link src_raw2_s sink_pad FAILED: %d\n", ret);
         }
+      }
+      if (src_pad && sink_pad_bridge) {
         ret = media_setup_link(device, src_pad, sink_pad_bridge, 0);
-        if (ret) LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n", ret);
+        if (ret) {
+          LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n", ret);
+        }
+      }
+      if (src_pad && sink_pad_mp) {
         ret = media_setup_link(device, src_pad, sink_pad_mp, MEDIA_LNK_FL_ENABLED);
         if (ret) {
           LOG_ERROR("media_setup_link src_pad src_pad FAILED: %d\n", ret);
         }
-        LOG_ERROR("media_setup_link unlink isp SUCCESS\n");
-      } else {
+      }
+      if (ret) {
         LOG_ERROR("media_setup_link unlink isp FAILED\n");
+      } else {
+        LOG_DEBUG("media_setup_link unlink isp SUCCESS\n");
       }
     }
 
