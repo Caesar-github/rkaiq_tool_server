@@ -78,7 +78,7 @@ string TCPClient::Receive(int size) {
   memset(&buffer[0], 0, sizeof(buffer));
   string reply;
   if (recv(sock, buffer, size, 0) < 0) {
-    LOG_ERROR("receive failed!\n", size);
+    LOG_ERROR("receive failed %s !\n", strerror(errno));
     return "\0";
   }
   buffer[size - 1] = '\0';
@@ -91,7 +91,7 @@ int TCPClient::Receive(char* buff, int size) {
   memset(buff, 0, size);
   ret = recv(sock, buff, size, 0);
   if (ret < 0) {
-    LOG_ERROR("receive failed!\n", size);
+    LOG_ERROR("receive failed %s !\n", strerror(errno));
     return -1;
   }
   return ret;

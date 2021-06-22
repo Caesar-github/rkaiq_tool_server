@@ -24,7 +24,7 @@ static std::shared_ptr<easymedia::Flow> create_flow(const std::string &flow_name
   // printf("flow_name : %s\n", flow_name.c_str());
   // printf("param : \n%s\n", param.c_str());
   auto ret = easymedia::REFLECTOR(Flow)::Create<easymedia::Flow>(flow_name.c_str(), param.c_str());
-  printf(" ####### create_flow flow use_count %d\n", ret.use_count());
+  printf(" ####### create_flow flow use_count %ld\n", ret.use_count());
   if (!ret) {
     fprintf(stderr, "Create flow %s failed\n", flow_name.c_str());
   }
@@ -130,7 +130,7 @@ void init_2688p(std::shared_ptr<easymedia::Flow> &video_cap_flow, std::shared_pt
   video_cap_flow->AddDownFlow(sink_flow, 0, 0);
 }
 
-void ImageProcess(unsigned char *buffer, unsigned int buffer_size, unsigned int present_time, int nat_type) {
+void ImageProcess(unsigned char *buffer, unsigned int buffer_size, long present_time, int nat_type) {
   LOG("SinkFlow process_buffer size %d\n", buffer_size);
 }
 

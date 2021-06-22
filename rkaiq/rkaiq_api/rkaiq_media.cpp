@@ -1,7 +1,9 @@
 #include "rkaiq_media.h"
 
+#include <cassert>
+#include <cstdio>
+
 #include <fcntl.h>
-#include <stdio.h>
 #include <sys/ioctl.h>
 
 #ifdef LOG_TAG

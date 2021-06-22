@@ -127,7 +127,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
         ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
       }
       if (ret) {
-        LOGE_ERROR("init_rtsp failed!!");
+        LOG_ERROR("init_rtsp failed!!");
         return ret;
       }
     }
@@ -293,7 +293,7 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
   std::lock_guard<std::mutex> lg(mutex_);
   CommandData_t* common_cmd = (CommandData_t*)buffer;
   LOG_INFO("HandlerTCPMessage:\n");
-  LOG_INFO("HandlerTCPMessage CommandData_t: 0x%x\n", sizeof(CommandData_t));
+  LOG_INFO("HandlerTCPMessage CommandData_t: 0x%lx\n", sizeof(CommandData_t));
   LOG_INFO("HandlerTCPMessage RKID: %s\n", (char*)common_cmd->RKID);
 
   // TODO Check APP Mode

@@ -422,7 +422,7 @@ static void DoCapture(int socket) {
   read_frame(socket, capture_frames_index, &cap_info, DoCaptureCallBack);
   capture_frames_index++;
 
-  LOG_INFO("DoCapture %lld ms %lld us\n", ad.Get() / 1000, ad.Get() % 1000);
+  LOG_INFO("DoCapture %ld ms %ld us\n", ad.Get() / 1000, ad.Get() % 1000);
   LOG_INFO("DoCapture exit!!!!!\n");
 }
 
@@ -444,19 +444,19 @@ static void DoMultiFrameCallBack(int socket, int index, void* buffer, int size) 
     MultiFrameAddition(averge_frame0, (uint16_t*)buffer, width, height);
   }
   DumpRawData32(averge_frame0, size, 2);
-  LOG_INFO("index %d MultiFrameAddition %lld ms %lld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
+  LOG_INFO("index %d MultiFrameAddition %ld ms %ld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
   ad.Reset();
   if (index == (capture_frames - 1)) {
     MultiFrameAverage(averge_frame0, averge_frame1, width, height, capture_frames);
     DumpRawData32(averge_frame0, size, 2);
     DumpRawData(averge_frame1, size, 2);
-    LOG_INFO("index %d MultiFrameAverage %lld ms %lld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
+    LOG_INFO("index %d MultiFrameAverage %ld ms %ld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
     ad.Reset();
     SendRawData(socket, index, averge_frame1, size);
-    LOG_INFO("index %d SendRawData %lld ms %lld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
+    LOG_INFO("index %d SendRawData %ld ms %ld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
   } else if (index == ((capture_frames >> 1) - 1)) {
     SendRawData(socket, index, buffer, size);
-    LOG_INFO("index %d SendRawData %lld ms %lld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
+    LOG_INFO("index %d SendRawData %ld ms %ld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
   }
 }
 
@@ -509,7 +509,7 @@ static void DoMultiFrameCapture(int socket) {
     }
   }
 
-  LOG_INFO("DoMultiFrameCapture %lld ms %lld us\n", ad.Get() / 1000, ad.Get() % 1000);
+  LOG_INFO("DoMultiFrameCapture %ld ms %ld us\n", ad.Get() / 1000, ad.Get() % 1000);
   LOG_INFO("DoMultiFrameCapture exit!!!!!\n");
 }
 

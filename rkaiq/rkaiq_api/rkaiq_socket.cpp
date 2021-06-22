@@ -213,7 +213,7 @@ int RkAiqSocketClientINETReceive(int commandID, void* data, unsigned int dataSiz
   int recv_size = 0;
 
   gettimeofday(&startTime, NULL);
-  printf("INET get, start receive:%d\n", startTime);
+  printf("INET get, start receive:%ld\n", startTime.tv_sec);
   while (remain_size > 0) {
     gettimeofday(&currentTime, NULL);
     if (currentTime.tv_sec - startTime.tv_sec >= 2) {

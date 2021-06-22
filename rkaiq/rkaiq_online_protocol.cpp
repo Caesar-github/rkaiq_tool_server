@@ -61,7 +61,7 @@ static void DoAnswer2(int sockfd, CommandData_t* cmd, int cmd_id, uint16_t check
 
 static int DoCheckSum(int sockfd, uint16_t check_sum) {
   char recv_data[MAXPACKETSIZE];
-  int recv_size = 0;
+  size_t recv_size = 0;
   int param_size = sizeof(CommandData_t);
   int remain_size = param_size;
   int try_count = 3;
@@ -75,7 +75,7 @@ static int DoCheckSum(int sockfd, uint16_t check_sum) {
     recv_size = recv(sockfd, recv_data + offset, remain_size, 0);
     if (recv_size < 0) {
       if (errno == EAGAIN) {
-        LOG_INFO("recv size %d, do try again, count %d\n", recv_size, try_count);
+        LOG_INFO("recv size %zu, do try again, count %d\n", recv_size, try_count);
         try_count--;
         if (try_count < 0) {
           break;
@@ -87,7 +87,7 @@ static int DoCheckSum(int sockfd, uint16_t check_sum) {
     }
     remain_size = remain_size - recv_size;
   }
-  LOG_INFO("recv_size: 0x%x expect 0x%x\n", recv_size, sizeof(CommandData_t));
+  LOG_INFO("recv_size: 0x%lx expect 0x%lx\n", recv_size, sizeof(CommandData_t));
 
   CommandData_t* cmd = (CommandData_t*)recv_data;
   uint16_t recv_check_sum = 0;
