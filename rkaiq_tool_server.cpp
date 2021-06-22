@@ -113,6 +113,7 @@ static void parse_args(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+  int ret = -1;
   LOG_ERROR("#### AIQ tool server 20201222-0933 ####\n");
 
   signal(SIGQUIT, sigterm_handler);
@@ -144,10 +145,12 @@ int main(int argc, char** argv) {
   for (int i = 0; i < MAX_CAM_NUM; i++) rkaiq_media->GetMediaInfo();
   rkaiq_media->DumpMediaInfo();
 
-  RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
+  ret = RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
+  if (ret != 0) {
+      LOG_ERROR("Failed set mode to tunning mode, does app started?");
+  }
 
-  // g_tcpClient.Send("UNIX.domain connect success,this is test data", 45);
-  LOG_DEBUG("domain connect success\n");
+  LOG_DEBUG("================== %d =====================", g_app_run_mode.load());
 
   if (g_stream_dev_name.length() > 0) {
     if (0 > access(g_stream_dev_name.c_str(), R_OK | W_OK)) {

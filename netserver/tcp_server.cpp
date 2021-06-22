@@ -36,6 +36,7 @@ int TCPServer::Recvieve(int cilent_socket) {
       callback_(cilent_socket, buffer, length);
     }
   }
+  LOG_ERROR("Recv from PC failed, closing socket!!");
   close(cilent_socket);
   return 0;
 }

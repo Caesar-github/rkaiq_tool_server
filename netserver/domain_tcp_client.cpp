@@ -106,6 +106,7 @@ bool DomainTCPClient::Send(string data) {
   if (sock != -1) {
     if (send(sock, data.c_str(), strlen(data.c_str()), 0) < 0) {
       LOG_ERROR("Send failed : %s\n", data.c_str());
+      Close();
       return false;
     }
   } else {
@@ -120,6 +121,7 @@ int DomainTCPClient::Send(char* buff, int size) {
     ret = send(sock, buff, size, 0);
     if (ret <= 0) {
       LOG_ERROR("Send buff size %d failed\n", size);
+      Close();
       return ret;
     }
   }
@@ -133,7 +135,8 @@ string DomainTCPClient::Receive(int size) {
   if (sock < 0) {
       return "\0";
   }
-  if (recv(sock, buffer, size, 0) < 0) {
+  ssize_t ret = recv(sock, buffer, size, 0);
+  if (ret < 0 && errno != EAGAIN) {
     LOG_ERROR("domain receive 1 failed %s!\n", strerror(errno));
     return "\0";
   }
@@ -143,14 +146,15 @@ string DomainTCPClient::Receive(int size) {
 }
 
 int DomainTCPClient::Receive(char* buff, int size) {
-  int ret = -1;
+  ssize_t ret = -1;
   if (sock < 0) {
       return 0;
   }
   memset(buff, 0, size);
   ret = recv(sock, buff, size, 0);
-  if (ret < 0) {
+  if (ret < 0 && errno != EAGAIN) {
     LOG_ERROR("domain receive 2 failed %s!\n", strerror(errno));
+    Close();
     return -1;
   }
   return ret;

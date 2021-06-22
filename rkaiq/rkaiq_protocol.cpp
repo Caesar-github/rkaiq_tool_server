@@ -80,22 +80,26 @@ int WaitProcessExit(const char* process, int sec) {
   return 0;
 }
 
-void RKAiqProtocol::ConnectAiq() {
+int RKAiqProtocol::ConnectAiq() {
 #ifdef __ANDROID__
     if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
       LOG_DEBUG("domain connect failed\n");
+      return -1;
     }
 #else
     if (g_device_id == 0) {
       if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
         LOG_DEBUG("domain connect failed\n");
+        return -1;
       }
     } else {
       if (g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
         LOG_DEBUG("domain connect failed\n");
+        return -1;
       }
     }
 #endif
+    return 0;
 }
 
 void RKAiqProtocol::DisConnectAiq() { g_tcpClient.Close(); }
@@ -123,7 +127,8 @@ void RKAiqProtocol::KillApp() {
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 
-void RKAiqProtocol::StartApp() {
+int RKAiqProtocol::StartApp() {
+  int ret = -1;
 #ifdef __ANDROID__
   if (g_allow_killapp) {
     property_set("ctrl.start", "cameraserver");
@@ -138,9 +143,11 @@ void RKAiqProtocol::StartApp() {
     return ret;
   }
 #endif
+  return 0;
 }
 
 int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
+  std::lock_guard<std::mutex> lg(mutex_);
   int ret = -1;
   LOG_DEBUG("Switch to mode %d->%d\n", g_app_run_mode, mode);
   if (g_app_run_mode == mode) {
@@ -195,11 +202,20 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 #endif
-    StartApp();
-    ConnectAiq();
+    ret = StartApp();
+    if (ret) {
+      LOG_ERROR("start app failed!!!");
+      return ret;
+    }
+    int ret = ConnectAiq();
+    if (ret) {
+      LOG_ERROR("connect aiq failed!!!");
+      //close(sockfd);
+      return ret;
+    }
   }
   g_app_run_mode = mode;
-  LOG_DEBUG("CHange mode to %d exit\n", g_app_run_mode);
+  LOG_DEBUG("Change mode to %d exit\n", g_app_run_mode);
   return 0;
 }
 
@@ -279,7 +295,6 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size) {
 }
 
 void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
-  std::lock_guard<std::mutex> lg(mutex_);
   CommandData_t* common_cmd = (CommandData_t*)buffer;
   LOG_INFO("HandlerTCPMessage:\n");
   LOG_INFO("HandlerTCPMessage CommandData_t: 0x%lx\n", sizeof(CommandData_t));
@@ -305,10 +320,21 @@ int RKAiqProtocol::doMessageForward(int sockfd) {
     char recv_buffer[MAXPACKETSIZE] = {0};
     int recv_len = g_tcpClient.Receive(recv_buffer, MAXPACKETSIZE);
     if (recv_len > 0) {
-      send(sockfd, recv_buffer, recv_len, 0);
+      ssize_t ret = send(sockfd, recv_buffer, recv_len, 0);
+      if (ret < 0) {
+          LOG_ERROR("Forward socket %d failed\n", sockfd);
+          close(sockfd);
+          is_recv_running = false;
+          return -1;
+      }
+    } else if (recv_len < 0 && errno != EAGAIN) {
+      close(sockfd);
+      is_recv_running = false;
+      return -1;
     }
   }
 
+  is_recv_running = false;
   return 0;
 }
 
