@@ -1,5 +1,7 @@
 #include "rkaiq_socket.h"
 
+#include <sys/time.h>
+
 #include "domain_tcp_client.h"
 #if 0
 #include "rkaiq_manager.h"
