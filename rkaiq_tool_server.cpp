@@ -4,7 +4,9 @@
 
 #include "camera_infohw.h"
 #include "domain_tcp_client.h"
+#if 0
 #include "rkaiq_manager.h"
+#endif
 #include "rkaiq_protocol.h"
 #include "tcp_server.h"
 #ifdef __ANDROID__

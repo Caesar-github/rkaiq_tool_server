@@ -9,7 +9,9 @@
 #include "camera_infohw.h"
 #include "logger/log.h"
 #include "rkaiq_cmdid.h"
+#if 0
 #include "rkaiq_manager.h"
+#endif
 #ifdef ENABLE_RSTP_SERVER
 #include "rtsp_server.h"
 #endif
@@ -25,7 +27,9 @@ typedef enum { PC_TO_DEVICE = 0x00, DEVICE_TO_PC } cmdType;
 
 #define STOP_RKLUNCH_CMD "sh /oem/RkLunch-stop.sh"
 
+#if 0
 extern std::shared_ptr<RKAiqToolManager> rkaiq_manager;
+#endif
 
 #define RKID_ISP_ON "ISP_ON"
 #define RKID_ISP_OFF "ISP_OFF"

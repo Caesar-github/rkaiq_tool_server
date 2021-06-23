@@ -1,7 +1,9 @@
 #include "rkaiq_socket.h"
 
 #include "domain_tcp_client.h"
+#if 0
 #include "rkaiq_manager.h"
+#endif
 
 #ifdef LOG_TAG
 #undef LOG_TAG
