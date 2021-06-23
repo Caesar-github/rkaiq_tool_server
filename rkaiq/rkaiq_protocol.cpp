@@ -258,7 +258,7 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size) {
   CommandData_t send_cmd;
   char send_data[MAXPACKETSIZE];
 
-  LOG_INFO("HandlerRawCapMessage:\n");
+  LOG_INFO("HandlerCheckDevice:\n");
 
   // for (int i = 0; i < common_cmd->datLen; i++) {
   //   LOG_INFO("DATA[%d]: 0x%x\n", i, common_cmd->dat[i]);
@@ -288,6 +288,9 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size) {
       break;
     case CMD_ID_GET_STATUS:
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
+      break;
+    case CMD_ID_GET_MODE:
+      DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, g_app_run_mode);
       break;
     default:
       break;
