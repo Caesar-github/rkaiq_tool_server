@@ -523,6 +523,90 @@ void RKAiqMedia::GetLensSubDevs(int id, struct media_device* device, const char*
   }
 }
 
+int RKAiqMedia::LinkToSensor(int cam_index) {
+  int ret = -1;
+  cif_info_t* cif_info = NULL;
+  isp_info_t* isp_info = NULL;
+  lens_info_t* lens_info = NULL;
+  std::string sensor_name;
+  std::string media_path;
+  media_device* device = NULL;
+  media_entity* entity = NULL;
+  media_pad *src_csi = NULL, *sink_csi = NULL, *src_dphy0 = NULL, *sink_dphy0 = NULL;
+  media_pad *src_cif = NULL;
+  media_pad *src_sensor = NULL;
+  bool linkToIsp = false;
+
+  cif_info = &media_info[cam_index].cif;
+  isp_info = &media_info[cam_index].isp;
+  if (cif_info->media_dev_path.empty()) {
+    if (isp_info->media_dev_path.empty()) {
+      LOG_ERROR("No sensor %d linked to isp/cif!!!", cam_index);
+      return ret;
+    } else {
+      linkToIsp = true;
+    }
+  }
+
+  if (!linkToIsp) {
+    sensor_name = cif_info->sensor_name;
+    media_path = cif_info->media_dev_path;
+  } else {
+    sensor_name = isp_info->sensor_name;
+    media_path = isp_info->media_dev_path;
+  }
+
+  if (sensor_name.empty()) {
+    LOG_ERROR("sensor %d not found!!!", cam_index);
+    return ret;
+  }
+
+  device = media_device_new(media_path.c_str());
+  if (device == NULL) {
+    LOG_ERROR("Failed to create media %s\n", media_path.c_str());
+    return ret;
+  }
+  ret = media_device_enumerate(device);
+  if (ret < 0) {
+    LOG_ERROR("Failed to enumerate %s (%d)\n", media_path.c_str(), ret);
+    media_device_unref(device);
+    return ret;
+  }
+  const struct media_device_info* info = media_get_info(device);
+  LOG_INFO("%s: model %s\n", media_path.c_str(), info->model);
+  media_reset_links(device);
+  LOG_INFO("%s: setup link to sensor %s\n", media_path.c_str(), sensor_name.c_str());
+
+  if (linkToIsp) {
+    ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":1 -> \"rkisp-isp-subdev\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy0\":1 -> \"rkisp-csi-subdev\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy1\":1 -> \"rkisp-csi-subdev\":0[1]");
+    std::string link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy0\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy1\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+  } else {
+    std::string link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy2\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy2\":1 -> \"rockchip-mipi-csi2\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":1 -> \"stream_cif_mipi_id0\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":2 -> \"stream_cif_mipi_id1\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":3 -> \"stream_cif_mipi_id2\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":4 -> \"stream_cif_mipi_id3\":0[1]");
+  }
+
+out:
+  ret = 0;
+  media_device_unref(device);
+  return ret;
+}
+
 int RKAiqMedia::LinkToIsp(bool enable) {
   int ret;
   int index = 0;
@@ -531,11 +615,17 @@ int RKAiqMedia::LinkToIsp(bool enable) {
   media_entity* entity = NULL;
   media_pad *src_pad = NULL, *src_raw2_s = NULL, *src_raw1_l = NULL, *src_raw0_m = NULL;
   media_pad *sink_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
-  media_pad *sink_csi = NULL, *src_sensor = NULL, *src_dphy0 = NULL, *sink_dphy0 = NULL;
+  media_pad *src_cif = NULL, *src_csi = NULL, *sink_csi = NULL, *src_sensor = NULL, *src_dphy0 = NULL, *sink_dphy0 = NULL;
 
   LOG_ERROR("############## LinkToIsp\n");
   system(VICAP_COMPACT_TEST_ON);
   system(VICAP2_COMPACT_TEST_ON);
+
+  ret = LinkToSensor(g_device_id);
+  if (ret < 0) {
+    LOG_ERROR(">>>>>>>>>>>> link sensor failed!!!");
+    return -1;
+  }
 
   while (index < 10) {
     snprintf(sys_path, 64, "/dev/media%d", index++);
@@ -559,6 +649,7 @@ int RKAiqMedia::LinkToIsp(bool enable) {
       media_device_unref(device);
       continue;
     }
+    //media_reset_links(device);
     LOG_INFO("%s: setup link to isp enable %d\n", sys_path, enable);
     entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
     if (entity) {
@@ -582,155 +673,20 @@ int RKAiqMedia::LinkToIsp(bool enable) {
         }
       }
     }
-
-    entity = media_get_entity_by_name(device, "rkisp-bridge-ispp");
-    if (entity) {
-      sink_pad_bridge = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!sink_pad_bridge) {
-        LOG_ERROR("get rkisp-bridge-ispp sink pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rkisp_mainpath");
-    if (entity) {
-      sink_pad_mp = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!sink_pad_mp) {
-        LOG_ERROR("get rkisp_mainpath sink pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
-    if (entity) {
-      sink_pad = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!sink_pad) {
-        LOG_DEBUG("get rkisp-isp-subdev source pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rkisp_rawrd0_m");
-    if (entity) {
-      src_raw0_m = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!src_raw0_m) {
-        LOG_DEBUG("get rkisp_rawrd0_m sink pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rkisp_rawrd1_l");
-    if (entity) {
-      src_raw1_l = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!src_raw1_l) {
-        LOG_DEBUG("get rkisp_rawrd1_l sink pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rkisp_rawrd2_s");
-    if (entity) {
-      src_raw2_s = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!src_raw2_s) {
-        LOG_DEBUG("get rkisp_rawrd2_s sink pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rkisp-csi-subdev");
-    if (entity) {
-      sink_csi = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!sink_csi) {
-        LOG_DEBUG("get rkisp-csi-subdev sink pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rockchip-csi2-dphy0");
-    if (entity) {
-      src_dphy0 = (media_pad*)media_entity_get_pad(entity, 1);
-      if (!src_dphy0 ) {
-        LOG_DEBUG("get rockchip-csi2-dphy0 src pad failed!\n");
-      }
-    }
-
-    entity = media_get_entity_by_name(device, "rockchip-csi2-dphy0");
-    if (entity) {
-      sink_dphy0 = (media_pad*)media_entity_get_pad(entity, 0);
-      if (!sink_dphy0 ) {
-        LOG_DEBUG("get rockchip-csi2-dphy0 sink pad failed!\n");
-      }
-    }
-
-    std::string sensor_name;
-    if (media_info[g_device_id].cif.sensor_name.length() > 0) {
-        sensor_name = media_info[g_device_id].cif.sensor_name;
-    } else if (media_info[g_device_id].isp.sensor_name.length() > 0) {
-        sensor_name = media_info[g_device_id].isp.sensor_name;
-    }
-    LOG_ERROR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> link sensor : %s\n", sensor_name.c_str());
-    if (sensor_name.length() > 0) {
-      entity = media_get_entity_by_name(device, sensor_name.c_str());
-      if (entity) {
-        src_sensor = (media_pad*)media_entity_get_pad(entity, 0);
-        if (!src_sensor) {
-          LOG_DEBUG("get %s subdev sink pad failed!\n", sensor_name.c_str());
-        }
-      }
-    }
-
-    if (sink_csi && src_dphy0) {
-      ret = media_setup_link(device, src_dphy0, sink_csi, MEDIA_LNK_FL_ENABLED);
-      if (ret) {
-        LOG_ERROR("media_setup_link sink_csi FAILED: %d\n", ret);
-      }
-    }
-
-    if (sink_dphy0 && src_sensor) {
-      ret = media_setup_link(device, src_sensor, sink_dphy0, MEDIA_LNK_FL_ENABLED);
-      if (ret) {
-        LOG_ERROR("media_setup_link sink_dphy0 FAILED: %d\n", ret);
-      }
-    }
+    ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":2 -> \"rkisp_rawwr0\":0[1]");
+    ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":4 -> \"rkisp_rawwr2\":0[1]");
+    ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":5 -> \"rkisp_rawwr3\":0[1]");
 
     if (enable) {
-      if (src_pad && sink_pad_mp) {
-        ret = media_setup_link(device, src_pad, sink_pad_mp, 0);
-        if (ret) {
-          LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
-        }
-      }
-      if (src_pad && sink_pad_bridge) {
-        ret = media_setup_link(device, src_pad, sink_pad_bridge, MEDIA_LNK_FL_ENABLED);
-        if (ret) {
-          LOG_ERROR("media_setup_link sink_pad_bridge FAILED: %d\n", ret);
-        }
-      }
-      LOG_ERROR("media_setup_link isp SUCCESS\n");
+      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_mainpath\":0[1]");
+      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_bridge_ispp\":0[1]");
+      LOG_DEBUG("media_setup_link isp SUCCESS\n");
     } else {
-      if (src_pad && src_raw0_m) {
-        ret = media_setup_link(device, src_raw0_m, sink_pad, 0);
-        if (ret) {
-          LOG_ERROR("media_setup_link src_raw0_m sink_pad FAILED: %d\n", ret);
-        }
-      }
-      if (src_pad && src_raw1_l) {
-        ret = media_setup_link(device, src_raw1_l, sink_pad, 0);
-        if (ret) {
-          LOG_ERROR("media_setup_link src_raw1_l sink_pad FAILED: %d\n", ret);
-        }
-      }
-      if (src_pad && src_raw2_s) {
-        ret = media_setup_link(device, src_raw2_s, sink_pad, 0);
-        if (ret) {
-          LOG_ERROR("media_setup_link src_raw2_s sink_pad FAILED: %d\n", ret);
-        }
-      }
-      if (src_pad && sink_pad_bridge) {
-        ret = media_setup_link(device, src_pad, sink_pad_bridge, 0);
-        if (ret) {
-          LOG_ERROR("media_setup_link src_pad sink_pad_bridge FAILED: %d\n", ret);
-        }
-      }
-      if (src_pad && sink_pad_mp) {
-        ret = media_setup_link(device, src_pad, sink_pad_mp, MEDIA_LNK_FL_ENABLED);
-        if (ret) {
-          LOG_ERROR("media_setup_link src_pad src_pad FAILED: %d\n", ret);
-        }
-      }
+      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_mainpath\":0[1]");
+      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_rawrd0_m\":0[0]");
+      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_rawrd1_l\":0[0]");
+      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_rawrd1_s\":0[0]");
+      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_bridge_ispp\":0[0]");
       if (ret) {
         LOG_ERROR("media_setup_link unlink isp FAILED\n");
       } else {
@@ -741,7 +697,7 @@ int RKAiqMedia::LinkToIsp(bool enable) {
     // ret = v4l2_subdev_parse_setup_formats(device, "crop:(0,0)/2688x1520");
     media_device_unref(device);
   }
-  return ret;
+  return 0;
 }
 
 int RKAiqMedia::GetIspVer() {

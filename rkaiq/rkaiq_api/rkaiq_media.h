@@ -113,6 +113,7 @@ class RKAiqMedia {
   int GetIspVer();
   int DumpMediaInfo();
   int LinkToIsp(bool enable = false);
+  int LinkToSensor(int cam_index);
 
  public:
   std::string GetSensorName(int id) {

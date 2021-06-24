@@ -268,7 +268,11 @@ int init_device(struct capture_info* cap_info) {
   CLEAR(cropcap);
   cropcap.type = cap_info->capture_buf_type;
   crop.type = cap_info->capture_buf_type;
-  crop.c = cropcap.defrect; /* reset to default */
+  //crop.c = cropcap.defrect; /* reset to default */
+  crop.c.left = 0;
+  crop.c.top = 0;
+  crop.c.width = cap_info->width;
+  crop.c.height = cap_info->height;
   if (cap_info->link == link_to_isp) {
     device_cropcap(cap_info->dev_fd, &cropcap, &crop);
   }

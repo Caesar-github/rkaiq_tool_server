@@ -45,7 +45,7 @@ int device_querycap(int dev_fd, struct v4l2_capability* cap) {
 
 int device_cropcap(int dev_fd, struct v4l2_cropcap* cropcap, struct v4l2_crop* crop) {
   int ret = xioctl(dev_fd, VIDIOC_CROPCAP, cropcap);
-  if (0 == ret) {
+  //if (0 == ret) {
     ret = xioctl(dev_fd, VIDIOC_S_CROP, crop);
     if (-1 == ret) {
       switch (errno) {
@@ -57,7 +57,7 @@ int device_cropcap(int dev_fd, struct v4l2_cropcap* cropcap, struct v4l2_crop* c
           break;
       }
     }
-  }
+  //}
   return ret;
 }
 
