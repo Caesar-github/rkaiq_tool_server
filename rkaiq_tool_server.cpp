@@ -42,7 +42,9 @@ std::shared_ptr<RKAiqMedia> rkaiq_media;
 void sigterm_handler(int sig) {
   fprintf(stderr, "sigterm_handler signal %d\n", sig);
   quit = true;
-  tcpServer->SaveExit();
+  if (tcpServer != nullptr)
+      tcpServer->SaveExit();
+  exit(0);
 }
 
 static int get_env(const char* name, int* value, int default_value) {
