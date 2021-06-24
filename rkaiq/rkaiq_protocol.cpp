@@ -5,6 +5,7 @@
 
 #ifdef __ANDROID__
 #include <cutils/properties.h>
+#include <rtspserver/RtspServer.h>
 #endif
 
 #include "domain_tcp_client.h"
@@ -159,7 +160,6 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
   if (mode == APP_RUN_STATUS_STREAMING) {
     LOG_DEBUG("Switch to APP_RUN_STATUS_STREAMING\n");
     KillApp();
-#ifndef __ANDROID__
     if (g_rtsp_en) {
       // TODO(Cody): Android does not need to setup link
       ret = rkaiq_media->LinkToIsp(true);
@@ -184,15 +184,12 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
         return ret;
       }
     }
-#endif
   } else if (mode == APP_RUN_STATUS_CAPTURE) {
     LOG_DEBUG("Switch to APP_RUN_STATUS_CAPTURE\n");
-#ifndef __ANDROID__
     if (g_rtsp_en) {
       deinit_rtsp();
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
-#endif
     KillApp();
     ret = rkaiq_media->LinkToIsp(false);
     if (ret) {
@@ -202,12 +199,10 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     }
   } else {
     LOG_DEBUG("Switch to APP_RUN_STATUS_TUNRING\n");
-#ifndef __ANDROID__
     if (g_rtsp_en) {
       deinit_rtsp();
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
-#endif
     ret = StartApp();
     if (ret) {
       LOG_ERROR("start app failed!!!");

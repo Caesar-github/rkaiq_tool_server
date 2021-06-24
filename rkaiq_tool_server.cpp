@@ -12,8 +12,11 @@
 #include "rkaiq_protocol.h"
 #include "tcp_server.h"
 #ifdef __ANDROID__
+#include <rtspserver/RtspServer.h>
 #include <cutils/properties.h>
 #endif
+
+#include "RtspServer.h"
 
 #ifdef LOG_TAG
 #undef LOG_TAG
@@ -50,7 +53,6 @@ void signal_handle(int sig) {
 
   if (g_rtsp_en)
     deinit_rtsp();
-
 }
 
 static int get_env(const char* name, int* value, int default_value) {
@@ -191,11 +193,9 @@ int main(int argc, char** argv) {
     }
   }
 
-#ifndef __ANDROID__
   if (g_rtsp_en && g_stream_dev_name.length() > 0) {
     init_rtsp(g_stream_dev_name.c_str(), g_width, g_height);
   }
-#endif
 
   pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
   tcpServer = std::make_shared<TCPServer>();
@@ -213,11 +213,9 @@ int main(int argc, char** argv) {
     g_aiqCred = nullptr;
   }
 
-#ifndef __ANDROID__
   if (g_rtsp_en) {
     deinit_rtsp();
   }
-#endif
 
 #if 0
   rkaiq_manager.reset();

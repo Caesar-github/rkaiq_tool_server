@@ -28,10 +28,13 @@ cc_defaults {
         "netserver",
         "rkaiq",
         "rkaiq/rkaiq_api",
-        "rkmedia",
-        "rkmedia/include",
-        "rkmedia/librkmedia/include",
-        "rkmedia/librkmedia/include/easymedia"
+        "rtspserver",
+        "rtspserver/include",
+        "rtspserver/include/UsageEnvironment/include",
+        "rtspserver/include/liveMedia/",
+        "rtspserver/include/liveMedia/include",
+        "rtspserver/include/BasicUsageEnvironment/include",
+        "rtspserver/include/groupsock/include",
     ],
 
     //clang: true,
@@ -52,139 +55,20 @@ cc_defaults {
     name: "rkaiq_tool_server_default_libs",
 
     static_libs: [
+        "libliveMedia",
+        "libgroupsock",
+        "libBasicUsageEnvironment",
+        "libUsageEnvironment",
+        "librtspserver",
     ],
     shared_libs: [
         "libbase",
         "libcutils",
         "liblog",
+        "libvpu",
+        "libssl",
+        "libcrypto",
     ],
-}
-
-cc_prebuilt_library_static {
-    name: "libliveMedia",
-    vendor: true,
-    arch: {
-        arm: {
-            srcs: [
-                "rkmedia/lib/arm/libliveMedia.a",
-            ]
-        },
-        arm64: {
-            srcs: [
-                "rkmedia/lib/aarch64/libliveMedia.a",
-            ]
-        },
-
-    },
-    strip: {
-        none:true,
-    }
-}
-
-cc_prebuilt_library_static {
-    name: "libgroupsock",
-    vendor: true,
-    arch: {
-        arm: {
-            srcs: [
-                "rkmedia/lib/arm/libgroupsock.a",
-            ]
-        },
-        arm64: {
-            srcs: [
-                "rkmedia/lib/aarch64/libgroupsock.a",
-            ]
-        },
-
-    },
-    strip: {
-        none:true,
-    }
-}
-
-cc_prebuilt_library_static {
-    name: "libBasicUsageEnvironment",
-    vendor: true,
-    arch: {
-        arm: {
-            srcs: [
-                "rkmedia/lib/arm/libBasicUsageEnvironment.a",
-            ]
-        },
-        arm64: {
-            srcs: [
-                "rkmedia/lib/aarch64/libBasicUsageEnvironment.a",
-            ]
-        },
-
-    },
-    strip: {
-        none:true,
-    }
-}
-
-cc_prebuilt_library_static {
-    name: "libUsageEnvironment",
-    vendor: true,
-    arch: {
-        arm: {
-            srcs: [
-                "rkmedia/lib/arm/libUsageEnvironment.a",
-            ]
-        },
-        arm64: {
-            srcs: [
-                "rkmedia/lib/aarch64/libUsageEnvironment.a",
-            ]
-        },
-
-    },
-    strip: {
-        none:true,
-    }
-}
-
-cc_library_static {
-    name: "librkmedia",
-    defaults: [
-        "rkaiq_tool_server_default_flags",
-        "rkaiq_tool_server_default_libs",
-    ],
-    cflags: [
-        "-DHAVE_LIBV4L2",
-        "-DLIVE555=ON",
-        "-DLIVE555_SERVER=ON",
-        "-DLIVE555_SERVER_H264",
-        "-DLIVE555_SERVER_H265",
-    ],
-    whole_static_libs: [
-        "libliveMedia",
-        "libgroupsock",
-        "libBasicUsageEnvironment",
-        "libUsageEnvironment",
-    ],
-    shared_libs: [
-        "libmpp",
-    ],
-    local_include_dirs: [
-        "rkmedia/include/liveMedia",
-        "rkmedia/include/groupsock",
-        "rkmedia/include/BasicUsageEnvironment",
-        "rkmedia/include/UsageEnvironment",
-        "rkmedia/librkmedia/include",
-        "rkmedia/librkmedia/include/easymedia",
-    ],
-    srcs: [
-        //"rkmedia/*.cc",
-        //"rkmedia/librkmedia/*.cc",
-        //"rkmedia/librkmedia/rkmpp/*.cc",
-        //"rkmedia/librkmedia/stream/camera/*.cc",
-        //"rkmedia/librkmedia/flow/*.cc",
-    ],
-
-    strip: {
-        none:true,
-    }
 }
 
 cc_binary {
