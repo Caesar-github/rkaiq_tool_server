@@ -28,7 +28,7 @@ extern std::string g_sensor_name;
 extern std::shared_ptr<RKAiqMedia> rkaiq_media;
 
 bool RKAiqProtocol::is_recv_running = false;
-std::shared_ptr<std::thread> RKAiqProtocol::forward_thread = nullptr;
+std::unique_ptr<std::thread> RKAiqProtocol::forward_thread = nullptr;
 std::mutex RKAiqProtocol::mutex_;
 
 static int ProcessExists(const char* process_name) {
@@ -84,17 +84,20 @@ int RKAiqProtocol::ConnectAiq() {
 #ifdef __ANDROID__
     if (g_tcpClient.Setup(LOCAL_SOCKET_PATH) == false) {
       LOG_DEBUG("domain connect failed\n");
+      g_tcpClient.Close();
       return -1;
     }
 #else
     if (g_device_id == 0) {
       if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
         LOG_DEBUG("domain connect failed\n");
+        g_tcpClient.Close();
         return -1;
       }
     } else {
       if (g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
         LOG_DEBUG("domain connect failed\n");
+        g_tcpClient.Close();
         return -1;
       }
     }
@@ -162,6 +165,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       ret = rkaiq_media->LinkToIsp(true);
       if (ret) {
         LOG_ERROR("link isp failed!!!");
+        g_app_run_mode = APP_RUN_STATUS_INIT;
         return ret;
       }
       media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
@@ -176,6 +180,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       }
       if (ret) {
         LOG_ERROR("init_rtsp failed!!");
+        g_app_run_mode = APP_RUN_STATUS_INIT;
         return ret;
       }
     }
@@ -192,6 +197,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     ret = rkaiq_media->LinkToIsp(false);
     if (ret) {
       LOG_ERROR("unlink isp failed!!!");
+      g_app_run_mode = APP_RUN_STATUS_INIT;
       return ret;
     }
   } else {
@@ -205,12 +211,14 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     ret = StartApp();
     if (ret) {
       LOG_ERROR("start app failed!!!");
+      g_app_run_mode = APP_RUN_STATUS_INIT;
       return ret;
     }
     int ret = ConnectAiq();
     if (ret) {
       LOG_ERROR("connect aiq failed!!!");
-      //close(sockfd);
+      is_recv_running = false;
+      g_app_run_mode = APP_RUN_STATUS_INIT;
       return ret;
     }
   }
@@ -312,8 +320,7 @@ void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size) {
   } else if (strcmp((char*)common_cmd->RKID, RKID_CHECK) == 0) {
     HandlerCheckDevice(sockfd, buffer, size);
   } else {
-    DoChangeAppMode(APP_RUN_STATUS_TUNRING);
-    MessageForward(sockfd, buffer, size);
+    if (!DoChangeAppMode(APP_RUN_STATUS_TUNRING)) MessageForward(sockfd, buffer, size);
   }
 }
 
@@ -327,29 +334,57 @@ int RKAiqProtocol::doMessageForward(int sockfd) {
       if (ret < 0) {
           LOG_ERROR("Forward socket %d failed\n", sockfd);
           close(sockfd);
+          std::lock_guard<std::mutex> lk(mutex_);
           is_recv_running = false;
           return -1;
       }
     } else if (recv_len < 0 && errno != EAGAIN) {
+      g_tcpClient.Close();
       close(sockfd);
+      std::lock_guard<std::mutex> lk(mutex_);
       is_recv_running = false;
       return -1;
     }
   }
 
+  std::lock_guard<std::mutex> lk(mutex_);
   is_recv_running = false;
   return 0;
 }
 
 int RKAiqProtocol::MessageForward(int sockfd, char* buffer, int size) {
   LOG_INFO("[%s]got data:%d!\n", __func__, size);
-  g_tcpClient.Send((char*)buffer, size);
+  int ret = g_tcpClient.Send((char*)buffer, size);
+  if (ret < 0 && (errno != EAGAIN && errno != EINTR)) {
+      g_tcpClient.Close();
+      g_app_run_mode = APP_RUN_STATUS_INIT;
+      LOG_ERROR("Forward to AIQ failed!");
+      return -1;
+  }
 
+  std::lock_guard<std::mutex> lk(mutex_);
   if (is_recv_running) {
     return 0;
   }
 
-  forward_thread = make_shared<thread>(&RKAiqProtocol::doMessageForward, sockfd);
+#if 0
+  if (forward_thread && forward_thread->joinable()) forward_thread->join();
+#endif
+
+  forward_thread = std::unique_ptr<std::thread>(new std::thread(&RKAiqProtocol::doMessageForward, sockfd));
+  forward_thread->detach();
 
   return 0;
+}
+
+void RKAiqProtocol::Exit() {
+  {
+    std::lock_guard<std::mutex> lk(mutex_);
+    is_recv_running = false;
+  }
+#if 0
+  if (forward_thread && forward_thread->joinable()) {
+    forward_thread->join();
+  }
+#endif
 }

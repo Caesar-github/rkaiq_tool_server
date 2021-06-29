@@ -29,11 +29,12 @@ class RKAiqProtocol {
   static void DisConnectAiq();
   static void KillApp();
   static int StartApp();
+  static void Exit();
 
  private:
   static std::mutex mutex_;
   static bool is_recv_running;
-  static std::shared_ptr<std::thread> forward_thread;
+  static std::unique_ptr<std::thread> forward_thread;
 };
 
 #endif

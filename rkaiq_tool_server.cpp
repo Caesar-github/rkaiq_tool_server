@@ -1,5 +1,7 @@
+#include <signal.h>
+#include <unistd.h>
+
 #include <atomic>
-#include <csignal>
 #include <ctime>
 
 #include "camera_infohw.h"
@@ -33,18 +35,22 @@ std::string iqfile;
 std::string g_sensor_name;
 std::string g_sensor_name1;
 
-std::shared_ptr<TCPServer> tcpServer;
+std::shared_ptr<TCPServer> tcpServer = nullptr;
 #if 0
 std::shared_ptr<RKAiqToolManager> rkaiq_manager;
 #endif
 std::shared_ptr<RKAiqMedia> rkaiq_media;
 
-void sigterm_handler(int sig) {
-  fprintf(stderr, "sigterm_handler signal %d\n", sig);
-  quit = true;
+void signal_handle(int sig) {
+  quit.store(true, std::memory_order_release);
   if (tcpServer != nullptr)
       tcpServer->SaveExit();
-  exit(0);
+ 
+  RKAiqProtocol::Exit();
+
+  if (g_rtsp_en)
+    deinit_rtsp();
+
 }
 
 static int get_env(const char* name, int* value, int default_value) {
@@ -120,12 +126,32 @@ int main(int argc, char** argv) {
   int ret = -1;
   LOG_ERROR("#### AIQ tool server 20201222-0933 ####\n");
 
-  signal(SIGQUIT, sigterm_handler);
-  signal(SIGINT, sigterm_handler);
-  signal(SIGTERM, sigterm_handler);
-  signal(SIGXCPU, sigterm_handler);
-  signal(SIGIO, sigterm_handler);
-  signal(SIGPIPE, sigterm_handler);
+#ifdef _WIN32
+  signal (SIGINT, signal_handle);
+  signal (SIGQUIT, signal_handle);
+  signal (SIGTERM, signal_handle);
+#else
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGINT);
+  sigaddset(&mask, SIGTERM);
+  sigaddset(&mask, SIGQUIT);
+  pthread_sigmask(SIG_BLOCK, &mask, NULL);
+
+  struct sigaction new_action, old_action;
+  new_action.sa_handler = signal_handle;
+  sigemptyset (&new_action.sa_mask);
+  new_action.sa_flags = 0;
+  sigaction (SIGINT, NULL, &old_action);
+  if (old_action.sa_handler != SIG_IGN)
+	  sigaction (SIGINT, &new_action, NULL);
+  sigaction (SIGQUIT, NULL, &old_action);
+  if (old_action.sa_handler != SIG_IGN)
+	  sigaction (SIGQUIT, &new_action, NULL);
+  sigaction (SIGTERM, NULL, &old_action);
+  if (old_action.sa_handler != SIG_IGN)
+	  sigaction (SIGTERM, &new_action, NULL);
+#endif
 
 #ifdef __ANDROID__
   char property_value[PROPERTY_VALUE_MAX] = {0};
@@ -171,13 +197,17 @@ int main(int argc, char** argv) {
   }
 #endif
 
+  pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
   tcpServer = std::make_shared<TCPServer>();
   tcpServer->RegisterRecvCallBack(RKAiqProtocol::HandlerTCPMessage);
   tcpServer->Process(SERVER_PORT);
-  while (!quit) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  while (!quit.load() && !tcpServer->Exited()) {
+    pause();
+    //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
+
   tcpServer->SaveExit();
+
   if (g_aiqCred != nullptr) {
     delete g_aiqCred;
     g_aiqCred = nullptr;

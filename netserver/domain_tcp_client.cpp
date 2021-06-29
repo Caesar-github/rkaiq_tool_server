@@ -53,13 +53,15 @@ void DomainTCPClient::Close() {
   }
   if (sock > 0) {
     close(sock);
+    sock = -1;
   }
 }
 
 bool DomainTCPClient::Setup(string domainPath) {
 #ifdef __ANDROID__
   if (sock > 0) {
-    close(sock);
+    //close(sock);
+    return true;
   }
   sock = socket_local_client(android::base::Basename(domainPath), SOCK_STREAM);
   if (sock < 0) {
@@ -92,13 +94,13 @@ bool DomainTCPClient::Setup(string domainPath) {
   }
   socklen_t len = sizeof(struct ucred);
   if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, (void*)g_aiqCred, &len) == -1) {
-    close(sock);
-    sock = -1;
-    LOG_ERROR("getsockopt");
+    //close(sock);
+    //sock = -1;
+    LOG_ERROR("getsockopt peer credentials not supported");
+  } else {
+    LOG_DEBUG("Credentials from SO_PEERCRED: pid=%ld, euid=%ld, egid=%ld\n", (long)g_aiqCred->pid, (long)g_aiqCred->uid,
+              (long)g_aiqCred->gid);
   }
-
-  LOG_DEBUG("Credentials from SO_PEERCRED: pid=%ld, euid=%ld, egid=%ld\n", (long)g_aiqCred->pid, (long)g_aiqCred->uid,
-            (long)g_aiqCred->gid);
   return true;
 }
 
@@ -119,7 +121,7 @@ int DomainTCPClient::Send(char* buff, int size) {
   int ret = -1;
   if (sock != -1) {
     ret = send(sock, buff, size, 0);
-    if (ret <= 0) {
+    if (ret < 0 && (errno != EAGAIN && errno != EINTR)) {
       LOG_ERROR("Send buff size %d failed\n", size);
       Close();
       return ret;
@@ -136,8 +138,9 @@ string DomainTCPClient::Receive(int size) {
       return "\0";
   }
   ssize_t ret = recv(sock, buffer, size, 0);
-  if (ret < 0 && errno != EAGAIN) {
+  if (ret < 0 && (errno != EAGAIN && errno != EINTR)) {
     LOG_ERROR("domain receive 1 failed %s!\n", strerror(errno));
+    Close();
     return "\0";
   }
   buffer[size - 1] = '\0';
@@ -148,11 +151,11 @@ string DomainTCPClient::Receive(int size) {
 int DomainTCPClient::Receive(char* buff, int size) {
   ssize_t ret = -1;
   if (sock < 0) {
-      return 0;
+      return -1;
   }
   memset(buff, 0, size);
   ret = recv(sock, buff, size, 0);
-  if (ret < 0 && errno != EAGAIN) {
+  if (ret < 0 && (errno != EAGAIN && errno != EINTR)) {
     LOG_ERROR("domain receive 2 failed %s!\n", strerror(errno));
     Close();
     return -1;
