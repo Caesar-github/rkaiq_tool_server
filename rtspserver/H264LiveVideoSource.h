@@ -7,6 +7,7 @@ class H264LiveVideoSource: public FramedSource
 {
 public:
     static H264LiveVideoSource* createNew(UsageEnvironment& env, void *listener);
+    virtual unsigned maxFrameSize() const;
 protected:
     H264LiveVideoSource(UsageEnvironment& env, void *listener);
 	// called only by createNew()

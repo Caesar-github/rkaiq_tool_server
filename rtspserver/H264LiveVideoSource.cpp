@@ -21,6 +21,8 @@ H264LiveVideoSource::~H264LiveVideoSource()
 {
 }
 
+ unsigned int H264LiveVideoSource::maxFrameSize() const { return 1024 * 1024; }
+
 void H264LiveVideoSource::doGetNextFrame()
 {
     QMediaBuffer outBuf;
@@ -37,7 +39,7 @@ void H264LiveVideoSource::doGetNextFrame()
             fNumTruncatedBytes = 0;
         }
 
-        memcpy(fTo, outBuf.getData(), fFrameSize);
+        memmove(fTo, outBuf.getData(), fFrameSize);
 
         FramedSource::afterGetting(this);
     }
