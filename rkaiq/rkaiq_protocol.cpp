@@ -27,6 +27,7 @@ extern struct ucred* g_aiqCred;
 extern std::string iqfile;
 extern std::string g_sensor_name;
 extern std::shared_ptr<RKAiqMedia> rkaiq_media;
+extern std::string g_stream_dev_name;
 
 bool RKAiqProtocol::is_recv_running = false;
 std::unique_ptr<std::thread> RKAiqProtocol::forward_thread = nullptr;
@@ -169,14 +170,26 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
         return ret;
       }
       media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
-      int isp_ver = rkaiq_media->GetIspVer();
-      LOG_DEBUG(">>>>>>>> isp ver = %d\n", isp_ver);
-      if (isp_ver == 4) {
-        ret = init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
-      } else if (isp_ver == 5) {
-        ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+#ifdef __ANDROID__
+      std::string isp3a_server_cmd = "/vendor/bin/rkaiq_3A_server --mmedia=";
+      isp3a_server_cmd.append(mi.isp.media_dev_path);
+      isp3a_server_cmd.append(" &");
+      system("pkill rkaiq_3A_server*");
+      system(isp3a_server_cmd.c_str());
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+#endif
+      if (g_stream_dev_name.empty()) {
+        int isp_ver = rkaiq_media->GetIspVer();
+        LOG_DEBUG(">>>>>>>> isp ver = %d\n", isp_ver);
+        if (isp_ver == 4) {
+          ret = init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+        } else if (isp_ver == 5) {
+          ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+        } else {
+          ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+        }
       } else {
-        ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+        ret = init_rtsp(g_stream_dev_name.c_str(), g_width, g_height);
       }
       if (ret) {
         LOG_ERROR("init_rtsp failed!!");
@@ -188,6 +201,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     LOG_DEBUG("Switch to APP_RUN_STATUS_CAPTURE\n");
     if (g_rtsp_en) {
       deinit_rtsp();
+      system("pkill rkaiq_3A_server*");
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
     KillApp();
@@ -201,6 +215,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     LOG_DEBUG("Switch to APP_RUN_STATUS_TUNRING\n");
     if (g_rtsp_en) {
       deinit_rtsp();
+      system("pkill rkaiq_3A_server*");
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
     ret = StartApp();

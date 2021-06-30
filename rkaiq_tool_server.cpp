@@ -177,12 +177,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < MAX_CAM_NUM; i++) rkaiq_media->GetMediaInfo();
   rkaiq_media->DumpMediaInfo();
 
-  ret = RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
-  if (ret != 0) {
-      LOG_ERROR("Failed set mode to tunning mode, does app started?");
-  }
-
-  LOG_DEBUG("================== %d =====================", g_app_run_mode.load());
+   LOG_DEBUG("================== %d =====================", g_app_run_mode.load());
 
   if (g_stream_dev_name.length() > 0) {
     if (0 > access(g_stream_dev_name.c_str(), R_OK | W_OK)) {
@@ -194,7 +189,15 @@ int main(int argc, char** argv) {
   }
 
   if (g_rtsp_en && g_stream_dev_name.length() > 0) {
-    init_rtsp(g_stream_dev_name.c_str(), g_width, g_height);
+    ret = RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_STREAMING);
+    if (ret != 0) {
+      LOG_ERROR("Failed set mode to tunning mode, does app started?");
+    }
+  } else {
+    ret = RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
+    if (ret != 0) {
+      LOG_ERROR("Failed set mode to tunning mode, does app started?");
+    }
   }
 
   pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
@@ -214,6 +217,7 @@ int main(int argc, char** argv) {
   }
 
   if (g_rtsp_en) {
+    system("pkill rkaiq_3A_server*");
     deinit_rtsp();
   }
 
