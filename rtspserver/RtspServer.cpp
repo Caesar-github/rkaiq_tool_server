@@ -86,7 +86,7 @@ bool RtspServer::initOther(MetaInfo *meta)
     encInfo.height = meta->height;
     encInfo.format = ENC_INPUT_YUV420_SEMIPLANAR;
     encInfo.framerate = 30; // 30fps
-    encInfo.bitRate = 500000; // 500k default
+    encInfo.bitRate = 8000000; // 500k default
     encInfo.IDRInterval = 1;
     encInfo.rc_mode = 1;
     encInfo.qp = 20;
