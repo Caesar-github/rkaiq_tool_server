@@ -65,6 +65,8 @@ typedef enum {
 typedef enum {
   CMD_ID_GET_STATUS = 0x0100,
   CMD_ID_GET_MODE = 0x0101,
+  CMD_ID_START_RTSP = 0x0102,
+  CMD_ID_STOP_RTSP = 0x0103,
 } RkispCmdStatusID_e;
 
 typedef enum {

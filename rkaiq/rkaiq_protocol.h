@@ -29,6 +29,8 @@ class RKAiqProtocol {
   static void DisConnectAiq();
   static void KillApp();
   static int StartApp();
+  static int StartRTSP();
+  static int StopRTSP();
   static void Exit();
 
  private:

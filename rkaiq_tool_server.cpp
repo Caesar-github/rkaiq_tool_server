@@ -30,7 +30,7 @@ std::atomic<int> g_app_run_mode(APP_RUN_STATUS_INIT);
 int g_width = 1920;
 int g_height = 1080;
 int g_device_id = 0;
-int g_rtsp_en = 1;
+int g_rtsp_en = 0;
 int g_allow_killapp = 0;
 int g_cam_count = 0;
 

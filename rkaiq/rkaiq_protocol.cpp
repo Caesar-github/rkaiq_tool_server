@@ -144,6 +144,60 @@ int RKAiqProtocol::StartApp() {
   return 0;
 }
 
+int RKAiqProtocol::StartRTSP() {
+  int ret = -1;
+
+  LOG_DEBUG("Starting RTSP !!!");
+  KillApp();
+  ret = rkaiq_media->LinkToIsp(true);
+  if (ret) {
+    LOG_ERROR("link isp failed!!!");
+    return ret;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
+#ifdef __ANDROID__
+  int readback = 0;
+  std::string isp3a_server_cmd = "/vendor/bin/rkaiq_3A_server -mmedia= ";
+  isp3a_server_cmd.append(mi.isp.media_dev_path);
+  isp3a_server_cmd.append(" --sensor_index=");
+  isp3a_server_cmd.append(std::to_string(g_device_id));
+  isp3a_server_cmd.append(" &");
+  system("pkill rkaiq_3A_server*");
+  system(isp3a_server_cmd.c_str());
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+#endif
+  if (g_stream_dev_name.empty()) {
+    int isp_ver = rkaiq_media->GetIspVer();
+    LOG_DEBUG(">>>>>>>> isp ver = %d\n", isp_ver);
+    if (isp_ver == 4) {
+      ret = init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
+    } else if (isp_ver == 5) {
+      ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+    } else {
+      ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
+    }
+  } else {
+    ret = init_rtsp(g_stream_dev_name.c_str(), g_width, g_height);
+  }
+  if (ret) {
+    LOG_ERROR("init_rtsp failed!!");
+    return ret;
+  }
+
+  LOG_DEBUG("Started RTSP !!!");
+  return 0;
+}
+
+int RKAiqProtocol::StopRTSP() {
+  LOG_DEBUG("Stopping RTSP !!!");
+  deinit_rtsp();
+  system("pkill rkaiq_3A_server*");
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  LOG_DEBUG("Stopped RTSP !!!");
+  return 0;
+}
+
 int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
   std::lock_guard<std::mutex> lg(mutex_);
   int ret = -1;
@@ -151,63 +205,15 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
   if (g_app_run_mode == mode) {
     return 0;
   }
-  if (mode == APP_RUN_STATUS_STREAMING) {
-    LOG_DEBUG("Switch to APP_RUN_STATUS_STREAMING\n");
-    KillApp();
-    if (g_rtsp_en) {
-      // TODO(Cody): Android does not need to setup link
-      ret = rkaiq_media->LinkToIsp(true);
-      if (ret) {
-        LOG_ERROR("link isp failed!!!");
-        g_app_run_mode = APP_RUN_STATUS_INIT;
-        return ret;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-      media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
-#ifdef __ANDROID__
-      int readback = 0;
-      std::string isp3a_server_cmd = "/vendor/bin/rkaiq_3A_server -mmedia= ";
-      isp3a_server_cmd.append(mi.isp.media_dev_path);
-      isp3a_server_cmd.append(" --sensor_index=");
-      isp3a_server_cmd.append(std::to_string(g_device_id));
-#if 0
-      isp3a_server_cmd.append(mi.isp.media_dev_path);
-      isp3a_server_cmd.append(" --readback=");
-      if (g_cam_count > 1 || !mi.cif.media_dev_path.empty()) {
-        readback = 1;
-      }
-      isp3a_server_cmd.append(std::to_string(readback));
-#endif
-      isp3a_server_cmd.append(" &");
-      system("pkill rkaiq_3A_server*");
-      system(isp3a_server_cmd.c_str());
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
-#endif
-      if (g_stream_dev_name.empty()) {
-        int isp_ver = rkaiq_media->GetIspVer();
-        LOG_DEBUG(">>>>>>>> isp ver = %d\n", isp_ver);
-        if (isp_ver == 4) {
-          ret = init_rtsp(mi.ispp.pp_scale0_path.c_str(), g_width, g_height);
-        } else if (isp_ver == 5) {
-          ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
-        } else {
-          ret = init_rtsp(mi.isp.main_path.c_str(), g_width, g_height);
-        }
-      } else {
-        ret = init_rtsp(g_stream_dev_name.c_str(), g_width, g_height);
-      }
-      if (ret) {
-        LOG_ERROR("init_rtsp failed!!");
-        g_app_run_mode = APP_RUN_STATUS_INIT;
-        return ret;
-      }
-    }
-  } else if (mode == APP_RUN_STATUS_CAPTURE) {
+  if (mode == APP_RUN_STATUS_CAPTURE) {
     LOG_DEBUG("Switch to APP_RUN_STATUS_CAPTURE\n");
     if (g_rtsp_en) {
-      deinit_rtsp();
-      system("pkill rkaiq_3A_server*");
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      ret = StopRTSP();
+      if (ret) {
+        LOG_ERROR("stop RTSP failed!!!");
+        g_app_run_mode = APP_RUN_STATUS_INIT;
+        return ret;
+      }
     }
     KillApp();
     ret = rkaiq_media->LinkToIsp(false);
@@ -218,22 +224,19 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
     }
   } else {
     LOG_DEBUG("Switch to APP_RUN_STATUS_TUNRING\n");
-    if (g_rtsp_en) {
-      deinit_rtsp();
-      system("pkill rkaiq_3A_server*");
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
     ret = rkaiq_media->LinkToIsp(true);
     if (ret) {
       LOG_ERROR("link isp failed!!!");
       g_app_run_mode = APP_RUN_STATUS_INIT;
       return ret;
     }
-    ret = StartApp();
-    if (ret) {
-      LOG_ERROR("start app failed!!!");
-      g_app_run_mode = APP_RUN_STATUS_INIT;
-      return ret;
+    if (!g_rtsp_en) {
+      ret = StartApp();
+      if (ret) {
+        LOG_ERROR("start app failed!!!");
+        g_app_run_mode = APP_RUN_STATUS_INIT;
+        return ret;
+      }
     }
     int ret = ConnectAiq();
     if (ret) {
@@ -286,6 +289,7 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size) {
   CommandData_t* common_cmd = (CommandData_t*)buffer;
   CommandData_t send_cmd;
   char send_data[MAXPACKETSIZE];
+  int ret = -1;
 
   LOG_INFO("HandlerCheckDevice:\n");
 
@@ -319,6 +323,23 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size) {
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
       break;
     case CMD_ID_GET_MODE:
+      DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, g_app_run_mode);
+      break;
+    case CMD_ID_START_RTSP:
+      g_rtsp_en = 1;
+      ret = StartRTSP();
+      if (ret) {
+        LOG_ERROR("start RTSP failed!!!");
+      }
+      DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, g_app_run_mode);
+      break;
+    case CMD_ID_STOP_RTSP:
+      g_rtsp_en = 0;
+      ret = StopRTSP();
+      if (ret) {
+        LOG_ERROR("stop RTSP failed!!!");
+      }
+      g_app_run_mode = APP_RUN_STATUS_INIT;
       DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, g_app_run_mode);
       break;
     default:
