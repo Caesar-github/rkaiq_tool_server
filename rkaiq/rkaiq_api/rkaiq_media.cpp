@@ -14,6 +14,7 @@
 extern int g_width;
 extern int g_height;
 extern int g_device_id;
+extern int g_cam_count;
 
 std::string RKAiqMedia::GetSensorName(struct media_device* device, int cam_index) {
   assert(cam_index >= 0 && cam_index < MAX_CAM_NUM);
@@ -206,6 +207,7 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device, const char* 
 
   isp_info->linked_sensor = IsLinkSensor(device, index);
   if (isp_info->linked_sensor) {
+    g_cam_count++;
     isp_info->sensor_name = GetSensorName(device, index);
     isp_info->sensor_subdev_path = GetLinkSensorSubDev(device, index);
   }
@@ -376,6 +378,7 @@ void RKAiqMedia::GetCifSubDevs(int id, struct media_device* device, const char* 
   cif_info->model_idx = id;
   cif_info->linked_sensor = IsLinkSensor(device, index);
   if (cif_info->linked_sensor) {
+    g_cam_count++;
     cif_info->sensor_name = GetSensorName(device, index);
     cif_info->sensor_subdev_path = GetLinkSensorSubDev(device, index);
   }
@@ -581,6 +584,7 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
     ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":1 -> \"rkisp-isp-subdev\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy0\":1 -> \"rkisp-csi-subdev\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy1\":1 -> \"rkisp-csi-subdev\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy2\":1 -> \"rkisp-csi-subdev\":0[1]");
     std::string link = "\"";
     link.append(sensor_name);
     link.append("\":0 -> \"rockchip-csi2-dphy0\":0[1]");
@@ -589,16 +593,33 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
     link.append(sensor_name);
     link.append("\":0 -> \"rockchip-csi2-dphy1\":0[1]");
     ret = media_parse_setup_links(device, link.c_str());
-  } else {
-    std::string link = "\"";
+    link = "\"";
     link.append(sensor_name);
     link.append("\":0 -> \"rockchip-csi2-dphy2\":0[1]");
     ret = media_parse_setup_links(device, link.c_str());
+  } else {
+    std::string link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy0\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy1\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy2\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy0\":1 -> \"rockchip-mipi-csi2\":0[1]");
+    ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy1\":1 -> \"rockchip-mipi-csi2\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-csi2-dphy2\":1 -> \"rockchip-mipi-csi2\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":1 -> \"stream_cif_mipi_id0\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":2 -> \"stream_cif_mipi_id1\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":3 -> \"stream_cif_mipi_id2\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":4 -> \"stream_cif_mipi_id3\":0[1]");
+    ret = media_parse_setup_links(device, "\"rkisp_rawrd0_m\":0 -> \"rkisp-isp-subdev\":0[0]");
+    ret = media_parse_setup_links(device, "\"rkisp_rawrd1_l\":0 -> \"rkisp-isp-subdev\":0[0]");
+    ret = media_parse_setup_links(device, "\"rkisp_rawrd2_s\":0 -> \"rkisp-isp-subdev\":0[0]");
   }
 
 out:
@@ -679,13 +700,22 @@ int RKAiqMedia::LinkToIsp(bool enable) {
 
     if (enable) {
       ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_mainpath\":0[1]");
+      if (g_cam_count > 1) {
+        ret = media_parse_setup_links(device, "\"rkisp_rawrd0_m\":0 -> \"rkisp-isp-subdev\":0[1]");
+        ret = media_parse_setup_links(device, "\"rkisp_rawrd1_l\":0 -> \"rkisp-isp-subdev\":0[1]");
+        ret = media_parse_setup_links(device, "\"rkisp_rawrd2_s\":0 -> \"rkisp-isp-subdev\":0[1]");
+      } else {
+        ret = media_parse_setup_links(device, "\"rkisp_rawrd0_m\":0 -> \"rkisp-isp-subdev\":0[0]");
+        ret = media_parse_setup_links(device, "\"rkisp_rawrd1_l\":0 -> \"rkisp-isp-subdev\":0[0]");
+        ret = media_parse_setup_links(device, "\"rkisp_rawrd2_s\":0 -> \"rkisp-isp-subdev\":0[0]");
+      }
       ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_bridge_ispp\":0[1]");
       LOG_DEBUG("media_setup_link isp SUCCESS\n");
     } else {
       ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_mainpath\":0[1]");
-      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_rawrd0_m\":0[0]");
-      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_rawrd1_l\":0[0]");
-      ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_rawrd1_s\":0[0]");
+      ret = media_parse_setup_links(device, "\"rkisp_rawrd0_m\":0 -> \"rkisp-isp-subdev\":0[0]");
+      ret = media_parse_setup_links(device, "\"rkisp_rawrd1_l\":0 -> \"rkisp-isp-subdev\":0[0]");
+      ret = media_parse_setup_links(device, "\"rkisp_rawrd2_s\":0 -> \"rkisp-isp-subdev\":0[0]");
       ret = media_parse_setup_links(device, "\"rkisp-isp-subdev\":2 -> \"rkisp_bridge_ispp\":0[0]");
       if (ret) {
         LOG_ERROR("media_setup_link unlink isp FAILED\n");
@@ -743,6 +773,7 @@ int RKAiqMedia::GetMediaInfo() {
   char sys_path[64];
   unsigned int index = 0, id, i;
   bool link_cif = false;
+  g_cam_count = 0;
 
   while (index < MAX_MEDIA_NUM) {
     id = index;

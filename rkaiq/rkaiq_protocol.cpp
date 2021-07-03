@@ -140,13 +140,6 @@ int RKAiqProtocol::StartApp() {
     system("start cameraserver");
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-#else
-  // TODO(Cody): Android does not need to setup link
-  ret = rkaiq_media->LinkToIsp(true);
-  if (ret) {
-    LOG_ERROR("link isp failed!!!");
-    return ret;
-  }
 #endif
   return 0;
 }
@@ -169,14 +162,26 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
         g_app_run_mode = APP_RUN_STATUS_INIT;
         return ret;
       }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
       media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
 #ifdef __ANDROID__
-      std::string isp3a_server_cmd = "/vendor/bin/rkaiq_3A_server --mmedia=";
+      int readback = 0;
+      std::string isp3a_server_cmd = "/vendor/bin/rkaiq_3A_server -mmedia= ";
       isp3a_server_cmd.append(mi.isp.media_dev_path);
+      isp3a_server_cmd.append(" --sensor_index=");
+      isp3a_server_cmd.append(std::to_string(g_device_id));
+#if 0
+      isp3a_server_cmd.append(mi.isp.media_dev_path);
+      isp3a_server_cmd.append(" --readback=");
+      if (g_cam_count > 1 || !mi.cif.media_dev_path.empty()) {
+        readback = 1;
+      }
+      isp3a_server_cmd.append(std::to_string(readback));
+#endif
       isp3a_server_cmd.append(" &");
       system("pkill rkaiq_3A_server*");
       system(isp3a_server_cmd.c_str());
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
 #endif
       if (g_stream_dev_name.empty()) {
         int isp_ver = rkaiq_media->GetIspVer();
@@ -217,6 +222,12 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode) {
       deinit_rtsp();
       system("pkill rkaiq_3A_server*");
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    ret = rkaiq_media->LinkToIsp(true);
+    if (ret) {
+      LOG_ERROR("link isp failed!!!");
+      g_app_run_mode = APP_RUN_STATUS_INIT;
+      return ret;
     }
     ret = StartApp();
     if (ret) {

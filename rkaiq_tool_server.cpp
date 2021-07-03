@@ -32,6 +32,7 @@ int g_height = 1080;
 int g_device_id = 0;
 int g_rtsp_en = 1;
 int g_allow_killapp = 0;
+int g_cam_count = 0;
 
 std::string g_stream_dev_name;
 std::string iqfile;
@@ -46,9 +47,8 @@ std::shared_ptr<RKAiqMedia> rkaiq_media;
 
 void signal_handle(int sig) {
   quit.store(true, std::memory_order_release);
-  if (tcpServer != nullptr)
-      tcpServer->SaveExit();
- 
+  if (tcpServer != nullptr) tcpServer->SaveExit();
+
   RKAiqProtocol::Exit();
 
   if (g_rtsp_en)
@@ -161,6 +161,8 @@ int main(int argc, char** argv) {
   log_level = strtoull(property_value, nullptr, 16);
   property_get("persist.vendor.aiqtool.killapp", property_value, "1");
   g_allow_killapp = strtoull(property_value, nullptr, 16);
+  // property_get("persist.vendor.rkisp_no_read_back", property_value, "-1");
+  // readback = strtoull(property_value, nullptr, 16);
 #else
   get_env("rkaiq_tool_server_log_level", &log_level, 5);
   get_env("rkaiq_tool_server_kill_app", &g_allow_killapp, 1);
@@ -177,7 +179,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < MAX_CAM_NUM; i++) rkaiq_media->GetMediaInfo();
   rkaiq_media->DumpMediaInfo();
 
-   LOG_DEBUG("================== %d =====================", g_app_run_mode.load());
+  LOG_DEBUG("================== %d =====================", g_app_run_mode.load());
 
   if (g_stream_dev_name.length() > 0) {
     if (0 > access(g_stream_dev_name.c_str(), R_OK | W_OK)) {
