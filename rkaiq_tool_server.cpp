@@ -14,9 +14,8 @@
 #ifdef __ANDROID__
 #include <rtspserver/RtspServer.h>
 #include <cutils/properties.h>
-#endif
-
 #include "RtspServer.h"
+#endif
 
 #ifdef LOG_TAG
 #undef LOG_TAG
