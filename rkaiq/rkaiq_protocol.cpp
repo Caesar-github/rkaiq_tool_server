@@ -138,6 +138,8 @@ int RKAiqProtocol::StartApp() {
   if (g_allow_killapp) {
     property_set("ctrl.start", "cameraserver");
     system("start cameraserver");
+    system("start vendor.camera-provider-2-4");
+    system("start vendor.camera-provider-2-4-ext");
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #endif
