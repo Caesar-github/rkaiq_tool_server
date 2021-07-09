@@ -34,6 +34,7 @@ extern std::shared_ptr<RKAiqToolManager> rkaiq_manager;
 #define RKID_ISP_ON "ISP_ON"
 #define RKID_ISP_OFF "ISP_OFF"
 #define RKID_CHECK "IGNORE"
+#define RKID_SEND_FILE "SendFile"
 
 #pragma pack(1)
 typedef struct CommandData_s {

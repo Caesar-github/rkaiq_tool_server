@@ -23,6 +23,7 @@ class RKAiqProtocol {
   static int DoChangeAppMode(appRunStatus mode);
   static void HandlerTCPMessage(int sockfd, char* buffer, int size);
   static void HandlerCheckDevice(int sockfd, char* buffer, int size);
+  static void HandlerReceiveFile(int sockfd, char* buffer, int size);
   static int MessageForward(int sockfd, char* buffer, int size);
   static int doMessageForward(int sockfd);
   static int ConnectAiq();

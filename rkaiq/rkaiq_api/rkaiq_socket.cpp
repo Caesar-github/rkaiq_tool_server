@@ -1,6 +1,6 @@
 #include "rkaiq_socket.h"
 
-#include <sys/time.h>
+#include <time.h>
 
 #include "domain_tcp_client.h"
 #if 0
@@ -27,21 +27,6 @@ typedef struct RkAiqSocketData {
   unsigned int dataHash;
 } RkAiqSocketData;
 #pragma pack()
-
-void hexdump(char* buf, int num) {
-  int i;
-  if (num > 50) {
-    num = 50;
-  }
-  for (i = 0; i < num; i++) {
-    printf("%02X ", buf[i]);
-    if ((i + 1) % 32 == 0) {
-      printf("\n");
-    }
-  }
-  printf("\n");
-  return;
-}
 
 unsigned int MurMurHash(const void* key, int len) {
   const unsigned int m = 0x5bd1e995;
@@ -144,9 +129,6 @@ int RkAiqSocketClientINETSend(int commandID, void* data, unsigned int dataSize) 
 
 // return:  0-failed 1-success
 int RkAiqSocketClientINETReceive(int commandID, void* data, unsigned int dataSize) {
-  struct timeval startTime;
-  struct timeval currentTime;
-
   // |sendTotalSize|command id|command data|data hash|
   // send request
   RkAiqSocketData packetData;
@@ -216,10 +198,12 @@ int RkAiqSocketClientINETReceive(int commandID, void* data, unsigned int dataSiz
   int remain_size = packetSize - 6;
   int recv_size = 0;
 
-  gettimeofday(&startTime, NULL);
+  struct timespec startTime = {0, 0};
+  struct timespec currentTime = {0, 0};
+  clock_gettime(CLOCK_REALTIME, &startTime);
   printf("INET get, start receive:%ld\n", startTime.tv_sec);
   while (remain_size > 0) {
-    gettimeofday(&currentTime, NULL);
+    clock_gettime(CLOCK_REALTIME, &currentTime);
     if (currentTime.tv_sec - startTime.tv_sec >= 2) {
       LOG_DEBUG("INET receive: receive data timeout, return\n");
       return 1;
