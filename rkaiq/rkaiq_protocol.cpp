@@ -288,7 +288,9 @@ int RKAiqProtocol::StartRTSP() {
 int RKAiqProtocol::StopRTSP() {
   LOG_DEBUG("Stopping RTSP !!!");
   deinit_rtsp();
+#ifdef __ANDROID__
   system("pkill rkaiq_3A_server*");
+#endif
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   LOG_DEBUG("Stopped RTSP !!!");
   return 0;

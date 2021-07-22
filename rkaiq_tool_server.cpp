@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
   // readback = strtoull(property_value, nullptr, 16);
 #else
   get_env("rkaiq_tool_server_log_level", &log_level, 5);
-  get_env("rkaiq_tool_server_kill_app", &g_allow_killapp, 1);
+  get_env("rkaiq_tool_server_kill_app", &g_allow_killapp, 0);
 #endif
 
   parse_args(argc, argv);
