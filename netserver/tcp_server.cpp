@@ -3,6 +3,8 @@
 #include <atomic>
 
 #include <net/if.h>
+#include <pthread.h>
+#include <signal.h>
 
 #ifdef LOG_TAG
 #undef LOG_TAG
@@ -24,6 +26,13 @@ void TCPServer::SaveExit() {
 int TCPServer::Send(int cilent_socket, char* buff, int size) { return send(cilent_socket, buff, size, 0); }
 
 int TCPServer::Recvieve(int cilent_socket) {
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGQUIT);
+  sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGTERM);
+  pthread_sigmask(SIG_BLOCK, &set, NULL);
+
   LOG_INFO("TCPServer::Recvieve enter %d\n", cilent_socket);
   char buffer[MAXPACKETSIZE];
   int size = sizeof(buffer);
@@ -52,6 +61,13 @@ int TCPServer::Recvieve(int cilent_socket) {
 
 void TCPServer::Accepted() {
   LOG_INFO("TCPServer::Accepted\n");
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGQUIT);
+  sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGTERM);
+  pthread_sigmask(SIG_BLOCK, &set, NULL);
+
   struct timeval interval = {1, 0};
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&interval, sizeof(struct timeval));
   while (!quit_) {
