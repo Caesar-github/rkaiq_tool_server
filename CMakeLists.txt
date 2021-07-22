@@ -40,9 +40,12 @@ if(BUILD_SANITIZER_STATIC)
         add_definitions(-g -ggdb -gdwarf -funwind-tables -rdynamic -O0 )
 endif()
 
-option(BUILD_RKAIQ_API "depend on rkaiq api library" ON)
+option(BUILD_RKAIQ_API "depend on rkaiq api library" OFF)
 if(BUILD_RKAIQ_API)
 aux_source_directory(${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_api RKAIQ_SOURCE)
+link_libraries(rkaiq)
+add_definitions(-DENABLE_RKAIQ_UAPI)
+endif()
 find_path(RKAIQ_API_INCLUDE_DIR
     NAMES rk_aiq_user_api_imgproc.h
     HINTS ${CMAKE_FIND_ROOT_PATH}
@@ -55,9 +58,6 @@ include_directories(${RKAIQ_API_INCLUDE_DIR}/../algos)
 include_directories(${RKAIQ_API_INCLUDE_DIR}/../iq_parser)
 include_directories(${RKAIQ_API_INCLUDE_DIR}/../iq_parser_v2)
 include_directories(${PROJECT_SOURCE_DIR}/rkaiq/rkaiq_api)
-link_libraries(rkaiq)
-add_definitions(-DENABLE_RKAIQ_UAPI)
-endif()
 
 option(BUILD_RKMEDIA "depend on rkmedia library" ON)
 option(BUILD_RKMEDIA_INDE "depend on rkmedia library independent" ON)
