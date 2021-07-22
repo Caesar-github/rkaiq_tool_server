@@ -3,6 +3,9 @@
 #include "multiframe_process.h"
 #include "rkaiq_protocol.h"
 
+#include <fstream>
+#include <iostream>
+
 #ifdef LOG_TAG
 #undef LOG_TAG
 #endif
@@ -426,8 +429,18 @@ static void DoCapture(int socket) {
   LOG_INFO("DoCapture exit!!!!!\n");
 }
 
+#if DEBUG_RAW
+void WriteToFile(int index, void* buffer, int size) {
+    std::string path = "/data/frame_";
+    path.append(std::to_string(index));
+    path.append(".raw");
+    std::ofstream ofs(path, std::ios::binary);
+    ofs.write(reinterpret_cast<const char*>(buffer), size);
+}
+#endif
+
 static void DoMultiFrameCallBack(int socket, int index, void* buffer, int size) {
-  LOG_INFO(" DoMultiFrameCallBack size %d\n", size);
+  LOG_INFO(" DoMultiFrameCallBack index %d buffer %p size %d\n", index, buffer, size);
   AutoDuration ad;
   int width = cap_info.width;
   int height = cap_info.height;
@@ -437,19 +450,27 @@ static void DoMultiFrameCallBack(int socket, int index, void* buffer, int size) 
     return;
   }
 
-  DumpRawData((uint16_t*)buffer, size, 2);
+#if DEBUG_RAW
+  WriteToFile(index, buffer, size);
+#endif
+  int offset = (((height / 2) + 10) * width) + (width / 2);
+  DumpRawData((uint16_t*)buffer + offset, size, 2);
   if (cap_info.link == link_to_vicap) {
-    MultiFrameAddition(averge_frame0, (uint16_t*)buffer, width, height, false);
+    MultiFrameAddition((uint32_t*)averge_frame0, (uint16_t*)buffer, width, height, false);
   } else {
-    MultiFrameAddition(averge_frame0, (uint16_t*)buffer, width, height);
+    MultiFrameAddition((uint32_t*)averge_frame0, (uint16_t*)buffer, width, height);
   }
-  DumpRawData32(averge_frame0, size, 2);
+  DumpRawData32((uint32_t*)averge_frame0 + offset, size, 2);
   LOG_INFO("index %d MultiFrameAddition %ld ms %ld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
   ad.Reset();
   if (index == (capture_frames - 1)) {
     MultiFrameAverage(averge_frame0, averge_frame1, width, height, capture_frames);
-    DumpRawData32(averge_frame0, size, 2);
-    DumpRawData(averge_frame1, size, 2);
+#if DEBUG_RAW
+    WriteToFile(88, averge_frame0, size);
+    WriteToFile(89, averge_frame1, size);
+#endif
+    DumpRawData32((uint32_t*)averge_frame0 + offset, size, 2);
+    DumpRawData((uint16_t*)averge_frame1 + offset, size, 2);
     LOG_INFO("index %d MultiFrameAverage %ld ms %ld us\n", index, ad.Get() / 1000, ad.Get() % 1000);
     ad.Reset();
     SendRawData(socket, index, averge_frame1, size);
@@ -463,9 +484,9 @@ static void DoMultiFrameCallBack(int socket, int index, void* buffer, int size) 
 static int InitMultiFrame() {
   uint32_t one_frame_size = cap_info.width * cap_info.height * sizeof(uint32_t);
   averge_frame0 = (uint32_t*)malloc(one_frame_size);
+  memset(averge_frame0, 0, one_frame_size);
   one_frame_size = one_frame_size >> 1;
   averge_frame1 = (uint16_t*)malloc(one_frame_size);
-  memset(averge_frame0, 0, one_frame_size);
   memset(averge_frame1, 0, one_frame_size);
   return 0;
 }

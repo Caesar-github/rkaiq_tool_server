@@ -127,6 +127,7 @@ int read_frame(int handler, int index, struct capture_info* cap_info, CaptureCal
         callback(handler, index, cap_info->buffers[buf.index].start, bytesused);
       }
 
+      memset(cap_info->buffers[buf.index].start, 0, bytesused);
       device_qbuf(cap_info->dev_fd, &buf);
       break;
 

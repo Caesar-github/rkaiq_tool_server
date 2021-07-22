@@ -13,12 +13,14 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <cassert>
 
 void DumpRawData(uint16_t* buf, uint32_t len, uint32_t plen) {
-  uint32_t a;
+  uint16_t a;
   for (uint32_t n = 0; n < len; n++) {
     if (n < plen) {
-      fprintf(stderr, "buf16[%d]      %x\n", n, buf[n]);
+      a = buf[n];
+      fprintf(stderr, "buf16[%d]      0x%04x\n", n, a);
     } else {
       break;
     }
@@ -29,7 +31,8 @@ void DumpRawData32(uint32_t* buf, uint32_t len, uint32_t plen) {
   uint32_t a;
   for (uint32_t n = 0; n < len; n++) {
     if (n < plen) {
-      fprintf(stderr, "buf32[%d]      %x\n", n, buf[n]);
+      a = buf[n];
+      fprintf(stderr, "buf32[%d]      0x%08x\n", n, a);
     } else {
       break;
     }
@@ -81,18 +84,23 @@ void MultiFrameAverage(uint32_t* pIn1_pOut, uint16_t* POut, uint16_t width, uint
   for (int i = 0; i < len; i++) {
     pIn1_pOut[i] += roundOffset;
     pIn1_pOut[i] = pIn1_pOut[i] >> n;
-    POut[i] = (uint16_t)pIn1_pOut[i];
+    POut[i] = (uint16_t)(pIn1_pOut[i]);
   }
 }
 
 void MultiFrameAddition(uint32_t* pIn1_pOut, uint16_t* pIn2, uint16_t width, uint16_t height, bool biToLi) {
   int n;
   int len = height * width;
+  uint16_t temp = 0;
   for (n = 0; n < len; n++) {
+    temp = 0;
     if (biToLi) {
-      pIn1_pOut[n] += ((uint16_t)(pIn2[n] >> 8) | (uint16_t)(pIn2[n] << 8));
+      temp |=  ((pIn2[n] & 0xff) << 8) & 0xff00;
+      temp |=  ((pIn2[n] & 0xff00) >> 8) & 0xff;
+      pIn1_pOut[n] += temp;
     } else {
-      pIn1_pOut[n] += pIn2[n];
+      temp = pIn2[n] & 0xffff;
+      pIn1_pOut[n] += temp;
     }
   }
 }

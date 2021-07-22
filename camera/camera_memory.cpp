@@ -97,6 +97,8 @@ void init_mmap(struct capture_info* cap_info) {
     if (MAP_FAILED == cap_info->buffers[cap_info->n_buffers].start) {
       errno_debug("mmap");
     }
+
+    memset(cap_info->buffers[cap_info->n_buffers].start, 0, cap_info->buffers[cap_info->n_buffers].length);
   }
 }
 
