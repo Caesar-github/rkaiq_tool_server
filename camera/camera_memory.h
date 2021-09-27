@@ -36,6 +36,7 @@ enum io_method {
 enum sensor_link {
   link_to_vicap,
   link_to_isp,
+  link_to_dvp,
 };
 
 struct buffer {

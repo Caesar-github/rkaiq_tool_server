@@ -97,6 +97,11 @@ static void RawCaptureinit(CommandData_t* cmd) {
     strcpy(cap_info.sd_path.device_name, mi.cif.sensor_subdev_path.c_str());
     strcpy(cap_info.cif_path.cif_video_path, mi.cif.mipi_id0.c_str());
     cap_info.dev_name = cap_info.cif_path.cif_video_path;
+  } else if (mi.dvp.linked_sensor) {
+    cap_info.link = link_to_dvp;
+    strcpy(cap_info.sd_path.device_name, mi.dvp.sensor_subdev_path.c_str());
+    strcpy(cap_info.cif_path.cif_video_path, mi.dvp.dvp_id0.c_str());
+    cap_info.dev_name = cap_info.cif_path.cif_video_path;
   } else {
     cap_info.link = link_to_isp;
     strcpy(cap_info.sd_path.device_name, mi.isp.sensor_subdev_path.c_str());

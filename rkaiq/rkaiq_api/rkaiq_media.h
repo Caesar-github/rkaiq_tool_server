@@ -78,6 +78,18 @@ typedef struct {
 
 typedef struct {
   int model_idx;
+  int linked_sensor;
+  std::string sensor_name;
+  std::string sensor_subdev_path;
+  std::string media_dev_path;
+  std::string dvp_id0;
+  std::string dvp_id1;
+  std::string dvp_id2;
+  std::string dvp_id3;
+} dvp_info_t;
+
+typedef struct {
+  int model_idx;
   std::string sensor_name;
   std::string sensor_subdev_path;
   std::string media_dev_path;
@@ -95,6 +107,7 @@ typedef struct {
   isp_info_t isp;
   ispp_info_t ispp;
   cif_info_t cif;
+  dvp_info_t dvp;
   lens_info_t lens;
 } media_info_t;
 
@@ -108,6 +121,7 @@ class RKAiqMedia {
   void GetIsppSubDevs(int id, struct media_device* device, const char* devpath);
   void GetIspSubDevs(int id, struct media_device* device, const char* devpath);
   void GetCifSubDevs(int id, struct media_device* device, const char* devpath);
+  void GetDvpSubDevs(int id, struct media_device* device, const char* devpath);
   void GetLensSubDevs(int id, struct media_device* device, const char* devpath, int count);
   int GetMediaInfo();
   int GetIspVer();
@@ -121,6 +135,8 @@ class RKAiqMedia {
       return media_info[id].isp.sensor_name;
     } else if (media_info[id].cif.linked_sensor) {
       return media_info[id].cif.sensor_name;
+    } else if (media_info[id].dvp.linked_sensor) {
+      return media_info[id].dvp.sensor_name;
     }
     return "";
   }

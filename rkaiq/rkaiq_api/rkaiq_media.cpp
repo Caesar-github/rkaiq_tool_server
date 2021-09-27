@@ -348,7 +348,7 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device, const char* 
     }
   }
 
-  LOG_ERROR("model(%s): isp_info(%d): isp-subdev entity name: %s\n", device->info.model, index,
+  LOG_INFO("model(%s): isp_info(%d): isp-subdev entity name: %s\n", device->info.model, index,
             isp_info->isp_dev_path.c_str());
 }
 
@@ -457,6 +457,72 @@ void RKAiqMedia::GetCifSubDevs(int id, struct media_device* device, const char* 
   }
 }
 
+void RKAiqMedia::GetDvpSubDevs(int id, struct media_device* device, const char* devpath) {
+    media_entity* entity = NULL;
+    const struct media_entity_desc* entity_info = NULL;
+    const char* entity_name = NULL;
+    int index = 0;
+    dvp_info_t* dvp_info = nullptr;
+
+    for (index = 0; index < MAX_CAM_NUM; index++) {
+      dvp_info = &media_info[index].dvp;
+      if (IsLinkSensor(device, index) && dvp_info->media_dev_path.empty()) {
+        break;
+      }
+      if (dvp_info->media_dev_path.compare(devpath) == 0) {
+        LOG_ERROR("dvp info of path %s exists!", devpath);
+        return;
+      }
+    }
+
+  dvp_info->model_idx = id;
+  dvp_info->linked_sensor = IsLinkSensor(device, index);
+  if (dvp_info->linked_sensor) {
+    g_cam_count++;
+    dvp_info->sensor_name = GetSensorName(device, index);
+    dvp_info->sensor_subdev_path = GetLinkSensorSubDev(device, index);
+  }
+  dvp_info->media_dev_path = devpath;
+
+  LOG_ERROR("cif media index %d, media info array id  %d\n", id, index);
+  if (index >= MAX_CAM_NUM) {
+    return;
+  }
+
+  entity = media_get_entity_by_name(device, "stream_cif_dvp_id0");
+    if (entity) {
+      entity_name = media_entity_get_devname(entity);
+      if (entity_name) {
+        dvp_info->dvp_id0 = entity_name;
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "stream_cif_dvp_id1");
+    if (entity) {
+      entity_name = media_entity_get_devname(entity);
+      if (entity_name) {
+        dvp_info->dvp_id1 = entity_name;
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "stream_cif_dvp_id2");
+    if (entity) {
+      entity_name = media_entity_get_devname(entity);
+      if (entity_name) {
+        dvp_info->dvp_id2 = entity_name;
+      }
+    }
+
+    entity = media_get_entity_by_name(device, "stream_cif_dvp_id3");
+    if (entity) {
+      entity_name = media_entity_get_devname(entity);
+      if (entity_name) {
+        dvp_info->dvp_id3 = entity_name;
+      }
+    }
+
+}
+
 void RKAiqMedia::GetLensSubDevs(int id, struct media_device* device, const char* devpath, int count) {
   media_entity* entity = NULL;
   const struct media_entity_desc* entity_info = NULL;
@@ -530,6 +596,7 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
   int ret = -1;
   cif_info_t* cif_info = NULL;
   isp_info_t* isp_info = NULL;
+  dvp_info_t* dvp_info = NULL;
   lens_info_t* lens_info = NULL;
   std::string sensor_name;
   std::string media_path;
@@ -539,9 +606,12 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
   media_pad *src_cif = NULL;
   media_pad *src_sensor = NULL;
   bool linkToIsp = false;
+  bool linkToDvp = false;
+  bool linkToCif = false;
 
   cif_info = &media_info[cam_index].cif;
   isp_info = &media_info[cam_index].isp;
+  dvp_info = &media_info[cam_index].dvp;
   if (cif_info->media_dev_path.empty()) {
     if (isp_info->media_dev_path.empty()) {
       LOG_ERROR("No sensor %d linked to isp/cif!!!", cam_index);
@@ -549,15 +619,29 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
     } else {
       linkToIsp = true;
     }
+  } else {
+      linkToCif = true;
   }
 
-  if (!linkToIsp) {
+  if (!dvp_info->media_dev_path.empty()) {
+    linkToDvp = true;
+  }
+
+  if (linkToCif) {
     sensor_name = cif_info->sensor_name;
     media_path = cif_info->media_dev_path;
-  } else {
+  } 
+
+  if (linkToIsp){
     sensor_name = isp_info->sensor_name;
     media_path = isp_info->media_dev_path;
   }
+
+  if (linkToDvp) {
+    sensor_name = dvp_info->sensor_name;
+    media_path = dvp_info->media_dev_path;
+  }
+
 
   if (sensor_name.empty()) {
     LOG_ERROR("sensor %d not found!!!", cam_index);
@@ -575,6 +659,7 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
     media_device_unref(device);
     return ret;
   }
+
   const struct media_device_info* info = media_get_info(device);
   LOG_INFO("%s: model %s\n", media_path.c_str(), info->model);
   media_reset_links(device);
@@ -604,11 +689,11 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
     link.append(std::to_string(index));
     link.append("\":1 -> \"rkisp-csi-subdev\":0[1]");
     ret = media_parse_setup_links(device, link.c_str());
-  } else {
-        LOG_ERROR("LinkToSensor | linkToIsp=false\n");
+  } 
+  if (linkToCif) {
     link = "\"rockchip-csi2-dphy";
     link.append(std::to_string(index));
-        link.append("\":1 -> \"rockchip-mipi-csi2\":0[1]");
+    link.append("\":1 -> \"rockchip-mipi-csi2\":0[1]");
     ret = media_parse_setup_links(device, link.c_str());
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":1 -> \"stream_cif_mipi_id0\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":2 -> \"stream_cif_mipi_id1\":0[1]");
@@ -617,6 +702,13 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
     ret = media_parse_setup_links(device, "\"rkisp_rawrd0_m\":0 -> \"rkisp-isp-subdev\":0[0]");
     ret = media_parse_setup_links(device, "\"rkisp_rawrd1_l\":0 -> \"rkisp-isp-subdev\":0[0]");
     ret = media_parse_setup_links(device, "\"rkisp_rawrd2_s\":0 -> \"rkisp-isp-subdev\":0[0]");
+  }
+
+  if (linkToDvp) {
+    std::string link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"stream_cif_dvp_id0\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
   }
 
 out:
@@ -635,7 +727,7 @@ int RKAiqMedia::LinkToIsp(bool enable) {
   media_pad *sink_pad = NULL, *sink_pad_bridge = NULL, *sink_pad_mp = NULL;
   media_pad *src_cif = NULL, *src_csi = NULL, *sink_csi = NULL, *src_sensor = NULL, *src_dphy0 = NULL, *sink_dphy0 = NULL;
 
-  LOG_ERROR("############## LinkToIsp\n");
+  LOG_INFO("############## LinkToIsp\n");
   system(VICAP_COMPACT_TEST_ON);
   system(VICAP2_COMPACT_TEST_ON);
 
@@ -802,7 +894,10 @@ int RKAiqMedia::GetMediaInfo() {
     } else if (strcmp(device->info.model, "rkcif") == 0 || strcmp(device->info.model, "rkcif_mipi_lvds") == 0 ||
                strcmp(device->info.model, "rkcif_lite_mipi_lvds") == 0) {
       GetCifSubDevs(id, device, sys_path);
-    } else {
+    } else if (strcmp(device->info.model, "rkcif_dvp") == 0) {
+      GetDvpSubDevs(id, device, sys_path);
+    }
+    else {
       goto media_unref;
     }
 
@@ -827,6 +922,7 @@ int RKAiqMedia::DumpMediaInfo() {
 
   for (int i = 0; i < MAX_CAM_NUM; i++) {
     cif_info_t* cif = &media_info[i].cif;
+    dvp_info_t* dvp = &media_info[i].dvp;
     isp_info_t* isp = &media_info[i].isp;
     ispp_info_t* ispp = &media_info[i].ispp;
     LOG_DEBUG("##### Camera index: %d\n", i);
@@ -834,6 +930,8 @@ int RKAiqMedia::DumpMediaInfo() {
       LOG_DEBUG("\t sensor_name :    %s\n", isp->sensor_name.c_str());
     } else if (cif->linked_sensor) {
       LOG_DEBUG("\t sensor_name :    %s\n", cif->sensor_name.c_str());
+    } else if (dvp->linked_sensor) {
+      LOG_DEBUG("\t sensor_name :    %s\n", dvp->sensor_name.c_str());
     }
     if (cif->model_idx >= 0) {
       LOG_DEBUG("#### cif:\n");
@@ -848,6 +946,16 @@ int RKAiqMedia::DumpMediaInfo() {
       LOG_DEBUG("\t mipi_csi2_sd_path : %s\n", cif->mipi_csi2_sd_path.c_str());
       LOG_DEBUG("\t lvds_sd_path :      %s\n", cif->lvds_sd_path.c_str());
       LOG_DEBUG("\t mipi_luma_path :    %s\n", cif->mipi_luma_path.c_str());
+    }
+    if (dvp->model_idx >= 0) {
+      LOG_DEBUG("#### dvp:\n");
+      LOG_DEBUG("\t model_idx :         %d\n", dvp->model_idx);
+      LOG_DEBUG("\t linked_sensor :     %d\n", dvp->linked_sensor);
+      LOG_DEBUG("\t media_dev_path :    %s\n", dvp->media_dev_path.c_str());
+      LOG_DEBUG("\t mipi_id0 :      %s\n", dvp->dvp_id0.c_str());
+      LOG_DEBUG("\t mipi_id1 :      %s\n", dvp->dvp_id1.c_str());
+      LOG_DEBUG("\t mipi_id2 :      %s\n", dvp->dvp_id2.c_str());
+      LOG_DEBUG("\t mipi_id3 :      %s\n", dvp->dvp_id3.c_str());
     }
     if (isp->model_idx >= 0) {
       LOG_DEBUG("#### isp:\n");
