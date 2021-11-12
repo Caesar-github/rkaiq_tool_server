@@ -125,7 +125,7 @@ static void parse_args(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   int ret = -1;
-  LOG_ERROR("#### AIQ tool server 20201222-0933 ####\n");
+    LOG_ERROR("#### AIQ tool server 20211112_150915 ####\n");
 
 #ifdef _WIN32
   signal (SIGINT, signal_handle);
@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
   LOG_DEBUG("g_device_id cmd_parser.get  %d\n", g_device_id);
 
   rkaiq_media = std::make_shared<RKAiqMedia>();
-  for (int i = 0; i < MAX_CAM_NUM; i++) rkaiq_media->GetMediaInfo();
+  rkaiq_media->GetMediaInfo();
   rkaiq_media->DumpMediaInfo();
 
   LOG_DEBUG("================== %d =====================", g_app_run_mode.load());

@@ -19,10 +19,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
+#include <dirent.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #ifndef __ANDROID__
 #include <v4l2subdev.h>
@@ -175,29 +179,70 @@ static void list_known_mbus_formats(void) {
     printf("%s %*c 0x%4.4x\n", str, spaces, ' ', *code);
 
     code++;
-  }
+    }
+}
+
+static const char* make_devname(const char* device) {
+    static char newdev[300];
+    struct dirent* ep;
+    DIR* dp;
+
+    if (!access(device, F_OK))
+    { return device; }
+
+    if (device[0] >= '0' && device[0] <= '9' && strlen(device) <= 3) {
+        snprintf(newdev, sizeof(newdev), "/dev/media%s", device);
+        return newdev;
+    }
+
+    dp = opendir("/dev");
+    if (dp == NULL)
+    { return device; }
+
+    while ((ep = readdir(dp))) {
+        const char* name = ep->d_name;
+
+        if (!memcmp(name, "media", 5) && isdigit(name[5])) {
+            struct media_device_info mdi;
+            int ret;
+            int fd;
+
+            snprintf(newdev, sizeof(newdev), "/dev/%s", name);
+            fd = open(newdev, O_RDWR);
+            if (fd < 0)
+            { continue; }
+            ret = ioctl(fd, MEDIA_IOC_DEVICE_INFO, &mdi);
+            close(fd);
+            if (!ret && !strcmp(device, mdi.bus_info)) {
+                closedir(dp);
+                return newdev;
+            }
+        }
+    }
+    closedir(dp);
+    return device;
 }
 
 int parse_cmdline(int argc, char** argv) {
-  int opt;
+    int opt;
 
-  if (argc == 1) {
+    if (argc == 1) {
     usage(argv[0]);
     return 1;
   }
 
-  /* parse options */
-  while ((opt = getopt_long(argc, argv, "d:e:f:hil:prvV:", opts, NULL)) != -1) {
-    switch (opt) {
-      case 'd':
-        media_opts.devname = optarg;
-        break;
+    /* parse options */
+    while ((opt = getopt_long(argc, argv, "d:e:f:hil:prvV:", opts, NULL)) != -1) {
+        switch (opt) {
+            case 'd':
+                media_opts.devname = make_devname(optarg);
+                break;
 
-      case 'e':
-        media_opts.entity = optarg;
-        break;
+            case 'e':
+                media_opts.entity = optarg;
+                break;
 
-      /* 'f' is supported for backward compatibility reasons and will
+            /* 'f' is supported for backward compatibility reasons and will
        * be removed later.
        */
       case 'f':

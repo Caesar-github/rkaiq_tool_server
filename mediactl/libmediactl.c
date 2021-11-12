@@ -21,6 +21,11 @@
 
 //#include "config.h"
 
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/sysmacros.h>
+
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -190,64 +195,57 @@ static void media_device_close(struct media_device* media) {
  */
 
 int media_setup_link(struct media_device* media, struct media_pad* source, struct media_pad* sink, __u32 flags) {
-  struct media_link_desc ulink = {{0}};
-  struct media_link* link;
-  unsigned int i;
-  int ret;
-  media_dbg(media, "set link %s:%d -> %s:%d ", source->entity->info.name, source->index,
-            sink->entity->info.name, sink->index);
+    struct media_link_desc ulink = {{0}};
+    struct media_link* link;
+    unsigned int i;
+    int ret;
 
-  ret = media_device_open(media);
-  if (ret < 0) {
-    media_dbg(media, "%s: media device open failed %s\n", __func__, strerror(errno));
-    goto done;
-  }
+    ret = media_device_open(media);
+    if (ret < 0)
+    { goto done; }
 
-  media_dbg(media, "source %s links: ", source->entity->info.name);
-  for (i = 0; i < source->entity->num_links; i++) {
-    link = &source->entity->links[i];
-    media_dbg(media, "%s:%d -> %s:%d", link->source->entity->info.name, link->source->index,
-              link->sink->entity->info.name, link->sink->index);
+    for (i = 0; i < source->entity->num_links; i++) {
+        link = &source->entity->links[i];
 
-    if (link->source->entity == source->entity && link->source->index == source->index &&
-        link->sink->entity == sink->entity && link->sink->index == sink->index) {
-      break;
+        if (link->source->entity == source->entity && link->source->index == source->index && link->sink->entity == sink->entity && link->sink->index == sink->index) {
+            media_dbg(media, "#### %s:%d -> %s:%d", link->source->entity->info.name, link->source->index, link->sink->entity->info.name, link->sink->index);
+            break;
+        }
     }
-  }
 
-  if (i == source->entity->num_links) {
-    media_dbg(media, "%s: Link not found %d\n", __func__, source->entity->num_links);
-    ret = -ENOENT;
-    goto done;
-  }
+    if (i == source->entity->num_links) {
+        media_dbg(media, "%s: Link not found\n", __func__);
+        ret = -ENOENT;
+        goto done;
+    }
 
-  /* source pad */
-  ulink.source.entity = source->entity->info.id;
-  ulink.source.index = source->index;
-  ulink.source.flags = MEDIA_PAD_FL_SOURCE;
+    /* source pad */
+    ulink.source.entity = source->entity->info.id;
+    ulink.source.index = source->index;
+    ulink.source.flags = MEDIA_PAD_FL_SOURCE;
 
-  /* sink pad */
-  ulink.sink.entity = sink->entity->info.id;
-  ulink.sink.index = sink->index;
-  ulink.sink.flags = MEDIA_PAD_FL_SINK;
+    /* sink pad */
+    ulink.sink.entity = sink->entity->info.id;
+    ulink.sink.index = sink->index;
+    ulink.sink.flags = MEDIA_PAD_FL_SINK;
 
-  ulink.flags = flags | (link->flags & MEDIA_LNK_FL_IMMUTABLE);
+    ulink.flags = flags | (link->flags & MEDIA_LNK_FL_IMMUTABLE);
 
-  ret = ioctl(media->fd, MEDIA_IOC_SETUP_LINK, &ulink);
-  if (ret == -1) {
-    ret = -errno;
-    media_dbg(media, "%s: Unable to setup link (%s)\n", __func__, strerror(errno));
-    goto done;
-  }
+    ret = ioctl(media->fd, MEDIA_IOC_SETUP_LINK, &ulink);
+    if (ret == -1) {
+        ret = -errno;
+        media_dbg(media, "%s: Unable to setup link (%s)\n", __func__, strerror(errno));
+        goto done;
+    }
 
-  link->flags = ulink.flags;
-  link->twin->flags = ulink.flags;
+    link->flags = ulink.flags;
+    link->twin->flags = ulink.flags;
 
-  ret = 0;
+    ret = 0;
 
 done:
-  media_device_close(media);
-  return ret;
+    media_device_close(media);
+    return ret;
 }
 
 int media_reset_links(struct media_device* media) {

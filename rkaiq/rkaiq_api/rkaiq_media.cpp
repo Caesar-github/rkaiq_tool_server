@@ -598,15 +598,17 @@ int RKAiqMedia::LinkToSensor(int cam_index) {
   if (!ret) index = 2;
 
   if (linkToIsp) {
+        LOG_ERROR("LinkToSensor | linkToIsp=true\n");
     ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":1 -> \"rkisp-isp-subdev\":0[1]");
     link = "\"rockchip-csi2-dphy";
     link.append(std::to_string(index));
     link.append("\":1 -> \"rkisp-csi-subdev\":0[1]");
     ret = media_parse_setup_links(device, link.c_str());
   } else {
+        LOG_ERROR("LinkToSensor | linkToIsp=false\n");
     link = "\"rockchip-csi2-dphy";
     link.append(std::to_string(index));
-    link.append("\":1 -> \"rkisp-mipi-csi2\":0[1]");
+        link.append("\":1 -> \"rockchip-mipi-csi2\":0[1]");
     ret = media_parse_setup_links(device, link.c_str());
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":1 -> \"stream_cif_mipi_id0\":0[1]");
     ret = media_parse_setup_links(device, "\"rockchip-mipi-csi2\":2 -> \"stream_cif_mipi_id1\":0[1]");
