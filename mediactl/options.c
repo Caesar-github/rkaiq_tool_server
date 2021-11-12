@@ -31,7 +31,7 @@
 #ifndef __ANDROID__
 #include <v4l2subdev.h>
 #endif
-
+#include <linux/media.h>
 #include <linux/videodev2.h>
 
 #include "options.h"
