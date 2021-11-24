@@ -64,17 +64,16 @@ int read_frame(struct capture_info* cap_info)
 
         case IO_METHOD_USERPTR:
             CLEAR(buf);
-
             buf.type = cap_info->capture_buf_type;
             buf.memory = V4L2_MEMORY_USERPTR;
-
             device_dqbuf(cap_info->dev_fd, &buf);
 
-            for (i = 0; i < cap_info->n_buffers; ++i)
+            for (i = 0; i < cap_info->n_buffers; ++i) {
                 if (buf.m.userptr == (unsigned long)cap_info->buffers[i].start &&
                     buf.length == cap_info->buffers[i].length) {
                     break;
                 }
+            }
 
             assert(i < cap_info->n_buffers);
 

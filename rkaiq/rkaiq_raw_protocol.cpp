@@ -13,7 +13,7 @@
 
 static int capture_status = READY;
 static int capture_mode = CAPTURE_NORMAL;
-static int capture_frames = 0;
+static int capture_frames = 1;
 static int capture_frames_index = 0;
 static uint16_t capture_check_sum;
 static struct capture_info cap_info;
@@ -229,6 +229,17 @@ static void GetSensorPara(CommandData_t* cmd, int ret_status)
         LOG_INFO("VICAP_COMPACT_TEST: %d  change to no compact\n", ret);
     }
 
+    system(VICAP_COMPACT_TEST_OFF);
+    system(VICAP2_COMPACT_TEST_OFF);
+    system(VICAP00_COMPACT_TEST_OFF);
+    system(VICAP01_COMPACT_TEST_OFF);
+    system(VICAP02_COMPACT_TEST_OFF);
+    system(VICAP03_COMPACT_TEST_OFF);
+    system(VICAP04_COMPACT_TEST_OFF);
+    system(VICAP05_COMPACT_TEST_OFF);
+    system(VICAP06_COMPACT_TEST_OFF);
+    LOG_INFO("change raw cap format to no compact\n");
+
     memset(&finterval, 0, sizeof(finterval));
     finterval.pad = 0;
     if (device_getsensorfps(cap_info.subdev_fd, &finterval) < 0) {
@@ -419,6 +430,8 @@ static void DoCaptureCallBack(int socket, int index, void* buffer, int size)
     LOG_INFO(" DoCaptureCallBack size %d\n", size);
     int width = cap_info.width;
     int height = cap_info.height;
+    LOG_INFO(" cap_info.width %d\n", cap_info.width);
+    LOG_INFO(" cap_info.height %d\n", cap_info.height);
     if (size > (width * height * 2)) {
         LOG_ERROR(" DoMultiFrameCallBack size error\n");
         return;

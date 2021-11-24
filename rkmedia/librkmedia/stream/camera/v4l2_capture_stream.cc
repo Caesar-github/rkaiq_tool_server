@@ -369,6 +369,7 @@ namespace easymedia
             if (buf.memory == V4L2_MEMORY_DMABUF) {
                 assert(ret_buf->GetFD() == buf.m.fd);
             }
+            ret_buf->SetFrameSequenceNumber(buf.sequence);
             ret_buf->SetAtomicTimeVal(buf_ts);
             ret_buf->SetTimeVal(buf_ts);
             ret_buf->SetValidSize(buf.bytesused);

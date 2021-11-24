@@ -692,9 +692,45 @@ int RKAiqMedia::LinkToSensor(int cam_index)
     ret = media_parse_setup_links(device, link.c_str());
     if (!ret)
         index = 2;
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy3\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    if (!ret)
+        index = 3;
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy4\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    if (!ret)
+        index = 4;
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy5\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    if (!ret)
+        index = 5;
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy6\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    if (!ret)
+        index = 6;
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy7\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    if (!ret)
+        index = 7;
+    link = "\"";
+    link.append(sensor_name);
+    link.append("\":0 -> \"rockchip-csi2-dphy8\":0[1]");
+    ret = media_parse_setup_links(device, link.c_str());
+    if (!ret)
+        index = 8;
 
     if (linkToIsp) {
-        LOG_ERROR("LinkToSensor | linkToIsp=true\n");
+        LOG_ERROR("LinkToSensor | linkToIsp=true, index:%d\n", index);
         ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":1 -> \"rkisp-isp-subdev\":0[1]");
         link = "\"rockchip-csi2-dphy";
         link.append(std::to_string(index));
@@ -702,6 +738,7 @@ int RKAiqMedia::LinkToSensor(int cam_index)
         ret = media_parse_setup_links(device, link.c_str());
     }
     if (linkToCif) {
+        LOG_ERROR("LinkToSensor | linkToCif=true, index:%d\n", index);
         link = "\"rockchip-csi2-dphy";
         link.append(std::to_string(index));
         link.append("\":1 -> \"rockchip-mipi-csi2\":0[1]");
@@ -740,17 +777,16 @@ int RKAiqMedia::LinkToIsp(bool enable)
     media_pad *src_cif = NULL, *src_csi = NULL, *sink_csi = NULL, *src_sensor = NULL, *src_dphy0 = NULL,
               *sink_dphy0 = NULL;
 
-    LOG_INFO("############## LinkToIsp\n");
     system(VICAP_COMPACT_TEST_ON);
     system(VICAP2_COMPACT_TEST_ON);
 
     ret = LinkToSensor(g_device_id);
     if (ret < 0) {
-        LOG_ERROR(">>>>>>>>>>>> link sensor failed!!!");
+        LOG_ERROR(">>>>>>>>>>>> link sensor failed!!!\n");
         return -1;
     }
 
-    while (index < 10) {
+    while (index < 20) {
         snprintf(sys_path, 64, "/dev/media%d", index++);
         if (access(sys_path, F_OK)) {
             continue;
@@ -766,10 +802,11 @@ int RKAiqMedia::LinkToIsp(bool enable)
             media_device_unref(device);
             continue;
         }
+
         const struct media_device_info* info = media_get_info(device);
         LOG_INFO("%s: model %s\n", sys_path, info->model);
-        if (strcmp(info->model, "rkisp0") != 0 && strcmp(info->model, "rkisp1") != 0 &&
-            strcmp(info->model, "rkisp") != 0) {
+        if (strcmp(info->model, "rkisp") != 0 && strcmp(info->model, "rkisp0") != 0 &&
+            strcmp(info->model, "rkisp1") != 0 && strcmp(info->model, "rkisp2") != 0) {
             media_device_unref(device);
             continue;
         }
@@ -905,11 +942,17 @@ int RKAiqMedia::GetMediaInfo()
             strcmp(device->info.model, "rkispp") == 0) {
             GetIsppSubDevs(id, device, sys_path);
             goto media_unref;
-        } else if (strcmp(device->info.model, "rkisp0") == 0 || strcmp(device->info.model, "rkisp1") == 0 ||
-                   strcmp(device->info.model, "rkisp") == 0) {
+        } else if (strcmp(device->info.model, "rkisp") == 0 || strcmp(device->info.model, "rkisp0") == 0 ||
+                   strcmp(device->info.model, "rkisp1") == 0 || strcmp(device->info.model, "rkisp2") == 0) {
             GetIspSubDevs(id, device, sys_path);
         } else if (strcmp(device->info.model, "rkcif") == 0 || strcmp(device->info.model, "rkcif_mipi_lvds") == 0 ||
-                   strcmp(device->info.model, "rkcif_lite_mipi_lvds") == 0) {
+                   strcmp(device->info.model, "rkcif_lite_mipi_lvds") == 0 ||
+                   strcmp(device->info.model, "rkcif-mipi-lvds") == 0 ||
+                   strcmp(device->info.model, "rkcif-mipi-lvds1") == 0 ||
+                   strcmp(device->info.model, "rkcif-mipi-lvds2") == 0 ||
+                   strcmp(device->info.model, "rkcif-mipi-lvds3") == 0 ||
+                   strcmp(device->info.model, "rkcif-mipi-lvds4") == 0 ||
+                   strcmp(device->info.model, "rkcif-mipi-lvds5") == 0) {
             GetCifSubDevs(id, device, sys_path);
         } else if (strcmp(device->info.model, "rkcif_dvp") == 0) {
             GetDvpSubDevs(id, device, sys_path);
@@ -942,7 +985,6 @@ int RKAiqMedia::DumpMediaInfo()
         dvp_info_t* dvp = &media_info[i].dvp;
         isp_info_t* isp = &media_info[i].isp;
         ispp_info_t* ispp = &media_info[i].ispp;
-        LOG_DEBUG("##### Camera index: %d\n", i);
         if (isp->linked_sensor) {
             LOG_DEBUG("\t sensor_name :    %s\n", isp->sensor_name.c_str());
         } else if (cif->linked_sensor) {

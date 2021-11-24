@@ -30,6 +30,7 @@ int g_width = 1920;
 int g_height = 1080;
 int g_device_id = 0;
 int g_rtsp_en = 0;
+int g_rtsp_en_from_cmdarg = 0;
 int g_allow_killapp = 0;
 int g_cam_count = 0;
 
@@ -74,8 +75,9 @@ static int get_env(const char* name, int* value, int default_value)
     return 0;
 }
 
-static const char short_options[] = "s:i:m:Dd:w:h:r:";
+static const char short_options[] = "s:r:i:m:Dd:w:h:";
 static const struct option long_options[] = {{"stream_dev", required_argument, NULL, 's'},
+                                             {"enable_rtsp", required_argument, NULL, 'r'},
                                              {"iqfile", required_argument, NULL, 'i'},
                                              {"mode", required_argument, NULL, 'm'},
                                              {"width", no_argument, NULL, 'w'},
@@ -84,8 +86,9 @@ static const struct option long_options[] = {{"stream_dev", required_argument, N
                                              {"help", no_argument, NULL, 'h'},
                                              {0, 0, 0, 0}};
 
-static void parse_args(int argc, char** argv)
+static int parse_args(int argc, char** argv)
 {
+    int ret = 0;
     for (;;) {
         int idx;
         int c;
@@ -98,6 +101,13 @@ static void parse_args(int argc, char** argv)
                 break;
             case 's':
                 g_stream_dev_name = optarg;
+                break;
+            case 'r':
+                g_rtsp_en_from_cmdarg = atoi(optarg);
+                if (g_rtsp_en_from_cmdarg != 0 && g_rtsp_en_from_cmdarg != 1) {
+                    LOG_ERROR("enable_rtsp arg|only equals 0 or 1\n");
+                    ret = 1;
+                }
                 break;
             case 'i':
                 iqfile = optarg;
@@ -125,12 +135,14 @@ static void parse_args(int argc, char** argv)
         iqfile = "/oem/etc/iqfiles";
 #endif
     }
+
+    return ret;
 }
 
 int main(int argc, char** argv)
 {
     int ret = -1;
-    LOG_ERROR("#### AIQ tool server 20211112_150915 ####\n");
+    LOG_ERROR("#### AIQ tool server 20211124_101838 ####\n");
 
 #ifdef _WIN32
     signal(SIGINT, signal_handle);
@@ -172,7 +184,11 @@ int main(int argc, char** argv)
     get_env("rkaiq_tool_server_kill_app", &g_allow_killapp, 0);
 #endif
 
-    parse_args(argc, argv);
+    if (parse_args(argc, argv) != 0) {
+        LOG_ERROR("Tool server args parse error.\n");
+        return 1;
+    }
+
     LOG_DEBUG("iqfile cmd_parser.get  %s\n", iqfile.c_str());
     LOG_DEBUG("g_mode cmd_parser.get  %d\n", g_app_run_mode.load());
     LOG_DEBUG("g_width cmd_parser.get  %d\n", g_width);
@@ -183,26 +199,32 @@ int main(int argc, char** argv)
     rkaiq_media->GetMediaInfo();
     rkaiq_media->DumpMediaInfo();
 
-    LOG_DEBUG("================== %d =====================", g_app_run_mode.load());
+    LOG_DEBUG("================== %d =====================\n", g_app_run_mode.load());
 
+    // return 0;
     if (g_stream_dev_name.length() > 0) {
         if (0 > access(g_stream_dev_name.c_str(), R_OK | W_OK)) {
-            LOG_DEBUG("Could not access streaming device");
-            g_rtsp_en = 0;
+            LOG_DEBUG("Could not access streaming device\n");
+            if (g_rtsp_en_from_cmdarg == 1) {
+                g_rtsp_en = 0;
+            }
         } else {
-            g_rtsp_en = 1;
+            LOG_DEBUG("Access streaming device\n");
+            if (g_rtsp_en_from_cmdarg == 1) {
+                g_rtsp_en = 1;
+            }
         }
     }
 
     if (g_rtsp_en && g_stream_dev_name.length() > 0) {
         ret = RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_STREAMING);
         if (ret != 0) {
-            LOG_ERROR("Failed set mode to tunning mode, does app started?");
+            LOG_ERROR("Failed set mode to tunning mode, does app started?\n");
         }
     } else {
         ret = RKAiqProtocol::DoChangeAppMode(APP_RUN_STATUS_TUNRING);
         if (ret != 0) {
-            LOG_ERROR("Failed set mode to tunning mode, does app started?");
+            LOG_ERROR("Failed set mode to tunning mode, does app started?\n");
         }
     }
 

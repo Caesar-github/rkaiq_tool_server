@@ -15,8 +15,8 @@
 #include "mediactl.h"
 #include "v4l2subdev.h"
 
-#define MAX_MEDIA_NUM 10
-#define MAX_CAM_NUM 4
+#define MAX_MEDIA_NUM 20
+#define MAX_CAM_NUM 20
 #define SENSOR_ATTACHED_FLASH_MAX_NUM 2
 
 #define VICAP_COMPACT_TEST_ON "echo 1 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"

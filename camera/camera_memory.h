@@ -25,7 +25,7 @@
 #define FMT_NUM_PLANES 1
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 #define DEV_PATH_LEN 64
-#define MAX_MEDIA_INDEX 4
+#define MAX_MEDIA_INDEX 20
 
 enum io_method
 {

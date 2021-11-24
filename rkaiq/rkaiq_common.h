@@ -114,7 +114,13 @@ typedef enum
 } RkispFmt_e;
 
 #define VICAP_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
-
 #define VICAP2_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif_lite_mipi_lvds/compact_test"
+#define VICAP00_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds/compact_test"
+#define VICAP01_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds1/compact_test"
+#define VICAP02_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds2/compact_test"
+#define VICAP03_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds3/compact_test"
+#define VICAP04_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds4/compact_test"
+#define VICAP05_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds5/compact_test"
+#define VICAP06_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds6/compact_test"
 
 #endif

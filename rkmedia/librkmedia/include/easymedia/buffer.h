@@ -188,6 +188,15 @@ namespace easymedia
             return userdata;
         }
 
+        void SetFrameSequenceNumber(uint32_t seq_number)
+        {
+            frame_sequence_number = seq_number;
+        }
+        uint32_t GetFrameSequenceNumber()
+        {
+            return frame_sequence_number;
+        }
+
         void SetRelatedSPtr(const std::shared_ptr<void>& rdata, int index = -1)
         {
             if (index < 0) {
@@ -225,6 +234,7 @@ namespace easymedia
         // copy attributs except buffer
         void CopyAttribute(MediaBuffer& src_attr);
 
+        uint32_t frame_sequence_number;
         void* ptr; // buffer virtual address
         size_t size;
         int fd;            // buffer fd

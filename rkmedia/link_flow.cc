@@ -75,7 +75,8 @@ namespace easymedia
         if (flow->enable > 0) {
             auto link_handler = flow->GetCaptureHandler();
             if (link_handler) {
-                link_handler((unsigned char*)buffer->GetPtr(), buffer->GetValidSize(), flow->socket_fd, NULL);
+                link_handler((unsigned char*)buffer->GetPtr(), buffer->GetValidSize(), flow->socket_fd,
+                             buffer->GetFrameSequenceNumber());
                 flow->enable--;
             }
         }

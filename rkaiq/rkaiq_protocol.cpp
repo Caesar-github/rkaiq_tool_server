@@ -21,6 +21,7 @@ extern int g_app_run_mode;
 extern int g_width;
 extern int g_height;
 extern int g_rtsp_en;
+extern int g_rtsp_en_from_cmdarg;
 extern int g_device_id;
 extern int g_allow_killapp;
 extern DomainTCPClient g_tcpClient;
@@ -179,18 +180,10 @@ int RKAiqProtocol::ConnectAiq()
         return -1;
     }
 #else
-    if (g_device_id == 0) {
-        if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
-            LOG_DEBUG("domain connect failed\n");
-            g_tcpClient.Close();
-            return -1;
-        }
-    } else {
-        if (g_tcpClient.Setup("/tmp/UNIX_1.domain") == false) {
-            LOG_DEBUG("domain connect failed\n");
-            g_tcpClient.Close();
-            return -1;
-        }
+    if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
+        LOG_DEBUG("domain connect failed\n");
+        g_tcpClient.Close();
+        return -1;
     }
 #endif
     return 0;
@@ -246,11 +239,12 @@ int RKAiqProtocol::StartRTSP()
 
     LOG_DEBUG("Starting RTSP !!!");
     KillApp();
-    ret = rkaiq_media->LinkToIsp(true);
-    if (ret) {
-        LOG_ERROR("link isp failed!!!");
-        return ret;
-    }
+    // ret = rkaiq_media->LinkToIsp(true);
+    // if (ret)
+    // {
+    //     LOG_ERROR("link isp failed!!!\n");
+    //     return ret;
+    // }
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
 #ifdef __ANDROID__
@@ -311,7 +305,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode)
         if (g_rtsp_en) {
             ret = StopRTSP();
             if (ret) {
-                LOG_ERROR("stop RTSP failed!!!");
+                LOG_ERROR("stop RTSP failed!!!\n");
                 g_app_run_mode = APP_RUN_STATUS_INIT;
                 return ret;
             }
@@ -319,7 +313,7 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode)
         KillApp();
         ret = rkaiq_media->LinkToIsp(false);
         if (ret) {
-            LOG_ERROR("unlink isp failed!!!");
+            LOG_ERROR("unlink isp failed!!!\n");
             g_app_run_mode = APP_RUN_STATUS_INIT;
             return ret;
         }
@@ -327,21 +321,22 @@ int RKAiqProtocol::DoChangeAppMode(appRunStatus mode)
         LOG_DEBUG("Switch to APP_RUN_STATUS_TUNRING\n");
         ret = rkaiq_media->LinkToIsp(true);
         if (ret) {
-            LOG_ERROR("link isp failed!!!");
+            LOG_ERROR("link isp failed!!!\n");
             g_app_run_mode = APP_RUN_STATUS_INIT;
-            return ret;
+            // return ret;
         }
+
         if (!g_rtsp_en) {
             ret = StartApp();
             if (ret) {
-                LOG_ERROR("start app failed!!!");
+                LOG_ERROR("start app failed!!!\n");
                 g_app_run_mode = APP_RUN_STATUS_INIT;
                 return ret;
             }
         }
         int ret = ConnectAiq();
         if (ret) {
-            LOG_ERROR("connect aiq failed!!!");
+            LOG_ERROR("connect aiq failed!!!\n");
             is_recv_running = false;
             g_app_run_mode = APP_RUN_STATUS_INIT;
             return ret;
@@ -430,18 +425,22 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size)
             DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, g_app_run_mode);
             break;
         case CMD_ID_START_RTSP:
-            g_rtsp_en = 1;
+            if (g_rtsp_en_from_cmdarg == 1) {
+                g_rtsp_en = 1;
+            }
             ret = StartRTSP();
             if (ret) {
-                LOG_ERROR("start RTSP failed!!!");
+                LOG_ERROR("start RTSP failed!!!\n");
             }
             DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, g_app_run_mode);
             break;
         case CMD_ID_STOP_RTSP:
-            g_rtsp_en = 0;
+            if (g_rtsp_en_from_cmdarg == 1) {
+                g_rtsp_en = 0;
+            }
             ret = StopRTSP();
             if (ret) {
-                LOG_ERROR("stop RTSP failed!!!");
+                LOG_ERROR("stop RTSP failed!!!\n");
             }
             g_app_run_mode = APP_RUN_STATUS_INIT;
             DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, g_app_run_mode);

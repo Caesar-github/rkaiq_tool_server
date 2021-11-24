@@ -38,7 +38,7 @@ void init_mmap(struct capture_info* cap_info)
 
     CLEAR(req);
 
-    req.count = 4;
+    req.count = 10;
     req.type = cap_info->capture_buf_type;
     req.memory = V4L2_MEMORY_MMAP;
 

@@ -13,7 +13,7 @@ extern int g_height;
 
 static uint16_t capture_check_sum;
 static int capture_status = READY;
-static int capture_frames = 0;
+static int capture_frames = 1;
 static int capture_frames_index = 0;
 
 static void DoAnswer(int sockfd, CommandData_t* cmd, int cmd_id, int ret_status)
@@ -245,15 +245,15 @@ extern std::shared_ptr<easymedia::Flow> video_dump_flow;
 static const uint32_t kSocket_fd = (1 << 0);
 static const uint32_t kEnable_Link = (1 << 1);
 
-void LinkCaptureCallBack(unsigned char* buffer, unsigned int buffer_size, int sockfd, const char* id)
+void LinkCaptureCallBack(unsigned char* buffer, unsigned int buffer_size, int sockfd, uint32_t sequence)
 {
-    LOG_ERROR("sockfd %d buffer %p, size %d\n", sockfd, buffer, buffer_size);
+    LOG_DEBUG("sockfd %d buffer %p, size %d, sequence:%u\n", sockfd, buffer, buffer_size, sequence);
     SendYuvData(sockfd, capture_frames_index++, buffer, buffer_size);
 }
 
 static int DoCaptureYuv(int sockfd)
 {
-    LOG_ERROR("sockfd %d\n", sockfd);
+    LOG_DEBUG("DoCaptureYuv |sockfd %d\n", sockfd);
 #ifndef __ANDROID__
     if (video_dump_flow) {
         video_dump_flow->SetCaptureHandler(LinkCaptureCallBack);
@@ -295,7 +295,6 @@ static void ReplySensorPara(int sockfd, CommandData_t* cmd)
     cmd->cmdType = CMD_TYPE_CAPTURE;
     cmd->cmdID = CMD_ID_CAPTURE_YUV_CAPTURE;
     cmd->datLen = 3;
-    LOG_ERROR("g_width  %d g_height %d\n", g_width, g_height);
     Sensor_Yuv_Params_t* param = (Sensor_Yuv_Params_t*)(cmd->dat);
     param->data_id = DATA_ID_CAPTURE_RAW_GET_PARAM;
     param->width = g_width;

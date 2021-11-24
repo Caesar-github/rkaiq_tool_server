@@ -3,7 +3,7 @@
 export TOPDIR=$(pwd)
 export CURDIR=$TOPDIR/scripts/build
 export AIQ_BUILD_HOST_DIR=/home/camera/camera/rk356x_linux/buildroot/output/rockchip_rk3566/host
-#export AIQ_BUILD_HOST_DIR=/work/linux/rk356x/sdk/buildroot/output/rockchip_rk3568/host
+#export AIQ_BUILD_HOST_DIR=/home/lili/hdd/projects/356x-linux/buildroot/output/rockchip_rk3568/host
 TOOLCHAIN_FILE=$CURDIR/aarch64_linux_buildroot.cmake
 #TOOLCHAIN_FILE=$AIQ_BUILD_HOST_DIR/share/buildroot/toolchainfile.cmake
 export OUTPUT=$TOPDIR/output/aarch64

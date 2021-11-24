@@ -62,7 +62,7 @@ namespace easymedia
     using LinkAudioHandler =
         std::add_pointer<void(unsigned char* buffer, unsigned int buffer_size, int64_t present_time)>::type;
     using LinkCaptureHandler =
-        std::add_pointer<void(unsigned char* buffer, unsigned int buffer_size, int type, const char* id)>::type;
+        std::add_pointer<void(unsigned char* buffer, unsigned int buffer_size, int type, uint32_t sequence)>::type;
     using PlayVideoHandler = std::add_pointer<void(Flow* f)>::type;
     using PlayAudioHandler = std::add_pointer<void(Flow* f)>::type;
     using CallBackHandler = std::add_pointer<void>::type;

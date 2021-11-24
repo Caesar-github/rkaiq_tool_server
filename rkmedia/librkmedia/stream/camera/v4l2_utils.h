@@ -21,7 +21,7 @@
 #endif
 
 #define DEV_PATH_LEN 64
-#define MAX_MEDIA_INDEX 4
+#define MAX_MEDIA_INDEX 20
 
 #define DRIVER_NAME "rkispp"
 #define MB_ENTITY_NAME DRIVER_NAME "_m_bypass"
