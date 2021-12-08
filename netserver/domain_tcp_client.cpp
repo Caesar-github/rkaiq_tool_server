@@ -76,6 +76,8 @@ bool DomainTCPClient::Setup(string domainPath)
     if (sock < 0) {
         LOG_ERROR("Could not create domain socket %s\n", strerror(errno));
         return false;
+    } else {
+        LOG_DEBUG("Android,Create domain socket success.\n");
     }
 #else
     if (sock == -1) {
@@ -83,6 +85,8 @@ bool DomainTCPClient::Setup(string domainPath)
         if (sock == -1) {
             LOG_ERROR("Could not create domain socket\n");
             return false;
+        } else {
+            LOG_DEBUG("Linux,Create domain socket success.\n");
         }
     }
 

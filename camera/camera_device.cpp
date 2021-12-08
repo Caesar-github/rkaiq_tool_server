@@ -193,6 +193,7 @@ int device_qbuf(int dev_fd, struct v4l2_buffer* buf)
 
 int device_dqbuf(int dev_fd, struct v4l2_buffer* buf)
 {
+    assert(buf);
     int ret = xioctl(dev_fd, VIDIOC_DQBUF, buf);
     if (-1 == ret) {
         switch (errno) {

@@ -205,7 +205,7 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device, const char* 
         }
     }
 
-    LOG_ERROR("isp media index %d, media info array id  %d\n", id, index);
+    LOG_DEBUG("isp media index %d, media info array id  %d\n", id, index);
     if (index >= MAX_CAM_NUM) {
         return;
     }
@@ -353,8 +353,8 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device, const char* 
         }
     }
 
-    LOG_INFO("model(%s): isp_info(%d): isp-subdev entity name: %s\n", device->info.model, index,
-             isp_info->isp_dev_path.c_str());
+    LOG_DEBUG("model(%s): isp_info(%d): isp-subdev entity name: %s\n", device->info.model, index,
+              isp_info->isp_dev_path.c_str());
 }
 
 void RKAiqMedia::GetCifSubDevs(int id, struct media_device* device, const char* devpath)
@@ -560,7 +560,7 @@ void RKAiqMedia::GetLensSubDevs(int id, struct media_device* device, const char*
         }
     }
 
-    LOG_ERROR("isp media index %d, media info array id  %d\n", id, index);
+    LOG_DEBUG("isp media index %d, media info array id  %d\n", id, index);
     if (index >= MAX_CAM_NUM) {
         return;
     }
@@ -669,7 +669,7 @@ int RKAiqMedia::LinkToSensor(int cam_index)
     }
 
     const struct media_device_info* info = media_get_info(device);
-    LOG_INFO("%s: model %s\n", media_path.c_str(), info->model);
+    LOG_DEBUG("%s: model %s\n", media_path.c_str(), info->model);
     media_reset_links(device);
     LOG_INFO("%s: setup link to sensor %s\n", media_path.c_str(), sensor_name.c_str());
 
@@ -730,7 +730,7 @@ int RKAiqMedia::LinkToSensor(int cam_index)
         index = 8;
 
     if (linkToIsp) {
-        LOG_ERROR("LinkToSensor | linkToIsp=true, index:%d\n", index);
+        LOG_DEBUG("LinkToSensor | linkToIsp=true, index:%d\n", index);
         ret = media_parse_setup_links(device, "\"rkisp-csi-subdev\":1 -> \"rkisp-isp-subdev\":0[1]");
         link = "\"rockchip-csi2-dphy";
         link.append(std::to_string(index));
@@ -738,7 +738,7 @@ int RKAiqMedia::LinkToSensor(int cam_index)
         ret = media_parse_setup_links(device, link.c_str());
     }
     if (linkToCif) {
-        LOG_ERROR("LinkToSensor | linkToCif=true, index:%d\n", index);
+        LOG_DEBUG("LinkToSensor | linkToCif=true, index:%d\n", index);
         link = "\"rockchip-csi2-dphy";
         link.append(std::to_string(index));
         link.append("\":1 -> \"rockchip-mipi-csi2\":0[1]");
@@ -804,14 +804,14 @@ int RKAiqMedia::LinkToIsp(bool enable)
         }
 
         const struct media_device_info* info = media_get_info(device);
-        LOG_INFO("%s: model %s\n", sys_path, info->model);
+        LOG_DEBUG("%s: model %s\n", sys_path, info->model);
         if (strcmp(info->model, "rkisp") != 0 && strcmp(info->model, "rkisp0") != 0 &&
             strcmp(info->model, "rkisp1") != 0 && strcmp(info->model, "rkisp2") != 0) {
             media_device_unref(device);
             continue;
         }
         // media_reset_links(device);
-        LOG_INFO("%s: setup link to isp enable %d\n", sys_path, enable);
+        LOG_DEBUG("%s: setup link to isp enable %d\n", sys_path, enable);
         entity = media_get_entity_by_name(device, "rkisp-isp-subdev");
         if (entity) {
             const struct media_entity_desc* info = media_entity_get_info(entity);
@@ -925,7 +925,7 @@ int RKAiqMedia::GetMediaInfo()
             continue;
         }
 
-        LOG_ERROR("access %s\n", sys_path);
+        LOG_DEBUG("access %s\n", sys_path);
 
         device = media_device_new(sys_path);
         if (!device) {
@@ -978,7 +978,7 @@ int RKAiqMedia::GetMediaInfo()
 
 int RKAiqMedia::DumpMediaInfo()
 {
-    LOG_DEBUG("DumpMediaInfo:\n");
+    LOG_INFO("DumpMediaInfo:\n");
 
     for (int i = 0; i < MAX_CAM_NUM; i++) {
         cif_info_t* cif = &media_info[i].cif;
@@ -986,71 +986,71 @@ int RKAiqMedia::DumpMediaInfo()
         isp_info_t* isp = &media_info[i].isp;
         ispp_info_t* ispp = &media_info[i].ispp;
         if (isp->linked_sensor) {
-            LOG_DEBUG("\t sensor_name :    %s\n", isp->sensor_name.c_str());
+            LOG_INFO("\t sensor_name :    %s\n", isp->sensor_name.c_str());
         } else if (cif->linked_sensor) {
-            LOG_DEBUG("\t sensor_name :    %s\n", cif->sensor_name.c_str());
+            LOG_INFO("\t sensor_name :    %s\n", cif->sensor_name.c_str());
         } else if (dvp->linked_sensor) {
-            LOG_DEBUG("\t sensor_name :    %s\n", dvp->sensor_name.c_str());
+            LOG_INFO("\t sensor_name :    %s\n", dvp->sensor_name.c_str());
         }
-        if (cif->model_idx >= 0) {
-            LOG_DEBUG("#### cif:\n");
-            LOG_DEBUG("\t model_idx :         %d\n", cif->model_idx);
-            LOG_DEBUG("\t linked_sensor :     %d\n", cif->linked_sensor);
-            LOG_DEBUG("\t media_dev_path :    %s\n", cif->media_dev_path.c_str());
-            LOG_DEBUG("\t mipi_id0 : 		  %s\n", cif->mipi_id0.c_str());
-            LOG_DEBUG("\t mipi_id1 : 		  %s\n", cif->mipi_id1.c_str());
-            LOG_DEBUG("\t mipi_id2 : 		  %s\n", cif->mipi_id2.c_str());
-            LOG_DEBUG("\t mipi_id3 : 		  %s\n", cif->mipi_id3.c_str());
-            LOG_DEBUG("\t mipi_dphy_rx_path : %s\n", cif->mipi_dphy_rx_path.c_str());
-            LOG_DEBUG("\t mipi_csi2_sd_path : %s\n", cif->mipi_csi2_sd_path.c_str());
-            LOG_DEBUG("\t lvds_sd_path :      %s\n", cif->lvds_sd_path.c_str());
-            LOG_DEBUG("\t mipi_luma_path :    %s\n", cif->mipi_luma_path.c_str());
+        if (cif->model_idx >= 0 && cif->media_dev_path.length() > 0) {
+            LOG_INFO("#### cif:\n");
+            LOG_INFO("\t model_idx :         %d\n", cif->model_idx);
+            LOG_INFO("\t linked_sensor :     %d\n", cif->linked_sensor);
+            LOG_INFO("\t media_dev_path :    %s\n", cif->media_dev_path.c_str());
+            LOG_INFO("\t mipi_id0 : 		  %s\n", cif->mipi_id0.c_str());
+            LOG_INFO("\t mipi_id1 : 		  %s\n", cif->mipi_id1.c_str());
+            LOG_INFO("\t mipi_id2 : 		  %s\n", cif->mipi_id2.c_str());
+            LOG_INFO("\t mipi_id3 : 		  %s\n", cif->mipi_id3.c_str());
+            LOG_INFO("\t mipi_dphy_rx_path : %s\n", cif->mipi_dphy_rx_path.c_str());
+            LOG_INFO("\t mipi_csi2_sd_path : %s\n", cif->mipi_csi2_sd_path.c_str());
+            LOG_INFO("\t lvds_sd_path :      %s\n", cif->lvds_sd_path.c_str());
+            LOG_INFO("\t mipi_luma_path :    %s\n", cif->mipi_luma_path.c_str());
         }
-        if (dvp->model_idx >= 0) {
-            LOG_DEBUG("#### dvp:\n");
-            LOG_DEBUG("\t model_idx :         %d\n", dvp->model_idx);
-            LOG_DEBUG("\t linked_sensor :     %d\n", dvp->linked_sensor);
-            LOG_DEBUG("\t media_dev_path :    %s\n", dvp->media_dev_path.c_str());
-            LOG_DEBUG("\t mipi_id0 :      %s\n", dvp->dvp_id0.c_str());
-            LOG_DEBUG("\t mipi_id1 :      %s\n", dvp->dvp_id1.c_str());
-            LOG_DEBUG("\t mipi_id2 :      %s\n", dvp->dvp_id2.c_str());
-            LOG_DEBUG("\t mipi_id3 :      %s\n", dvp->dvp_id3.c_str());
+        if (dvp->model_idx >= 0 && dvp->media_dev_path.length() > 0) {
+            LOG_INFO("#### dvp:\n");
+            LOG_INFO("\t model_idx :         %d\n", dvp->model_idx);
+            LOG_INFO("\t linked_sensor :     %d\n", dvp->linked_sensor);
+            LOG_INFO("\t media_dev_path :    %s\n", dvp->media_dev_path.c_str());
+            LOG_INFO("\t mipi_id0 :      %s\n", dvp->dvp_id0.c_str());
+            LOG_INFO("\t mipi_id1 :      %s\n", dvp->dvp_id1.c_str());
+            LOG_INFO("\t mipi_id2 :      %s\n", dvp->dvp_id2.c_str());
+            LOG_INFO("\t mipi_id3 :      %s\n", dvp->dvp_id3.c_str());
         }
-        if (isp->model_idx >= 0) {
-            LOG_DEBUG("#### isp:\n");
-            LOG_DEBUG("\t model_idx :         %d\n", isp->model_idx);
-            LOG_DEBUG("\t linked_sensor :     %d\n", isp->linked_sensor);
-            LOG_DEBUG("\t media_dev_path :    %s\n", isp->media_dev_path.c_str());
-            LOG_DEBUG("\t isp_dev_path :      %s\n", isp->isp_dev_path.c_str());
-            LOG_DEBUG("\t csi_dev_path :      %s\n", isp->csi_dev_path.c_str());
-            LOG_DEBUG("\t mpfbc_dev_path :    %s\n", isp->mpfbc_dev_path.c_str());
-            LOG_DEBUG("\t main_path :         %s\n", isp->main_path.c_str());
-            LOG_DEBUG("\t self_path :         %s\n", isp->self_path.c_str());
-            LOG_DEBUG("\t rawwr0_path :       %s\n", isp->rawwr0_path.c_str());
-            LOG_DEBUG("\t rawwr1_path :       %s\n", isp->rawwr1_path.c_str());
-            LOG_DEBUG("\t rawwr2_path :       %s\n", isp->rawwr2_path.c_str());
-            LOG_DEBUG("\t rawwr3_path :       %s\n", isp->rawwr3_path.c_str());
-            LOG_DEBUG("\t dma_path :          %s\n", isp->dma_path.c_str());
-            LOG_DEBUG("\t rawrd0_m_path :     %s\n", isp->rawrd0_m_path.c_str());
-            LOG_DEBUG("\t rawrd1_l_path :     %s\n", isp->rawrd1_l_path.c_str());
-            LOG_DEBUG("\t rawrd2_s_path :     %s\n", isp->rawrd2_s_path.c_str());
-            LOG_DEBUG("\t stats_path :        %s\n", isp->stats_path.c_str());
-            LOG_DEBUG("\t input_params_path : %s\n", isp->input_params_path.c_str());
-            LOG_DEBUG("\t mipi_luma_path :    %s\n", isp->mipi_luma_path.c_str());
-            LOG_DEBUG("\t mipi_dphy_rx_path : %s\n", isp->mipi_dphy_rx_path.c_str());
+        if (isp->model_idx >= 0 && isp->media_dev_path.length() > 0) {
+            LOG_INFO("#### isp:\n");
+            LOG_INFO("\t model_idx :         %d\n", isp->model_idx);
+            LOG_INFO("\t linked_sensor :     %d\n", isp->linked_sensor);
+            LOG_INFO("\t media_dev_path :    %s\n", isp->media_dev_path.c_str());
+            LOG_INFO("\t isp_dev_path :      %s\n", isp->isp_dev_path.c_str());
+            LOG_INFO("\t csi_dev_path :      %s\n", isp->csi_dev_path.c_str());
+            LOG_INFO("\t mpfbc_dev_path :    %s\n", isp->mpfbc_dev_path.c_str());
+            LOG_INFO("\t main_path :         %s\n", isp->main_path.c_str());
+            LOG_INFO("\t self_path :         %s\n", isp->self_path.c_str());
+            LOG_INFO("\t rawwr0_path :       %s\n", isp->rawwr0_path.c_str());
+            LOG_INFO("\t rawwr1_path :       %s\n", isp->rawwr1_path.c_str());
+            LOG_INFO("\t rawwr2_path :       %s\n", isp->rawwr2_path.c_str());
+            LOG_INFO("\t rawwr3_path :       %s\n", isp->rawwr3_path.c_str());
+            LOG_INFO("\t dma_path :          %s\n", isp->dma_path.c_str());
+            LOG_INFO("\t rawrd0_m_path :     %s\n", isp->rawrd0_m_path.c_str());
+            LOG_INFO("\t rawrd1_l_path :     %s\n", isp->rawrd1_l_path.c_str());
+            LOG_INFO("\t rawrd2_s_path :     %s\n", isp->rawrd2_s_path.c_str());
+            LOG_INFO("\t stats_path :        %s\n", isp->stats_path.c_str());
+            LOG_INFO("\t input_params_path : %s\n", isp->input_params_path.c_str());
+            LOG_INFO("\t mipi_luma_path :    %s\n", isp->mipi_luma_path.c_str());
+            LOG_INFO("\t mipi_dphy_rx_path : %s\n", isp->mipi_dphy_rx_path.c_str());
         }
-        if (ispp->model_idx >= 0) {
-            LOG_DEBUG("#### ispp:\n");
-            LOG_DEBUG("\t model_idx :            %d\n", ispp->model_idx);
-            LOG_DEBUG("\t media_dev_path :       %s\n", ispp->media_dev_path.c_str());
-            LOG_DEBUG("\t pp_input_image_path :  %s\n", ispp->pp_input_image_path.c_str());
-            LOG_DEBUG("\t pp_m_bypass_path :     %s\n", ispp->pp_m_bypass_path.c_str());
-            LOG_DEBUG("\t pp_scale0_path :       %s\n", ispp->pp_scale0_path.c_str());
-            LOG_DEBUG("\t pp_scale1_path :       %s\n", ispp->pp_scale1_path.c_str());
-            LOG_DEBUG("\t pp_scale2_path :       %s\n", ispp->pp_scale2_path.c_str());
-            LOG_DEBUG("\t pp_input_params_path : %s\n", ispp->pp_input_params_path.c_str());
-            LOG_DEBUG("\t pp_stats_path :        %s\n", ispp->pp_stats_path.c_str());
-            LOG_DEBUG("\t pp_dev_path :          %s\n", ispp->pp_dev_path.c_str());
+        if (ispp->model_idx >= 0 && ispp->media_dev_path.length() > 0) {
+            LOG_INFO("#### ispp:\n");
+            LOG_INFO("\t model_idx :            %d\n", ispp->model_idx);
+            LOG_INFO("\t media_dev_path :       %s\n", ispp->media_dev_path.c_str());
+            LOG_INFO("\t pp_input_image_path :  %s\n", ispp->pp_input_image_path.c_str());
+            LOG_INFO("\t pp_m_bypass_path :     %s\n", ispp->pp_m_bypass_path.c_str());
+            LOG_INFO("\t pp_scale0_path :       %s\n", ispp->pp_scale0_path.c_str());
+            LOG_INFO("\t pp_scale1_path :       %s\n", ispp->pp_scale1_path.c_str());
+            LOG_INFO("\t pp_scale2_path :       %s\n", ispp->pp_scale2_path.c_str());
+            LOG_INFO("\t pp_input_params_path : %s\n", ispp->pp_input_params_path.c_str());
+            LOG_INFO("\t pp_stats_path :        %s\n", ispp->pp_stats_path.c_str());
+            LOG_INFO("\t pp_dev_path :          %s\n", ispp->pp_dev_path.c_str());
         }
     }
     return 0;

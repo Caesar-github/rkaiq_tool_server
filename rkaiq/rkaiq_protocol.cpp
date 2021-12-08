@@ -127,11 +127,11 @@ static int ProcessExists(const char* process_name)
     snprintf(cmd, sizeof(cmd), "ps -ef | grep %s | grep -v grep", process_name);
     fp = popen(cmd, "r");
     if (!fp) {
-        LOG_INFO("popen ps | grep %s fail\n", process_name);
+        LOG_DEBUG("popen ps | grep %s fail\n", process_name);
         return -1;
     }
     while (fgets(buf, sizeof(buf), fp)) {
-        LOG_INFO("ProcessExists %s\n", buf);
+        LOG_DEBUG("ProcessExists %s\n", buf);
         if (strstr(buf, process_name)) {
             fclose(fp);
             return 1;
@@ -145,7 +145,7 @@ int StopProcess(const char* process, const char* str)
 {
     int count = 0;
     while (ProcessExists(process) > 0) {
-        LOG_INFO("StopProcess %s... \n", process);
+        LOG_DEBUG("StopProcess %s... \n", process);
         system(str);
         sleep(1);
         count++;
@@ -159,9 +159,9 @@ int StopProcess(const char* process, const char* str)
 int WaitProcessExit(const char* process, int sec)
 {
     int count = 0;
-    LOG_INFO("WaitProcessExit %s... \n", process);
+    LOG_DEBUG("WaitProcessExit %s... \n", process);
     while (ProcessExists(process) > 0) {
-        LOG_INFO("WaitProcessExit %s... \n", process);
+        LOG_DEBUG("WaitProcessExit %s... \n", process);
         sleep(1);
         count++;
         if (count > sec) {
@@ -239,18 +239,26 @@ int RKAiqProtocol::StartRTSP()
 
     LOG_DEBUG("Starting RTSP !!!");
     KillApp();
-    // ret = rkaiq_media->LinkToIsp(true);
-    // if (ret)
-    // {
-    //     LOG_ERROR("link isp failed!!!\n");
-    //     return ret;
-    // }
+    ret = rkaiq_media->LinkToIsp(true);
+    if (ret) {
+        LOG_ERROR("link isp failed!!!\n");
+        return ret;
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     media_info_t mi = rkaiq_media->GetMediaInfoT(g_device_id);
 #ifdef __ANDROID__
     int readback = 0;
-    std::string isp3a_server_cmd = "/vendor/bin/rkaiq_3A_server -mmedia= ";
-    isp3a_server_cmd.append(mi.isp.media_dev_path);
+    std::string isp3a_server_cmd = "/vendor/bin/rkaiq_3A_server -mmedia=";
+    if (mi.isp.media_dev_path.length() > 0) {
+        isp3a_server_cmd.append(mi.isp.media_dev_path);
+        LOG_DEBUG("#### using isp dev path.\n");
+    } else if (mi.cif.media_dev_path.length() > 0) {
+        isp3a_server_cmd.append(mi.cif.media_dev_path);
+        LOG_DEBUG("#### using cif dev path.\n");
+    } else {
+        isp3a_server_cmd.append("/dev/media2");
+        LOG_DEBUG("#### using default dev path.\n");
+    }
     isp3a_server_cmd.append(" --sensor_index=");
     isp3a_server_cmd.append(std::to_string(g_device_id));
     isp3a_server_cmd.append(" &");
@@ -364,7 +372,7 @@ static void InitCommandPingAns(CommandData_t* cmd, int ret_status)
 static void DoAnswer(int sockfd, CommandData_t* cmd, int cmd_id, int ret_status)
 {
     char send_data[MAXPACKETSIZE];
-    LOG_INFO("enter\n");
+    LOG_DEBUG("enter\n");
 
     strncpy((char*)cmd->RKID, TAG_OL_DEVICE_TO_PC, sizeof(cmd->RKID));
     cmd->cmdType = DEVICE_TO_PC;
@@ -380,7 +388,7 @@ static void DoAnswer(int sockfd, CommandData_t* cmd, int cmd_id, int ret_status)
 
     memcpy(send_data, cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
 }
 
 void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size)
@@ -390,33 +398,33 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size)
     char send_data[MAXPACKETSIZE];
     int ret = -1;
 
-    LOG_INFO("HandlerCheckDevice:\n");
+    LOG_DEBUG("HandlerCheckDevice:\n");
 
     // for (int i = 0; i < common_cmd->datLen; i++) {
-    //   LOG_INFO("DATA[%d]: 0x%x\n", i, common_cmd->dat[i]);
+    //   LOG_DEBUG("DATA[%d]: 0x%x\n", i, common_cmd->dat[i]);
     // }
 
     if (strcmp((char*)common_cmd->RKID, RKID_CHECK) == 0) {
-        LOG_INFO("RKID: %s\n", common_cmd->RKID);
+        LOG_DEBUG("RKID: %s\n", common_cmd->RKID);
     } else {
-        LOG_INFO("RKID: Unknow\n");
+        LOG_DEBUG("RKID: Unknow\n");
         return;
     }
 
-    LOG_INFO("cmdID: %d\n", common_cmd->cmdID);
+    LOG_DEBUG("cmdID: %d\n", common_cmd->cmdID);
 
     switch (common_cmd->cmdID) {
         case CMD_ID_CAPTURE_STATUS:
-            LOG_INFO("CmdID CMD_ID_CAPTURE_STATUS in\n");
+            LOG_DEBUG("CmdID CMD_ID_CAPTURE_STATUS in\n");
             if (common_cmd->dat[0] == KNOCK_KNOCK) {
                 InitCommandPingAns(&send_cmd, READY);
-                LOG_INFO("Device is READY\n");
+                LOG_DEBUG("Device is READY\n");
             } else {
                 LOG_ERROR("Unknow CMD_ID_CAPTURE_STATUS message\n");
             }
             memcpy(send_data, &send_cmd, sizeof(CommandData_t));
             send(sockfd, send_data, sizeof(CommandData_t), 0);
-            LOG_INFO("cmdID CMD_ID_CAPTURE_STATUS out\n\n");
+            LOG_DEBUG("cmdID CMD_ID_CAPTURE_STATUS out\n\n");
             break;
         case CMD_ID_GET_STATUS:
             DoAnswer(sockfd, &send_cmd, common_cmd->cmdID, READY);
@@ -453,7 +461,7 @@ void RKAiqProtocol::HandlerCheckDevice(int sockfd, char* buffer, int size)
 void RKAiqProtocol::HandlerReceiveFile(int sockfd, char* buffer, int size)
 {
     FileTransferData* recData = (FileTransferData*)buffer;
-    LOG_INFO("HandlerReceiveFile begin\n");
+    LOG_DEBUG("HandlerReceiveFile begin\n");
     // HexDump((unsigned char*)buffer, size);
     // parse data
     unsigned long long packetSize = recData->packetSize;
@@ -625,7 +633,7 @@ void RKAiqProtocol::HandlerReceiveFile(int sockfd, char* buffer, int size)
         receivedData.data = NULL;
     }
 
-    LOG_INFO("HandlerReceiveFile process finished.\n");
+    LOG_DEBUG("HandlerReceiveFile process finished.\n");
 
     char tmpBuf[200] = {0};
     snprintf(tmpBuf, sizeof(tmpBuf), "##StatusMessage##FileTransfer##Success##%s##", dstFileName.c_str());
@@ -636,9 +644,9 @@ void RKAiqProtocol::HandlerReceiveFile(int sockfd, char* buffer, int size)
 void RKAiqProtocol::HandlerTCPMessage(int sockfd, char* buffer, int size)
 {
     CommandData_t* common_cmd = (CommandData_t*)buffer;
-    LOG_INFO("HandlerTCPMessage:\n");
-    LOG_INFO("HandlerTCPMessage CommandData_t: 0x%lx\n", sizeof(CommandData_t));
-    LOG_INFO("HandlerTCPMessage RKID: %s\n", (char*)common_cmd->RKID);
+    LOG_DEBUG("HandlerTCPMessage:\n");
+    LOG_DEBUG("HandlerTCPMessage CommandData_t: 0x%lx\n", sizeof(CommandData_t));
+    LOG_DEBUG("HandlerTCPMessage RKID: %s\n", (char*)common_cmd->RKID);
 
     // TODO Check APP Mode
 
@@ -665,7 +673,10 @@ int RKAiqProtocol::doMessageForward(int sockfd)
         if (recv_len > 0) {
             ssize_t ret = send(sockfd, recv_buffer, recv_len, 0);
             if (ret < 0) {
-                LOG_ERROR("Forward socket %d failed\n", sockfd);
+                LOG_ERROR("#########################################################\n");
+                LOG_ERROR("## Forward socket %d failed, please check AIQ status.####\n", sockfd);
+                LOG_ERROR("#########################################################\n\n");
+
                 close(sockfd);
                 std::lock_guard<std::mutex> lk(mutex_);
                 is_recv_running = false;
@@ -687,12 +698,16 @@ int RKAiqProtocol::doMessageForward(int sockfd)
 
 int RKAiqProtocol::MessageForward(int sockfd, char* buffer, int size)
 {
-    LOG_INFO("[%s]got data:%d!\n", __func__, size);
+    LOG_DEBUG("[%s]got data:%d!\n", __func__, size);
     int ret = g_tcpClient.Send((char*)buffer, size);
     if (ret < 0 && (errno != EAGAIN && errno != EINTR)) {
         g_tcpClient.Close();
         g_app_run_mode = APP_RUN_STATUS_INIT;
-        LOG_ERROR("Forward to AIQ failed!");
+        LOG_ERROR("########################################################\n");
+        LOG_ERROR("#### Forward to AIQ failed! please check AIQ status.####n");
+        LOG_ERROR("########################################################\n\n");
+        close(sockfd);
+        is_recv_running = false;
         return -1;
     }
 

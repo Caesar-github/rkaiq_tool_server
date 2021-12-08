@@ -43,7 +43,7 @@ int TCPServer::Recvieve(int cilent_socket)
     sigaddset(&set, SIGTERM);
     pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-    LOG_INFO("TCPServer::Recvieve enter %d\n", cilent_socket);
+    LOG_DEBUG("TCPServer::Recvieve enter %d\n", cilent_socket);
     char buffer[MAXPACKETSIZE];
     int size = sizeof(buffer);
     struct timeval interval = {3, 0};
@@ -51,7 +51,7 @@ int TCPServer::Recvieve(int cilent_socket)
     while (!quit_.load()) {
         int length = recv(cilent_socket, buffer, size, 0);
         if (length == 0) {
-            LOG_INFO("socket recvieve exit\n");
+            LOG_DEBUG("socket recvieve exit\n");
             break;
         } else if (length < 0 && errno == EAGAIN) {
             // LOG_INFO("socket recvieve failed\n");
@@ -59,13 +59,13 @@ int TCPServer::Recvieve(int cilent_socket)
         } else if (length < 0) {
             break;
         }
-        LOG_INFO("socket recvieve length: %d\n", length);
+        LOG_DEBUG("socket recvieve length: %d\n", length);
 
         if (callback_) {
             callback_(cilent_socket, buffer, length);
         }
     }
-    LOG_INFO("TCPServer::Recvieve exit %d\n", cilent_socket);
+    LOG_DEBUG("TCPServer::Recvieve exit %d\n", cilent_socket);
     return 0;
 }
 
@@ -101,13 +101,13 @@ void TCPServer::Accepted()
     close(sockfd);
     sockfd = -1;
     exited_.store(true, std::memory_order_release);
-    LOG_INFO("socket accept exit\n");
+    LOG_DEBUG("socket accept exit\n");
 }
 
 int TCPServer::Process(int port)
 {
     exited_.store(false, std::memory_order_release);
-    LOG_INFO("TCPServer::Process\n");
+    LOG_DEBUG("TCPServer::Process\n");
     int opt = 1;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {

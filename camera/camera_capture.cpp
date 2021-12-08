@@ -8,7 +8,7 @@
 void process_image(struct capture_info* cap_info, const void* p, int size)
 {
     static int image_index = 0;
-    LOG_INFO("image_index %d\n", image_index++);
+    LOG_DEBUG("image_index %d\n", image_index++);
     if (cap_info->out_fp) {
         fwrite(p, size, 1, cap_info->out_fp);
         fflush(cap_info->out_fp);
@@ -47,7 +47,8 @@ int read_frame(struct capture_info* cap_info)
                 buf.length = FMT_NUM_PLANES;
             }
 
-            device_dqbuf(cap_info->dev_fd, &buf);
+            if (device_dqbuf(cap_info->dev_fd, &buf) == -1)
+                break;
 
             assert(buf.index < cap_info->n_buffers);
 
@@ -66,7 +67,9 @@ int read_frame(struct capture_info* cap_info)
             CLEAR(buf);
             buf.type = cap_info->capture_buf_type;
             buf.memory = V4L2_MEMORY_USERPTR;
-            device_dqbuf(cap_info->dev_fd, &buf);
+
+            if (device_dqbuf(cap_info->dev_fd, &buf) == -1)
+                break;
 
             for (i = 0; i < cap_info->n_buffers; ++i) {
                 if (buf.m.userptr == (unsigned long)cap_info->buffers[i].start &&
@@ -117,7 +120,9 @@ int read_frame(int handler, int index, struct capture_info* cap_info, CaptureCal
                 buf.m.planes = planes;
                 buf.length = FMT_NUM_PLANES;
             }
-            device_dqbuf(cap_info->dev_fd, &buf);
+
+            if (device_dqbuf(cap_info->dev_fd, &buf) == -1)
+                break;
 
             assert(buf.index < cap_info->n_buffers);
 
@@ -130,7 +135,6 @@ int read_frame(int handler, int index, struct capture_info* cap_info, CaptureCal
             if (callback) {
                 callback(handler, index, cap_info->buffers[buf.index].start, bytesused);
             }
-
             memset(cap_info->buffers[buf.index].start, 0, bytesused);
             device_qbuf(cap_info->dev_fd, &buf);
             break;
@@ -141,7 +145,8 @@ int read_frame(int handler, int index, struct capture_info* cap_info, CaptureCal
             buf.type = cap_info->capture_buf_type;
             buf.memory = V4L2_MEMORY_USERPTR;
 
-            device_dqbuf(cap_info->dev_fd, &buf);
+            if (device_dqbuf(cap_info->dev_fd, &buf) == -1)
+                break;
 
             for (i = 0; i < cap_info->n_buffers; ++i)
                 if (buf.m.userptr == (unsigned long)cap_info->buffers[i].start &&

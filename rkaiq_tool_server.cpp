@@ -142,7 +142,7 @@ static int parse_args(int argc, char** argv)
 int main(int argc, char** argv)
 {
     int ret = -1;
-    LOG_ERROR("#### AIQ tool server 20211124_101838 ####\n");
+    LOG_ERROR("#### AIQ tool server 20211212_152030 ####\n");
 
 #ifdef _WIN32
     signal(SIGINT, signal_handle);
@@ -180,7 +180,8 @@ int main(int argc, char** argv)
     // property_get("persist.vendor.rkisp_no_read_back", property_value, "-1");
     // readback = strtoull(property_value, nullptr, 16);
 #else
-    get_env("rkaiq_tool_server_log_level", &log_level, 5);
+    get_env("rkaiq_tool_server_log_level", &log_level,
+            LOG_LEVEL_INFO); // LOG_LEVEL_ERROR   LOG_LEVEL_WARN  LOG_LEVEL_INFO  LOG_LEVEL_DEBUG
     get_env("rkaiq_tool_server_kill_app", &g_allow_killapp, 0);
 #endif
 

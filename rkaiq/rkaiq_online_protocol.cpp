@@ -19,7 +19,7 @@ static int capture_frames_index = 0;
 static void DoAnswer(int sockfd, CommandData_t* cmd, int cmd_id, int ret_status)
 {
     char send_data[MAXPACKETSIZE];
-    LOG_INFO("enter\n");
+    LOG_DEBUG("enter\n");
 
     strncpy((char*)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
     cmd->cmdType = CMD_TYPE_CAPTURE;
@@ -35,13 +35,13 @@ static void DoAnswer(int sockfd, CommandData_t* cmd, int cmd_id, int ret_status)
 
     memcpy(send_data, cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
 }
 
 static void DoAnswer2(int sockfd, CommandData_t* cmd, int cmd_id, uint16_t check_sum, uint32_t result)
 {
     char send_data[MAXPACKETSIZE];
-    LOG_INFO("enter\n");
+    LOG_DEBUG("enter\n");
     strncpy((char*)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
     cmd->cmdType = CMD_TYPE_CAPTURE;
     cmd->cmdID = cmd_id;
@@ -58,7 +58,7 @@ static void DoAnswer2(int sockfd, CommandData_t* cmd, int cmd_id, uint16_t check
 
     memcpy(send_data, cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
 }
 
 static int DoCheckSum(int sockfd, uint16_t check_sum)
@@ -68,7 +68,7 @@ static int DoCheckSum(int sockfd, uint16_t check_sum)
     int param_size = sizeof(CommandData_t);
     int remain_size = param_size;
     int try_count = 3;
-    LOG_INFO("enter\n");
+    LOG_DEBUG("enter\n");
 
     struct timeval interval = {3, 0};
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&interval, sizeof(struct timeval));
@@ -78,7 +78,7 @@ static int DoCheckSum(int sockfd, uint16_t check_sum)
         recv_size = recv(sockfd, recv_data + offset, remain_size, 0);
         if (recv_size < 0) {
             if (errno == EAGAIN) {
-                LOG_INFO("recv size %zu, do try again, count %d\n", recv_size, try_count);
+                LOG_DEBUG("recv size %zu, do try again, count %d\n", recv_size, try_count);
                 try_count--;
                 if (try_count < 0) {
                     break;
@@ -90,20 +90,20 @@ static int DoCheckSum(int sockfd, uint16_t check_sum)
         }
         remain_size = remain_size - recv_size;
     }
-    LOG_INFO("recv_size: 0x%lx expect 0x%lx\n", recv_size, sizeof(CommandData_t));
+    LOG_DEBUG("recv_size: 0x%lx expect 0x%lx\n", recv_size, sizeof(CommandData_t));
 
     CommandData_t* cmd = (CommandData_t*)recv_data;
     uint16_t recv_check_sum = 0;
     recv_check_sum += cmd->dat[0] & 0xff;
     recv_check_sum += (cmd->dat[1] & 0xff) << 8;
-    LOG_INFO("check_sum local: 0x%x pc: 0x%x\n", check_sum, recv_check_sum);
+    LOG_DEBUG("check_sum local: 0x%x pc: 0x%x\n", check_sum, recv_check_sum);
 
     if (check_sum != recv_check_sum) {
-        LOG_INFO("check_sum fail!\n");
+        LOG_DEBUG("check_sum fail!\n");
         return -1;
     }
 
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
     return 0;
 }
 
@@ -113,8 +113,8 @@ static void OnLineSet(int sockfd, CommandData_t* cmd, uint16_t& check_sum, uint3
     int param_size = *(int*)cmd->dat;
     int remain_size = param_size;
 
-    LOG_INFO("enter\n");
-    LOG_INFO("expect recv param_size 0x%x\n", param_size);
+    LOG_DEBUG("enter\n");
+    LOG_DEBUG("expect recv param_size 0x%x\n", param_size);
     char* param = (char*)malloc(param_size);
     while (remain_size > 0) {
         int offset = param_size - remain_size;
@@ -122,13 +122,13 @@ static void OnLineSet(int sockfd, CommandData_t* cmd, uint16_t& check_sum, uint3
         remain_size = remain_size - recv_size;
     }
 
-    LOG_INFO("recv ready\n");
+    LOG_DEBUG("recv ready\n");
 
     for (int i = 0; i < param_size; i++) {
         check_sum += param[i];
     }
 
-    LOG_INFO("DO Sycn Setting, CmdId: 0x%x, expect ParamSize %d\n", cmd->cmdID, param_size);
+    LOG_DEBUG("DO Sycn Setting, CmdId: 0x%x, expect ParamSize %d\n", cmd->cmdID, param_size);
 #if 0
   if (rkaiq_manager) {
     result = rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
@@ -137,7 +137,7 @@ static void OnLineSet(int sockfd, CommandData_t* cmd, uint16_t& check_sum, uint3
     if (param != NULL) {
         free(param);
     }
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
 }
 
 static int OnLineGet(int sockfd, CommandData_t* cmd)
@@ -147,8 +147,8 @@ static int OnLineGet(int sockfd, CommandData_t* cmd)
     int send_size = 0;
     int param_size = *(int*)cmd->dat;
     int remain_size = param_size;
-    LOG_INFO("enter\n");
-    LOG_INFO("ParamSize: 0x%x\n", param_size);
+    LOG_DEBUG("enter\n");
+    LOG_DEBUG("ParamSize: 0x%x\n", param_size);
 
     uint8_t* param = (uint8_t*)malloc(param_size);
 
@@ -157,7 +157,7 @@ static int OnLineGet(int sockfd, CommandData_t* cmd)
   if (rkaiq_manager) {
     ioRet = rkaiq_manager->IoCtrl(cmd->cmdID, param, param_size);
     if (ioRet != 0) {
-      LOG_INFO("DO Get Setting, io get data failed. return\n");
+      LOG_ERROR("DO Get Setting, io get data failed. return\n");
       return 1;
     }
   }
@@ -185,7 +185,7 @@ static int OnLineGet(int sockfd, CommandData_t* cmd)
 
 static void SendYuvData(int socket, int index, void* buffer, int size)
 {
-    LOG_INFO("SendYuvData\n");
+    LOG_DEBUG("SendYuvData\n");
     char* buf = NULL;
     int total = size;
     int packet_len = MAXPACKETSIZE;
@@ -199,6 +199,10 @@ static void SendYuvData(int socket, int index, void* buffer, int size)
     }
     capture_check_sum += check_sum;
     LOG_INFO("capture yuv index %d, check_sum %d capture_check_sum %d\n", index, check_sum, capture_check_sum);
+    if (check_sum != capture_check_sum) {
+        capture_check_sum = 0;
+        return;
+    }
 
     buf = (char*)buffer;
     while (total > 0) {
@@ -224,13 +228,14 @@ static void SendYuvDataResult(int sockfd, CommandData_t* cmd, CommandData_t* rec
     cmd->datLen = 2;
     memset(cmd->dat, 0, sizeof(cmd->dat));
     cmd->dat[0] = 0x04;
-    LOG_INFO("capture_check_sum %d, recieve %d\n", capture_check_sum, *checksum);
+    LOG_DEBUG("capture_check_sum %d, recieve %d\n", capture_check_sum, *checksum);
     if (capture_check_sum == *checksum) {
         cmd->dat[1] = RES_SUCCESS;
     } else {
         cmd->dat[1] = RES_FAILED;
     }
     cmd->checkSum = 0;
+    capture_check_sum = 0;
     for (int i = 0; i < cmd->datLen; i++) {
         cmd->checkSum += cmd->dat[i];
     }
@@ -253,7 +258,7 @@ void LinkCaptureCallBack(unsigned char* buffer, unsigned int buffer_size, int so
 
 static int DoCaptureYuv(int sockfd)
 {
-    LOG_DEBUG("DoCaptureYuv |sockfd %d\n", sockfd);
+    LOG_DEBUG("DoCaptureYuv\n");
 #ifndef __ANDROID__
     if (video_dump_flow) {
         video_dump_flow->SetCaptureHandler(LinkCaptureCallBack);
@@ -266,7 +271,7 @@ static int DoCaptureYuv(int sockfd)
 
 static void ReplyStatus(int sockfd, CommandData_t* cmd, int ret_status)
 {
-    LOG_INFO("enter\n");
+    LOG_DEBUG("enter\n");
     char send_data[MAXPACKETSIZE];
     strncpy((char*)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
     cmd->cmdType = CMD_TYPE_CAPTURE;
@@ -280,15 +285,15 @@ static void ReplyStatus(int sockfd, CommandData_t* cmd, int ret_status)
         cmd->checkSum += cmd->dat[i];
     }
 
-    LOG_INFO("cmd->checkSum %d\n", cmd->checkSum);
+    LOG_DEBUG("cmd->checkSum %d\n", cmd->checkSum);
     memcpy(send_data, cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
 }
 
 static void ReplySensorPara(int sockfd, CommandData_t* cmd)
 {
-    LOG_INFO("enter\n");
+    LOG_DEBUG("enter\n");
     char send_data[MAXPACKETSIZE];
     memset(cmd, 0, sizeof(CommandData_t));
     strncpy((char*)cmd->RKID, RKID_ISP_ON, sizeof(cmd->RKID));
@@ -305,22 +310,22 @@ static void ReplySensorPara(int sockfd, CommandData_t* cmd)
         cmd->checkSum += cmd->dat[i];
     }
 
-    LOG_INFO("cmd->checkSum %d\n", cmd->checkSum);
+    LOG_DEBUG("cmd->checkSum %d\n", cmd->checkSum);
     memcpy(send_data, cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
 }
 
 static void SetSensorPara(int sockfd, CommandData_t* recv_cmd, CommandData_t* cmd)
 {
-    LOG_INFO("enter\n");
+    LOG_DEBUG("enter\n");
     char send_data[MAXPACKETSIZE];
 
     Capture_Yuv_Params_t* CapParam = (Capture_Yuv_Params_t*)(recv_cmd->dat + 1);
-    LOG_INFO(" set gain        : %d\n", CapParam->gain);
-    LOG_INFO(" set exposure    : %d\n", CapParam->time);
-    LOG_INFO(" set fmt        : %d\n", CapParam->fmt);
-    LOG_INFO(" set framenumber : %d\n", CapParam->framenumber);
+    LOG_DEBUG(" set gain        : %d\n", CapParam->gain);
+    LOG_DEBUG(" set exposure    : %d\n", CapParam->time);
+    LOG_DEBUG(" set fmt        : %d\n", CapParam->fmt);
+    LOG_DEBUG(" set framenumber : %d\n", CapParam->framenumber);
 
     capture_frames = CapParam->framenumber;
     capture_frames_index = 0;
@@ -338,10 +343,10 @@ static void SetSensorPara(int sockfd, CommandData_t* recv_cmd, CommandData_t* cm
     for (int i = 0; i < cmd->datLen; i++) {
         cmd->checkSum += cmd->dat[i];
     }
-    LOG_INFO("cmd->checkSum %d\n", cmd->checkSum);
+    LOG_DEBUG("cmd->checkSum %d\n", cmd->checkSum);
     memcpy(send_data, cmd, sizeof(CommandData_t));
     send(sockfd, send_data, sizeof(CommandData_t), 0);
-    LOG_INFO("exit\n");
+    LOG_DEBUG("exit\n");
 }
 
 void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size)
@@ -350,17 +355,17 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size)
     CommandData_t send_cmd;
     int ret_val, ret;
 
-    LOG_INFO("HandlerOnLineMessage:\n");
-    LOG_INFO("DATA datLen: 0x%x\n", common_cmd->datLen);
+    LOG_DEBUG("HandlerOnLineMessage:\n");
+    LOG_DEBUG("DATA datLen: 0x%x\n", common_cmd->datLen);
 
     if (strcmp((char*)common_cmd->RKID, TAG_OL_PC_TO_DEVICE) == 0) {
-        LOG_INFO("RKID: %s\n", common_cmd->RKID);
+        LOG_DEBUG("RKID: %s\n", common_cmd->RKID);
     } else {
-        LOG_INFO("RKID: Unknow\n");
+        LOG_DEBUG("RKID: Unknow\n");
         return;
     }
 
-    LOG_INFO("cmdID: 0x%x cmdType: 0x%x\n", common_cmd->cmdID, common_cmd->cmdType);
+    LOG_DEBUG("cmdID: 0x%x cmdType: 0x%x\n", common_cmd->cmdID, common_cmd->cmdType);
 
     switch (common_cmd->cmdType) {
         case CMD_TYPE_STREAMING:
@@ -392,42 +397,42 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size)
             }
         } break;
         case CMD_TYPE_CAPTURE: {
-            LOG_INFO("CMD_TYPE_CAPTURE in\n");
-            DoCaptureYuv(sockfd);
+            LOG_DEBUG("CMD_TYPE_CAPTURE in\n");
+            // DoCaptureYuv(sockfd);
             char* datBuf = (char*)(common_cmd->dat);
             switch (datBuf[0]) {
                 case DATA_ID_CAPTURE_YUV_STATUS:
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_STATUS in\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_STATUS in\n");
                     ReplyStatus(sockfd, &send_cmd, READY);
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_STATUS out\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_STATUS out\n");
                     break;
                 case DATA_ID_CAPTURE_YUV_GET_PARAM:
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_GET_PARAM in\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_GET_PARAM in\n");
                     ReplySensorPara(sockfd, &send_cmd);
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_GET_PARAM out\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_GET_PARAM out\n");
                     break;
                 case DATA_ID_CAPTURE_YUV_SET_PARAM:
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_SET_PARAM in\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_SET_PARAM in\n");
                     SetSensorPara(sockfd, common_cmd, &send_cmd);
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_SET_PARAM out\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_SET_PARAM out\n");
                     break;
                 case DATA_ID_CAPTURE_YUV_START: {
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_START in\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_START in\n");
                     capture_status = BUSY;
                     DoCaptureYuv(sockfd);
                     capture_status = READY;
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_START out\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_START out\n");
                     break;
                 }
                 case DATA_ID_CAPTURE_YUV_CHECKSUM:
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM in\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM in\n");
                     SendYuvDataResult(sockfd, &send_cmd, common_cmd);
-                    LOG_INFO("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM out\n");
+                    LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM out\n");
                     break;
                 default:
                     break;
             }
-            LOG_INFO("CMD_TYPE_CAPTURE out\n\n");
+            LOG_DEBUG("CMD_TYPE_CAPTURE out\n\n");
         } break;
         default:
             LOG_INFO("cmdID: Unknow\n");

@@ -92,7 +92,7 @@ int get_isp_subdevs(struct media_device* device, const char* devpath, struct cap
     }
 
     strncpy(media_info->vd_path.media_dev_path, (char*)devpath, sizeof(media_info->vd_path.media_dev_path));
-    LOG_INFO("get isp subdev: %s \n", media_info->vd_path.media_dev_path);
+    LOG_DEBUG("get isp subdev: %s \n", media_info->vd_path.media_dev_path);
     entity = media_get_entity_by_name(device, "rkisp_mainpath");
     if (entity) {
         entity_name = media_entity_get_devname(entity);
@@ -105,7 +105,7 @@ int get_isp_subdevs(struct media_device* device, const char* devpath, struct cap
         entity_name = media_entity_get_devname(entity);
         if (entity_name) {
             strncpy(media_info->vd_path.isp_sd_path, (char*)entity_name, sizeof(media_info->vd_path.isp_sd_path));
-            LOG_INFO("isp subdev path: %s\n", media_info->vd_path.isp_sd_path);
+            LOG_DEBUG("isp subdev path: %s\n", media_info->vd_path.isp_sd_path);
         }
     }
 
@@ -119,9 +119,9 @@ int get_isp_subdevs(struct media_device* device, const char* devpath, struct cap
             strncpy(media_info->sd_path.device_name, (char*)media_entity_get_devname(entity),
                     sizeof(media_info->sd_path.device_name));
             media_info->link = link_to_isp;
-            LOG_INFO("get isp subdev: sensor link to %d \n", media_info->link);
+            LOG_DEBUG("get isp subdev: sensor link to %d \n", media_info->link);
             strncpy(media_info->sd_path.sensor_name, entity_info->name, sizeof(media_info->sd_path.sensor_name));
-            LOG_INFO("sensor subdev path: %s\n", media_info->sd_path.device_name);
+            LOG_DEBUG("sensor subdev path: %s\n", media_info->sd_path.device_name);
         }
     }
 
@@ -145,7 +145,7 @@ int get_vicap_subdevs(struct media_device* device, const char* devpath, struct c
         if (entity_name) {
             strncpy(media_info->cif_path.cif_video_path, (char*)entity_name,
                     sizeof(media_info->cif_path.cif_video_path));
-            LOG_INFO("get vicap subdev: %s \n", media_info->cif_path.cif_video_path);
+            LOG_DEBUG("get vicap subdev: %s \n", media_info->cif_path.cif_video_path);
         }
     }
 
@@ -155,7 +155,7 @@ int get_vicap_subdevs(struct media_device* device, const char* devpath, struct c
         if (entity_name) {
             strncpy(media_info->cif_path.cif_video_path, (char*)entity_name,
                     sizeof(media_info->cif_path.cif_video_path));
-            LOG_INFO("get vicap subdev: %s \n", media_info->cif_path.cif_video_path);
+            LOG_DEBUG("get vicap subdev: %s \n", media_info->cif_path.cif_video_path);
         }
     }
 
@@ -169,9 +169,9 @@ int get_vicap_subdevs(struct media_device* device, const char* devpath, struct c
             strncpy(media_info->sd_path.device_name, (char*)media_entity_get_devname(entity),
                     sizeof(media_info->sd_path.device_name));
             media_info->link = link_to_vicap;
-            LOG_INFO("get vicap subdev: sensor link to %d \n", media_info->link);
+            LOG_DEBUG("get vicap subdev: sensor link to %d \n", media_info->link);
             strncpy(media_info->sd_path.sensor_name, entity_info->name, sizeof(media_info->sd_path.sensor_name));
-            LOG_INFO("sensor subdev path: %s\n", media_info->sd_path.device_name);
+            LOG_DEBUG("sensor subdev path: %s\n", media_info->sd_path.device_name);
         }
     }
 
@@ -269,10 +269,10 @@ int rkisp_set_ispsd_fmt(struct capture_info* media_info, int in_w, int in_h, int
     int ret;
     if (media_info->link == link_to_isp) {
         ispsd = media_info->vd_path.isp_sd_path;
-        LOG_INFO("ispsd: isp subdev path%s\n", media_info->vd_path.isp_sd_path);
+        LOG_INFO("link_to_isp, isp subdev path:%s\n", media_info->vd_path.isp_sd_path);
     } else if (media_info->link == link_to_vicap) {
         ispsd = media_info->cif_path.cif_video_path;
-        LOG_INFO("ispsd: isp subdev path%s\n", media_info->cif_path.cif_video_path);
+        LOG_INFO("link_to_vicap, isp subdev path:%s\n", media_info->cif_path.cif_video_path);
     }
     // TODO: check source and sink pad
     ret = rkisp_sd_set_fmt(ispsd, 0, &in_w, &in_h, in_code);

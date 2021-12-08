@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <linux/types.h>
+#include <linux/v4l2-controls.h>
 
 #include "camera_capture.h"
 #include "camera_infohw.h"
@@ -113,14 +115,42 @@ typedef enum
     RKISP_FORMAT_NV16,
 } RkispFmt_e;
 
-#define VICAP_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif_mipi_lvds/compact_test"
-#define VICAP2_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif_lite_mipi_lvds/compact_test"
-#define VICAP00_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds/compact_test"
-#define VICAP01_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds1/compact_test"
-#define VICAP02_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds2/compact_test"
-#define VICAP03_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds3/compact_test"
-#define VICAP04_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds4/compact_test"
-#define VICAP05_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds5/compact_test"
-#define VICAP06_COMPACT_TEST_OFF "echo 0 > /sys/devices/platform/rkcif-mipi-lvds6/compact_test"
+#define RKCIF_CMD_GET_CSI_MEMORY_MODE _IOR('V', BASE_VIDIOC_PRIVATE + 0, int)
+#define RKCIF_CMD_SET_CSI_MEMORY_MODE _IOW('V', BASE_VIDIOC_PRIVATE + 1, int)
+#define RKCIF_CMD_GET_SCALE_BLC _IOR('V', BASE_VIDIOC_PRIVATE + 2, struct bayer_blc)
+#define RKCIF_CMD_SET_SCALE_BLC _IOW('V', BASE_VIDIOC_PRIVATE + 3, struct bayer_blc)
+
+/* cif memory mode
+ * 0: raw12/raw10/raw8 8bit memory compact
+ * 1: raw12/raw10 16bit memory one pixel
+ *    low align for rv1126/rv1109/rk356x
+ *    |15|14|13|12|11|10| 9| 8| 7| 6| 5| 4| 3| 2| 1| 0|
+ *    | -| -| -| -|11|10| 9| 8| 7| 6| 5| 4| 3| 2| 1| 0|
+ * 2: raw12/raw10 16bit memory one pixel
+ *    high align for rv1126/rv1109/rk356x
+ *    |15|14|13|12|11|10| 9| 8| 7| 6| 5| 4| 3| 2| 1| 0|
+ *    |11|10| 9| 8| 7| 6| 5| 4| 3| 2| 1| 0| -| -| -| -|
+ *
+ * note: rv1109/rv1126/rk356x dvp only support uncompact mode,
+ *       and can be set low align or high align
+ */
+
+enum cif_csi_lvds_memory
+{
+    CSI_LVDS_MEM_COMPACT = 0,
+    CSI_LVDS_MEM_WORD_LOW_ALIGN = 1,
+    CSI_LVDS_MEM_WORD_HIGH_ALIGN = 2,
+};
+
+/* black level for scale image
+ * The sequence of pattern00~03 is the same as the output of sensor bayer
+ */
+
+struct bayer_blc {
+    uint8_t pattern00;
+    uint8_t pattern01;
+    uint8_t pattern02;
+    uint8_t pattern03;
+};
 
 #endif

@@ -259,6 +259,8 @@ void deinit_rtsp()
 
 int init_rtsp(const char* video_dev, int width, int height, std::string enc_type)
 {
+    deinit_rtsp();
+
     int fps = 30;
     std::string yuv_format = IMAGE_NV12;
     printf("init_rtsp video_dev %s\n", video_dev);
