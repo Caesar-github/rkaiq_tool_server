@@ -187,6 +187,7 @@ void start_capturing(struct capture_info* cap_info)
 {
     unsigned int i;
     enum v4l2_buf_type type;
+    LOG_DEBUG("#### start_capturing, cap_info.dev_name:%s\n", cap_info->dev_name);
 
     switch (cap_info->io) {
         case IO_METHOD_READ:

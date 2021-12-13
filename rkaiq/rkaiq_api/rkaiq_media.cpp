@@ -268,6 +268,13 @@ void RKAiqMedia::GetIspSubDevs(int id, struct media_device* device, const char* 
             isp_info->self_path = entity_name;
         }
     }
+    entity = media_get_entity_by_name(device, "rkisp_fbcpath");
+    if (entity) {
+        entity_name = media_entity_get_devname(entity);
+        if (entity_name) {
+            isp_info->fbc_path = entity_name;
+        }
+    }
     entity = media_get_entity_by_name(device, "rkisp_rawwr0");
     if (entity) {
         entity_name = media_entity_get_devname(entity);
@@ -1026,6 +1033,7 @@ int RKAiqMedia::DumpMediaInfo()
             LOG_INFO("\t mpfbc_dev_path :    %s\n", isp->mpfbc_dev_path.c_str());
             LOG_INFO("\t main_path :         %s\n", isp->main_path.c_str());
             LOG_INFO("\t self_path :         %s\n", isp->self_path.c_str());
+            LOG_INFO("\t fbc_path :          %s\n", isp->fbc_path.c_str());
             LOG_INFO("\t rawwr0_path :       %s\n", isp->rawwr0_path.c_str());
             LOG_INFO("\t rawwr1_path :       %s\n", isp->rawwr1_path.c_str());
             LOG_INFO("\t rawwr2_path :       %s\n", isp->rawwr2_path.c_str());

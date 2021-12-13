@@ -2,6 +2,7 @@
 
 #include "multiframe_process.h"
 #include "rkaiq_protocol.h"
+#include "rk-camera-module.h"
 
 #include <fstream>
 #include <iostream>
@@ -24,6 +25,7 @@ static uint16_t* averge_frame1;
 extern std::string g_sensor_name;
 extern std::shared_ptr<RKAiqMedia> rkaiq_media;
 extern int g_device_id;
+extern uint32_t g_sensorHdrMode;
 
 static void RunCmd(const char* cmd, char* result)
 {
@@ -42,13 +44,19 @@ static void RunCmd(const char* cmd, char* result)
 
 static int SetLHcg(int mode)
 {
-    char cmd[1024] = {0};
-    char result[1024] = {0};
-    int pos = g_sensor_name.find(" ");
-    snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/i2c-dev/i2c-%d/device/%s/cam_s_cg", mode,
-             atoi(g_sensor_name.substr(pos + 1, pos + 2).c_str()),
-             g_sensor_name.substr(pos + 1, g_sensor_name.size() - 1).c_str());
-    RunCmd(cmd, result);
+    int fd = device_open(cap_info.sd_path.device_name);
+    LOG_DEBUG("SetLHcg, sensor subdev path: %s\n", cap_info.sd_path.device_name);
+    if (fd < 0) {
+        LOG_ERROR("Open %s failed.\n", cap_info.sd_path.device_name);
+    } else {
+        int ret = ioctl(fd, RKMODULE_SET_CONVERSION_GAIN, &mode);
+        if (ret > 0) {
+            LOG_ERROR("SetLHcg failed\n");
+        } else {
+            LOG_INFO("SetLHcg :%d\n", mode);
+        }
+    }
+    close(fd);
     return 0;
 }
 
@@ -139,6 +147,39 @@ static void RawCaptureinit(CommandData_t* cmd)
     cap_info.width = Reso->width;
     // cap_info.format = v4l2_fourcc('B', 'G', '1', '2');
     LOG_DEBUG("get ResW: %d  ResH: %d\n", cap_info.width, cap_info.height);
+
+    //
+    int fd = device_open(cap_info.sd_path.device_name);
+    LOG_DEBUG("sensor subdev path: %s\n", cap_info.sd_path.device_name);
+    LOG_DEBUG("cap_info.subdev_fd: %d\n", fd);
+    if (fd < 0) {
+        LOG_ERROR("Open %s failed.\n", cap_info.sd_path.device_name);
+    } else {
+        rkmodule_hdr_cfg hdrCfg;
+        int ret = ioctl(fd, RKMODULE_GET_HDR_CFG, &hdrCfg);
+        if (ret > 0) {
+            LOG_ERROR("Get sensor hdr mode failed\n");
+        } else {
+            g_sensorHdrMode = hdrCfg.hdr_mode;
+            LOG_INFO("Get sensor hdr mode:%u\n", g_sensorHdrMode);
+        }
+    }
+    close(fd);
+    if (mi.cif.linked_sensor) {
+        if (g_sensorHdrMode == NO_HDR) {
+            LOG_INFO("Get sensor mode: NO_HDR\n");
+            strcpy(cap_info.cif_path.cif_video_path, mi.cif.mipi_id0.c_str());
+            cap_info.dev_name = cap_info.cif_path.cif_video_path;
+        } else if (g_sensorHdrMode == HDR_X2) {
+            LOG_INFO("Get sensor mode: HDR_2\n");
+            strcpy(cap_info.cif_path.cif_video_path, mi.cif.mipi_id1.c_str());
+            cap_info.dev_name = cap_info.cif_path.cif_video_path;
+        } else if (g_sensorHdrMode == HDR_X3) {
+            LOG_INFO("Get sensor mode: HDR_3\n");
+            strcpy(cap_info.cif_path.cif_video_path, mi.cif.mipi_id2.c_str());
+            cap_info.dev_name = cap_info.cif_path.cif_video_path;
+        }
+    }
 }
 
 static void RawCaptureDeinit()
@@ -170,10 +211,20 @@ static void GetSensorPara(CommandData_t* cmd, int ret_status)
     float fps;
     int endianness = 0;
 
-    // cap_info.dev_fd = device_open(cap_info.dev_name);
     cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
-
     LOG_DEBUG("sensor subdev path: %s\n", cap_info.sd_path.device_name);
+
+    // set capture image data format
+    if (g_sensorHdrMode == NO_HDR) {
+        sensorParam->sensorImageFormat = PROC_ID_CAPTURE_RAW_COMPACT_LINEAR_ALIGN256;
+    } else if (g_sensorHdrMode == HDR_X2) {
+        sensorParam->sensorImageFormat = PROC_ID_CAPTURE_RAW_COMPACT_HDR2_ALIGN256;
+    } else if (g_sensorHdrMode == HDR_X3) {
+        sensorParam->sensorImageFormat = PROC_ID_CAPTURE_RAW_COMPACT_HDR3_ALIGN256;
+    } else {
+        LOG_ERROR("Get sensor hdr mode failed, return. hdr mode:%u\n", g_sensorHdrMode);
+        return;
+    }
 
     memset(&ctrl, 0, sizeof(ctrl));
     ctrl.id = V4L2_CID_HBLANK;
@@ -293,12 +344,16 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
     if (fd < 0) {
         LOG_ERROR("Open dev %s failed.\n", cap_info.dev_name);
     } else {
-        int value = CSI_LVDS_MEM_WORD_LOW_ALIGN;
-        int ret = ioctl(fd, RKCIF_CMD_SET_CSI_MEMORY_MODE, &value); // set to no compact
-        if (ret > 0) {
-            LOG_ERROR("set cif node %s compact mode failed.\n", cap_info.dev_name);
+        if (g_sensorHdrMode == NO_HDR) {
+            int value = CSI_LVDS_MEM_WORD_LOW_ALIGN;
+            int ret = ioctl(fd, RKCIF_CMD_SET_CSI_MEMORY_MODE, &value); // set to no compact
+            if (ret > 0) {
+                LOG_ERROR("set cif node %s compact mode failed.\n", cap_info.dev_name);
+            } else {
+                LOG_INFO("cif node %s set to no compact mode.\n", cap_info.dev_name);
+            }
         } else {
-            LOG_INFO("cif node %s set to no compact mode.\n", cap_info.dev_name);
+            LOG_INFO("cif node HDR mode, compact format as default.\n");
         }
     }
     close(fd);

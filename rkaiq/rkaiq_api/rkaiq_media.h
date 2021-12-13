@@ -33,6 +33,7 @@ typedef struct {
     std::string mpfbc_dev_path;
     std::string main_path;
     std::string self_path;
+    std::string fbc_path;
     std::string rawwr0_path;
     std::string rawwr1_path;
     std::string rawwr2_path;

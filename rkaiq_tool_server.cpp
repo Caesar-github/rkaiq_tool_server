@@ -33,6 +33,7 @@ int g_rtsp_en = 0;
 int g_rtsp_en_from_cmdarg = 0;
 int g_allow_killapp = 0;
 int g_cam_count = 0;
+uint32_t g_sensorHdrMode = 0;
 
 std::string g_stream_dev_name;
 std::string iqfile;
@@ -142,7 +143,7 @@ static int parse_args(int argc, char** argv)
 int main(int argc, char** argv)
 {
     int ret = -1;
-    LOG_ERROR("#### AIQ tool server 20211212_152030 ####\n");
+    LOG_ERROR("#### AIQ tool server 20211213_202358 ####\n");
 
 #ifdef _WIN32
     signal(SIGINT, signal_handle);
