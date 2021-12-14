@@ -185,7 +185,6 @@ static int OnLineGet(int sockfd, CommandData_t* cmd)
 
 static void SendYuvData(int socket, int index, void* buffer, int size)
 {
-    LOG_DEBUG("SendYuvData\n");
     char* buf = NULL;
     int total = size;
     int packet_len = MAXPACKETSIZE;
@@ -193,16 +192,12 @@ static void SendYuvData(int socket, int index, void* buffer, int size)
     int ret_val;
     uint16_t check_sum = 0;
 
-    buf = (char*)buffer;
-    for (int i = 0; i < size; i++) {
-        check_sum += buf[i];
-    }
-    capture_check_sum += check_sum;
-    LOG_INFO("capture yuv index %d, check_sum %d capture_check_sum %d\n", index, check_sum, capture_check_sum);
-    if (check_sum != capture_check_sum) {
-        capture_check_sum = 0;
-        return;
-    }
+    // buf = (char*)buffer;
+    // for (int i = 0; i < size; i++)
+    // {
+    //     check_sum += buf[i];
+    // }
+    // capture_check_sum = check_sum;
 
     buf = (char*)buffer;
     while (total > 0) {
@@ -426,7 +421,8 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size)
                 }
                 case DATA_ID_CAPTURE_YUV_CHECKSUM:
                     LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM in\n");
-                    SendYuvDataResult(sockfd, &send_cmd, common_cmd);
+                    LOG_DEBUG("DATA_ID_CAPTURE_YUV_CHECKSUM SKIP\n");
+                    // SendYuvDataResult(sockfd, &send_cmd, common_cmd);
                     LOG_DEBUG("ProcID DATA_ID_CAPTURE_YUV_CHECKSUM out\n");
                     break;
                 default:

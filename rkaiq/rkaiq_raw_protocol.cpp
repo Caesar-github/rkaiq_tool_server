@@ -165,7 +165,8 @@ static void RawCaptureinit(CommandData_t* cmd)
         rkmodule_hdr_cfg hdrCfg;
         int ret = ioctl(fd, RKMODULE_GET_HDR_CFG, &hdrCfg);
         if (ret > 0) {
-            LOG_ERROR("Get sensor hdr mode failed\n");
+            g_sensorHdrMode = NO_HDR;
+            LOG_ERROR("Get sensor hdr mode failed, use default, No HDR\n");
         } else {
             g_sensorHdrMode = hdrCfg.hdr_mode;
             LOG_INFO("Get sensor hdr mode:%u\n", g_sensorHdrMode);
@@ -233,8 +234,9 @@ static void GetSensorPara(CommandData_t* cmd, int ret_status)
         sensorFormat = PROC_ID_CAPTURE_RAW_COMPACT_HDR3_ALIGN256;
         LOG_INFO("HDR_X3 | sensorFormat:%d\n", sensorFormat);
     } else {
-        LOG_ERROR("Get sensor hdr mode failed, return. hdr mode:%u\n", g_sensorHdrMode);
-        return;
+        LOG_ERROR("Get sensor hdr mode failed, hdr mode:%u, use default.No HDR\n", g_sensorHdrMode);
+        sensorFormat = PROC_ID_CAPTURE_RAW_NON_COMPACT_LINEAR;
+        LOG_INFO("NO_HDR | sensorFormat:%d\n", sensorFormat);
     }
 
     memset(&ctrl, 0, sizeof(ctrl));
