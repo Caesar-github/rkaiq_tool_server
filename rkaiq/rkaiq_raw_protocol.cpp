@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <regex>
+using namespace std;
 
 #ifdef LOG_TAG
     #undef LOG_TAG
@@ -27,19 +29,24 @@ extern std::shared_ptr<RKAiqMedia> rkaiq_media;
 extern int g_device_id;
 extern uint32_t g_sensorHdrMode;
 
-static void RunCmd(const char* cmd, char* result)
+static void ExecuteCMD(const char* cmd, char* result)
 {
-    LOG_DEBUG("RunCmd: %s\n", cmd);
-
-    FILE* fp;
-    fp = popen(cmd, "r");
-    if (!fp) {
-        LOG_DEBUG("[%s] fail\n", cmd);
-        return;
+    char buf_ps[2048];
+    char ps[2048] = {0};
+    FILE* ptr;
+    strcpy(ps, cmd);
+    if ((ptr = popen(ps, "r")) != NULL) {
+        while (fgets(buf_ps, 2048, ptr) != NULL) {
+            strcat(result, buf_ps);
+            if (strlen(result) > 2048) {
+                break;
+            }
+        }
+        pclose(ptr);
+        ptr = NULL;
+    } else {
+        printf("popen %s error\n", ps);
     }
-    fgets(result, 1024, fp);
-    LOG_DEBUG("fgets result: %s\n", result);
-    fclose(fp);
 }
 
 static int SetLHcg(int mode)
@@ -214,13 +221,17 @@ static void GetSensorPara(CommandData_t* cmd, int ret_status)
     cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
     LOG_DEBUG("sensor subdev path: %s\n", cap_info.sd_path.device_name);
 
+    uint16_t sensorFormat;
     // set capture image data format
     if (g_sensorHdrMode == NO_HDR) {
-        sensorParam->sensorImageFormat = PROC_ID_CAPTURE_RAW_COMPACT_LINEAR_ALIGN256;
+        sensorFormat = PROC_ID_CAPTURE_RAW_NON_COMPACT_LINEAR;
+        LOG_INFO("NO_HDR | sensorFormat:%d\n", sensorFormat);
     } else if (g_sensorHdrMode == HDR_X2) {
-        sensorParam->sensorImageFormat = PROC_ID_CAPTURE_RAW_COMPACT_HDR2_ALIGN256;
+        sensorFormat = PROC_ID_CAPTURE_RAW_COMPACT_HDR2_ALIGN256;
+        LOG_INFO("HDR_X2 | sensorFormat:%d\n", sensorFormat);
     } else if (g_sensorHdrMode == HDR_X3) {
-        sensorParam->sensorImageFormat = PROC_ID_CAPTURE_RAW_COMPACT_HDR3_ALIGN256;
+        sensorFormat = PROC_ID_CAPTURE_RAW_COMPACT_HDR3_ALIGN256;
+        LOG_INFO("HDR_X3 | sensorFormat:%d\n", sensorFormat);
     } else {
         LOG_ERROR("Get sensor hdr mode failed, return. hdr mode:%u\n", g_sensorHdrMode);
         return;
@@ -291,15 +302,18 @@ static void GetSensorPara(CommandData_t* cmd, int ret_status)
     strncpy((char*)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
     cmd->cmdType = DEVICE_TO_PC;
     cmd->cmdID = CMD_ID_CAPTURE_RAW_CAPTURE;
-    cmd->datLen = 14;
+    cmd->datLen = sizeof(Sensor_Params_t);
     memset(cmd->dat, 0, sizeof(cmd->dat));
     cmd->dat[0] = 0x01;
+
     sensorParam->status = ret_status;
     sensorParam->fps = fps;
     sensorParam->hts = hts;
     sensorParam->vts = vts;
     sensorParam->bits = cap_info.sd_path.bits;
     sensorParam->endianness = endianness;
+    sensorParam->sensorImageFormat = sensorFormat;
+
     LOG_DEBUG("sensorParam->endianness: %d\n", endianness);
 
     cmd->checkSum = 0;
@@ -322,7 +336,7 @@ end:
     strncpy((char*)cmd->RKID, TAG_DEVICE_TO_PC, sizeof(cmd->RKID));
     cmd->cmdType = PC_TO_DEVICE;
     cmd->cmdID = CMD_ID_CAPTURE_RAW_CAPTURE;
-    cmd->datLen = 14;
+    cmd->datLen = sizeof(Sensor_Params_t);
     cmd->dat[0] = 0x01;
     cmd->checkSum = 0;
     for (int i = 0; i < cmd->datLen; i++) {
@@ -357,6 +371,20 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
         }
     }
     close(fd);
+    //
+    int needSetParamFlag = 1;
+    char result[2048] = {0};
+    std::string pattern{"Isp online"};
+    std::regex re(pattern);
+    std::smatch results;
+    ExecuteCMD("cat /proc/rkisp0-vir0", result);
+    std::string srcStr = result;
+    // LOG_INFO("#### srcStr:%s\n", srcStr.c_str());
+    std::regex_search(srcStr, results, re);
+    if (results.length() > 0) {
+        needSetParamFlag = 0;
+        LOG_INFO("Online capture raw not set param.\n");
+    }
 
     //
     bool focus_enable = false;
@@ -367,15 +395,6 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
         LOG_DEBUG("data[%d]: 0x%x\n", i, recv_cmd->dat[i]);
     }
 
-    LOG_INFO(" set gain        : %d\n", CapParam->gain);
-    LOG_INFO(" set exposure    : %d\n", CapParam->time);
-    LOG_INFO(" set lhcg        : %d\n", CapParam->lhcg);
-    LOG_INFO(" set bits        : %d\n", CapParam->bits);
-    LOG_INFO(" set framenumber : %d\n", CapParam->framenumber);
-    LOG_INFO(" set multiframe  : %d\n", CapParam->multiframe);
-    LOG_INFO(" set vblank      : %d\n", CapParam->vblank);
-    LOG_INFO(" set focus       : %d\n", CapParam->focus_position);
-    LOG_INFO(" sd_path subdev  : %s\n", cap_info.sd_path.device_name);
     cap_info.subdev_fd = device_open(cap_info.sd_path.device_name);
     if (strlen(cap_info.lens_path.lens_device_name) > 0) {
         focus_enable = true;
@@ -390,48 +409,60 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
     capture_mode = CapParam->multiframe;
     capture_check_sum = 0;
 
-    struct v4l2_control exp;
-    exp.id = V4L2_CID_EXPOSURE;
-    exp.value = CapParam->time;
-    struct v4l2_control gain;
-    gain.id = V4L2_CID_ANALOGUE_GAIN;
-    gain.value = CapParam->gain;
-    struct v4l2_control vblank;
-    vblank.id = V4L2_CID_VBLANK;
-    vblank.value = CapParam->vblank;
-    struct v4l2_control focus;
+    if (needSetParamFlag == 1) {
+        LOG_INFO(" set gain        : %d\n", CapParam->gain);
+        LOG_INFO(" set exposure    : %d\n", CapParam->time);
+        LOG_INFO(" set lhcg        : %d\n", CapParam->lhcg);
+        LOG_INFO(" set bits        : %d\n", CapParam->bits);
+        LOG_INFO(" set framenumber : %d\n", CapParam->framenumber);
+        LOG_INFO(" set multiframe  : %d\n", CapParam->multiframe);
+        LOG_INFO(" set vblank      : %d\n", CapParam->vblank);
+        LOG_INFO(" set focus       : %d\n", CapParam->focus_position);
+        LOG_INFO(" sd_path subdev  : %s\n", cap_info.sd_path.device_name);
 
-    if (focus_enable) {
-        struct v4l2_queryctrl focus_query;
-        focus_query.id = V4L2_CID_FOCUS_ABSOLUTE;
-        if (device_queryctrl(cap_info.lensdev_fd, &focus_query) < 0) {
-            LOG_ERROR(" query focus result failed to device\n");
-            focus_enable = false;
+        struct v4l2_control exp;
+        exp.id = V4L2_CID_EXPOSURE;
+        exp.value = CapParam->time;
+        struct v4l2_control gain;
+        gain.id = V4L2_CID_ANALOGUE_GAIN;
+        gain.value = CapParam->gain;
+        struct v4l2_control vblank;
+        vblank.id = V4L2_CID_VBLANK;
+        vblank.value = CapParam->vblank;
+        struct v4l2_control focus;
+
+        if (focus_enable) {
+            struct v4l2_queryctrl focus_query;
+            focus_query.id = V4L2_CID_FOCUS_ABSOLUTE;
+            if (device_queryctrl(cap_info.lensdev_fd, &focus_query) < 0) {
+                LOG_ERROR(" query focus result failed to device\n");
+                focus_enable = false;
+            }
+            focus.id = V4L2_CID_FOCUS_ABSOLUTE;
+            focus.value = CapParam->focus_position;
+            if (CapParam->focus_position > focus_query.maximum)
+                focus.value = focus_query.maximum;
+            if (CapParam->focus_position < focus_query.minimum)
+                focus.value = focus_query.minimum;
         }
-        focus.id = V4L2_CID_FOCUS_ABSOLUTE;
-        focus.value = CapParam->focus_position;
-        if (CapParam->focus_position > focus_query.maximum)
-            focus.value = focus_query.maximum;
-        if (CapParam->focus_position < focus_query.minimum)
-            focus.value = focus_query.minimum;
-    }
 
-    if (device_setctrl(cap_info.subdev_fd, &vblank) < 0) {
-        LOG_ERROR(" set vblank result failed to device\n");
-        ret_status = RES_FAILED;
-    }
-    if (device_setctrl(cap_info.subdev_fd, &exp) < 0) {
-        LOG_ERROR(" set exposure result failed to device\n");
-        ret_status = RES_FAILED;
-    }
-    if (device_setctrl(cap_info.subdev_fd, &gain) < 0) {
-        LOG_ERROR(" set gain result failed to device\n");
-        ret_status = RES_FAILED;
-    }
-    if (focus_enable) {
-        if (device_setctrl(cap_info.lensdev_fd, &focus) < 0) {
-            LOG_ERROR(" set focus result failed to device\n");
+        if (device_setctrl(cap_info.subdev_fd, &vblank) < 0) {
+            LOG_ERROR(" set vblank result failed to device\n");
             ret_status = RES_FAILED;
+        }
+        if (device_setctrl(cap_info.subdev_fd, &exp) < 0) {
+            LOG_ERROR(" set exposure result failed to device\n");
+            ret_status = RES_FAILED;
+        }
+        if (device_setctrl(cap_info.subdev_fd, &gain) < 0) {
+            LOG_ERROR(" set gain result failed to device\n");
+            ret_status = RES_FAILED;
+        }
+        if (focus_enable) {
+            if (device_setctrl(cap_info.lensdev_fd, &focus) < 0) {
+                LOG_ERROR(" set focus result failed to device\n");
+                ret_status = RES_FAILED;
+            }
         }
     }
 
@@ -491,13 +522,13 @@ static void SendRawData(int socket, int index, void* buffer, int size)
 
 static void DoCaptureCallBack(int socket, int index, void* buffer, int size)
 {
-    LOG_DEBUG(" DoCaptureCallBack size %d\n", size);
+    LOG_DEBUG("DoCaptureCallBack size %d\n", size);
     int width = cap_info.width;
     int height = cap_info.height;
-    LOG_DEBUG(" cap_info.width %d\n", cap_info.width);
-    LOG_DEBUG(" cap_info.height %d\n", cap_info.height);
-    if (size > (width * height * 2)) {
-        LOG_ERROR(" DoMultiFrameCallBack size error\n");
+    LOG_DEBUG("cap_info.width %d\n", cap_info.width);
+    LOG_DEBUG("cap_info.height %d\n", cap_info.height);
+    if (g_sensorHdrMode == NO_HDR && size > (width * height * 2)) {
+        LOG_ERROR("DoMultiFrameCallBack size error\n");
         return;
     }
     SendRawData(socket, index, buffer, size);
