@@ -628,19 +628,19 @@ int RKAiqMedia::LinkToSensor(int cam_index)
     cif_info = &media_info[cam_index].cif;
     isp_info = &media_info[cam_index].isp;
     dvp_info = &media_info[cam_index].dvp;
-    if (cif_info->media_dev_path.empty()) {
-        if (isp_info->media_dev_path.empty()) {
+    if (cif_info->media_dev_path.empty() && isp_info->media_dev_path.empty() &&
+        dvp_info->media_dev_path.empty()) {
             LOG_ERROR("No sensor %d linked to isp/cif!!!", cam_index);
             return ret;
-        } else {
-            linkToIsp = true;
-        }
-    } else {
+    } else if (!cif_info->media_dev_path.empty()) {
         linkToCif = true;
-    }
-
-    if (!dvp_info->media_dev_path.empty()) {
+        LOG_INFO("sensor %d linked to rkcif mipi lvds!!!", cam_index);
+    } else if (!isp_info->media_dev_path.empty()) {
+        linkToIsp =true;
+        LOG_INFO("sensor %d linked to rkisp!!!", cam_index);
+    } else if (!dvp_info->media_dev_path.empty()) {
         linkToDvp = true;
+        LOG_INFO("sensor %d linked to rkcif dvp!!!", cam_index);
     }
 
     if (linkToCif) {
