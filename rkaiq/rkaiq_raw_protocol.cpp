@@ -23,6 +23,7 @@ static uint16_t capture_check_sum;
 static struct capture_info cap_info;
 static uint32_t* averge_frame0;
 static uint16_t* averge_frame1;
+static int needSetParamFlag = 1;
 
 extern std::string g_sensor_name;
 extern std::shared_ptr<RKAiqMedia> rkaiq_media;
@@ -51,6 +52,11 @@ static void ExecuteCMD(const char* cmd, char* result)
 
 static int SetLHcg(int mode)
 {
+    if (needSetParamFlag == 0) {
+        LOG_INFO("Online mode, not set SetLHcg\n");
+        return 0;
+    }
+
     int fd = device_open(cap_info.sd_path.device_name);
     LOG_DEBUG("SetLHcg, sensor subdev path: %s\n", cap_info.sd_path.device_name);
     if (fd < 0) {
@@ -374,7 +380,6 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
     }
     close(fd);
     //
-    int needSetParamFlag = 1;
     char result[2048] = {0};
     std::string pattern{"Isp online"};
     std::regex re(pattern);
@@ -386,6 +391,8 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
     if (results.length() > 0) {
         needSetParamFlag = 0;
         LOG_INFO("Online capture raw not set param.\n");
+    } else {
+        needSetParamFlag = 1;
     }
 
     //
@@ -698,7 +705,7 @@ static int StartCapture()
 
 static int StopCapture()
 {
-    LOG_DEBUG(" enter\n");
+    LOG_DEBUG("enter\n");
     stop_capturing(&cap_info);
     uninit_device(&cap_info);
     RawCaptureDeinit();
