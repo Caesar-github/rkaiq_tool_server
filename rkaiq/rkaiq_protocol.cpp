@@ -817,7 +817,8 @@ int RKAiqProtocol::offlineRawProcess()
             }
             LOG_DEBUG("ENUM_ID_SYSCTL_ENQUEUERKRAWFILE begin\n");
             struct timeval tv;
-            gettimeofday(&tv, NULL);
+            struct timezone tz;
+            gettimeofday(&tv, &tz);
             long startTime = tv.tv_sec * 1000 + tv.tv_usec / 1000;
             LOG_DEBUG("begin millisecond: %ld\n", startTime); // ms
             std::string filePath = "/data/OfflineRAW/" + raw_file;
@@ -833,7 +834,7 @@ int RKAiqProtocol::offlineRawProcess()
             uint32_t frameInterval = 1000 / g_offlineFrameRate;
             std::this_thread::sleep_for(std::chrono::milliseconds(frameInterval));
 
-            gettimeofday(&tv, NULL);
+            gettimeofday(&tv, &tz);
             long endTime = tv.tv_sec * 1000 + tv.tv_usec / 1000;
             LOG_DEBUG("end millisecond: %ld\n", endTime);                                                   // ms
             LOG_DEBUG("####################################### time spend: %ld ms\n", endTime - startTime); // ms
