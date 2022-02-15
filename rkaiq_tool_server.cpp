@@ -263,7 +263,7 @@ static void RawCaptureinit()
 int main(int argc, char** argv)
 {
     int ret = -1;
-    LOG_ERROR("#### AIQ tool server v2.0.6-20220117_150747 ####\n");
+    LOG_ERROR("#### AIQ tool server v2.0.6-20220215_145026 ####\n");
 
 #ifdef _WIN32
     signal(SIGINT, signal_handle);
@@ -350,6 +350,14 @@ int main(int argc, char** argv)
         if (ret != 0) {
             LOG_ERROR("Failed set mode to tunning mode, does app started?\n");
         }
+    }
+
+    if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
+        LOG_INFO("#### ToolServer connect AIQ failed ####\n");
+        // g_tcpClient.Close();
+        // return -1;
+    } else {
+        LOG_INFO("#### ToolServer connect AIQ success ####\n");
     }
 
     pthread_sigmask(SIG_UNBLOCK, &mask, NULL);

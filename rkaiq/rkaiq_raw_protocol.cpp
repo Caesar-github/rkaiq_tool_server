@@ -380,6 +380,8 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
     }
     close(fd);
     //
+    needSetParamFlag = 1;
+
     char result[2048] = {0};
     std::string pattern{"Isp online"};
     std::regex re(pattern);
@@ -391,8 +393,33 @@ static void SetCapConf(CommandData_t* recv_cmd, CommandData_t* cmd, int ret_stat
     if (results.length() > 0) {
         needSetParamFlag = 0;
         LOG_INFO("Online capture raw not set param.\n");
-    } else {
-        needSetParamFlag = 1;
+    }
+    memset(result, 0, sizeof(result));
+    ExecuteCMD("cat /proc/rkisp1-vir0", result);
+    srcStr = result;
+    // LOG_INFO("#### srcStr:%s\n", srcStr.c_str());
+    std::regex_search(srcStr, results, re);
+    if (results.length() > 0) {
+        needSetParamFlag = 0;
+        LOG_INFO("Online capture raw not set param.\n");
+    }
+    memset(result, 0, sizeof(result));
+    ExecuteCMD("cat /proc/rkisp-vir0", result);
+    srcStr = result;
+    // LOG_INFO("#### srcStr:%s\n", srcStr.c_str());
+    std::regex_search(srcStr, results, re);
+    if (results.length() > 0) {
+        needSetParamFlag = 0;
+        LOG_INFO("Online capture raw not set param.\n");
+    }
+    memset(result, 0, sizeof(result));
+    ExecuteCMD("cat /proc/rkisp-unite", result);
+    srcStr = result;
+    // LOG_INFO("#### srcStr:%s\n", srcStr.c_str());
+    std::regex_search(srcStr, results, re);
+    if (results.length() > 0) {
+        needSetParamFlag = 0;
+        LOG_INFO("Online capture raw not set param.\n");
     }
 
     //

@@ -796,8 +796,10 @@ static void ReplySensorPara(int sockfd, CommandData_t* cmd)
     assert(results.length() >= 2);
     string width = results.str(1);
     string height = results.str(2);
-    g_width = atoi(width.c_str());
-    g_height = atoi(height.c_str());
+    if (g_stream_dev_name.length() == 0) {
+        g_width = atoi(width.c_str());
+        g_height = atoi(height.c_str());
+    }
     if (g_width == 0 || g_height == 0) {
         LOG_ERROR("Captrure YUV, get output resolution failed.\n");
     } else {
@@ -1030,11 +1032,20 @@ static void ReplyOnlineRawSensorPara(int sockfd, CommandData_t* cmd)
     memset(captureDevNode, 0, sizeof(captureDevNode));
 
     if (videoDevNodeFindedFlag == false) {
-        memset(cmdResStr, 0, sizeof(cmdResStr));
-        ExecuteCMD("media-ctl -d /dev/media0 -e stream_cif_mipi_id0", cmdResStr);
-        if (strstr(cmdResStr, "/dev/video") != NULL) {
-            videoDevNodeFindedFlag = true;
-            memcpy(captureDevNode, cmdResStr, strlen(cmdResStr) + 1);
+        if (g_device_id == 0) {
+            memset(cmdResStr, 0, sizeof(cmdResStr));
+            ExecuteCMD("media-ctl -d /dev/media0 -e stream_cif_mipi_id0", cmdResStr);
+            if (strstr(cmdResStr, "/dev/video") != NULL) {
+                videoDevNodeFindedFlag = true;
+                memcpy(captureDevNode, cmdResStr, strlen(cmdResStr) + 1);
+            }
+        } else if (g_device_id == 1) {
+            memset(cmdResStr, 0, sizeof(cmdResStr));
+            ExecuteCMD("media-ctl -d /dev/media1 -e stream_cif_mipi_id0", cmdResStr);
+            if (strstr(cmdResStr, "/dev/video") != NULL) {
+                videoDevNodeFindedFlag = true;
+                memcpy(captureDevNode, cmdResStr, strlen(cmdResStr) + 1);
+            }
         }
     }
 
@@ -1296,7 +1307,7 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size)
                         std::string pattern{"Isp online"};
                         std::regex re(pattern);
                         std::smatch results;
-                        ExecuteCMD("cat /proc/rkisp-vir0", result);
+                        ExecuteCMD("cat /proc/rkisp1-vir0", result);
                         std::string srcStr = result;
                         // LOG_INFO("#### srcStr:%s\n", srcStr.c_str());
                         if (!std::regex_search(srcStr, results, re)) // not found
@@ -1305,13 +1316,23 @@ void RKAiqOLProtocol::HandlerOnLineMessage(int sockfd, char* buffer, int size)
                             std::string pattern{"Isp online"};
                             std::regex re(pattern);
                             std::smatch results;
-                            ExecuteCMD("cat /proc/rkisp-unite", result);
+                            ExecuteCMD("cat /proc/rkisp-vir0", result);
                             std::string srcStr = result;
                             // LOG_INFO("#### srcStr:%s\n", srcStr.c_str());
                             if (!std::regex_search(srcStr, results, re)) // not found
                             {
-                                LOG_INFO("Isp not online, online raw capture not available.\n");
-                                return;
+                                char result[2048] = {0};
+                                std::string pattern{"Isp online"};
+                                std::regex re(pattern);
+                                std::smatch results;
+                                ExecuteCMD("cat /proc/rkisp-unite", result);
+                                std::string srcStr = result;
+                                // LOG_INFO("#### srcStr:%s\n", srcStr.c_str());
+                                if (!std::regex_search(srcStr, results, re)) // not found
+                                {
+                                    LOG_INFO("Isp not online, online raw capture not available.\n");
+                                    return;
+                                }
                             }
                         }
                     }

@@ -117,9 +117,11 @@ int ConnectAiq()
     }
 #else
     if (g_tcpClient.Setup("/tmp/UNIX.domain") == false) {
-        LOG_DEBUG("domain connect failed\n");
+        LOG_INFO("domain connect failed\n");
         g_tcpClient.Close();
         return -1;
+    } else {
+        LOG_INFO("#### Socket connect AIQ success ####\n");
     }
 #endif
     return 0;
