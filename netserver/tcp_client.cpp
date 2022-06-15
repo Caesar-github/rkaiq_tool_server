@@ -36,10 +36,10 @@ bool TCPClient::Setup(string address, int port)
             return false;
         }
         addr_list = (struct in_addr**)he->h_addr_list;
-        for (int i = 0; addr_list[i] != NULL; i++) {
-            server.sin_addr = *addr_list[i];
-            break;
-        }
+        //for (int i = 0; addr_list[i] != NULL; i++) {
+            server.sin_addr = *addr_list[0];
+          //  break;
+       // }
     } else {
         server.sin_addr.s_addr = inet_addr(address.c_str());
     }
